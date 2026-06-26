@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="id" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    {{-- Anti-cache di mobile (penyebab 419 Page Expired) --}}
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <!-- Backgroundlogin -->
+    <title>Login &middot; {{ $AppCfg['app_name'] }}</title>
+    @if($AppCfg['favicon'])
+        <link rel="icon" href="{{ Storage::url($AppCfg['favicon']) }}">
+    @endif
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <style>
+        .login-hero {
+            @if($AppCfg['login_bg'])
+                background-image: linear-gradient(135deg, rgb(0 40 153 / 64%), rgb(0 0 0 / 78%)),
+                                  url('{{ Storage::url($AppCfg['login_bg']) }}');
+                background-size: cover;
+                background-position: center;
+            @else
+                background:
+                    radial-gradient(circle at 20% 20%, rgba(48,102,255,0.25), transparent 50%),
+                    radial-gradient(circle at 80% 30%, rgba(16,185,129,0.18), transparent 55%),
+                    linear-gradient(135deg, #1e293b 0%, #1d2e8b 70%, #1934dd 100%);
+            @endif
+            color: white;
+        }
+    </style>
+</head>
+<body class="h-full bg-slate-50">
+<div class="min-h-screen grid lg:grid-cols-5">
+
+    <!-- KIRI: hero -->
+    <div class="hidden lg:flex lg:col-span-3 flex-col justify-between p-12 login-hero relative overflow-hidden">
+        <!-- Decorative shapes -->
+        <div class="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-white/5 blur-3xl"></div>
+        <div class="absolute -bottom-32 -left-12 w-96 h-96 rounded-full bg-white/5 blur-3xl"></div>
+
+        <div class="flex items-center gap-3 relative z-10">
+            @if($AppCfg['logo'])
+                <img src="{{ Storage::url($AppCfg['logo']) }}" alt="" class="w-12 h-12 object-contain bg-white/95 rounded-xl p-1.5 shadow-soft">
+            @else
+                <div class="w-12 h-12 rounded-2xl bg-white/95 grid place-items-center text-brand-700 font-bold text-xl shadow-soft">
+                    {{ mb_substr($AppCfg['app_name'], 0, 1) }}
+                </div>
+            @endif
+            <div>
+                <div class="text-base font-bold">{{ $AppCfg['app_name'] }}</div>
+                <div class="text-xs text-white/80">{{ $AppCfg['app_tagline'] }}</div>
+            </div>
+        </div>
+
+        
+        <div class="max-w-xl relative z-10">
+            <h1 class="text-4xl xl:text-5xl font-bold leading-tight">{!! $AppCfg['login_title'] !!}</h1>
+            <p class="mt-4 text-white/85 text-lg leading-relaxed">{{ $AppCfg['login_subtitle'] }}</p>
+            
+            <!--Hapus ini jika dipakai
+            <div class="mt-10 grid grid-cols-3 gap-3">
+                @foreach([
+                    ['👨‍🎓','Siswa', ''],
+                    ['👩‍🏫','Guru', ''],
+                    ['🛡️','Admin', ''],
+                ] as $item)
+                    <div class="rounded-2xl bg-white/10 backdrop-blur border border-white/20 p-4 hover:bg-white/15 transition">
+                        <div class="text-2xl">{{ $item[0] }}</div>
+                        <div class="font-semibold mt-1.5">{{ $item[1] }}</div>
+                        <div class="text-xs text-white/75 mt-0.5">{{ $item[2] }}</div>
+                    </div>
+                @endforeach
+            </div>
+             -->
+        </div>
+       
+
+        <div class="text-xs text-white/70 relative z-10">
+            © {{ date('Y') }} {{ $AppCfg['app_name'] }} — Powered by Humam Studio
+        </div>
+    </div>
+
+    <!-- KANAN: form -->
+    <div class="lg:col-span-2 flex items-center justify-center p-6 sm:p-12 bg-slate-50">
+        <div class="w-full max-w-md">
+            <div class="lg:hidden flex items-center gap-3 mb-8">
+                @if($AppCfg['logo'])
+                    <img src="{{ Storage::url($AppCfg['logo']) }}" alt="" class="w-11 h-11 object-contain">
+                @else
+                    <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 grid place-items-center text-white font-bold text-lg shadow-soft">
+                        {{ mb_substr($AppCfg['app_name'], 0, 1) }}
+                    </div>
+                @endif
+                <div class="text-base font-bold text-ink-900">{{ $AppCfg['app_name'] }}</div>
+            </div>
+
+            <div>
+                <h2 class="text-3xl font-bold text-ink-900">Login Akun</h2>
+                <p class="text-sm text-ink-500 mt-1.5">Pilih Login sesuai dengan akun.</p>
+
+                {{-- Flash error (mis. dari 419 redirect) --}}
+                @if(session('error'))
+                    <div class="mt-4 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm">
+                        {{ session('error') }}
+                    </div>
+                @endif
+
+                <form method="POST" action="{{ route('login.post') }}" class="mt-8 space-y-5"
+                      id="login-form"
+                      x-data="{ role: '{{ old('role','admin') }}' }">
+                    {{-- Token CSRF dengan id supaya JS bisa refresh sebelum submit (anti 419 di mobile) --}}
+                    <input type="hidden" name="_token" id="csrf-token-input" value="{{ csrf_token() }}">
+
+                    <div>
+                        <span class="label">Login sebagai</span>
+                        <div class="grid grid-cols-3 gap-1.5 rounded-xl bg-slate-100 p-1.5">
+                            @foreach(['admin' => ' Admin', 'guru' => ' Guru', 'siswa' => ' Siswa'] as $val => $lbl)
+                                <button type="button" @click="role='{{ $val }}'"
+                                        :class="role==='{{ $val }}' ? 'bg-white shadow-soft text-brand-700 ring-1 ring-brand-200' : 'text-ink-600 hover:text-ink-900'"
+                                        class="rounded-lg py-2 text-sm font-semibold transition">{{ $lbl }}</button>
+                            @endforeach
+                        </div>
+                        <input type="hidden" name="role" :value="role">
+                    </div>
+
+                    <div>
+                        <label class="label" x-text="role==='admin' ? 'Email' : (role==='guru' ? 'NIP' : 'NISN')"></label>
+                        <input type="text" name="username" value="{{ old('username') }}"
+                               class="input" autofocus required
+                               placeholder="Masukkan username Anda">
+                        @error('username')<p class="mt-1 text-xs text-rose-600">{{ $message }}</p>@enderror
+                    </div>
+
+                    <div>
+                        <label class="label">Password</label>
+                        <div class="relative" x-data="{ show: false }">
+                            <input :type="show ? 'text' : 'password'" name="password" class="input pr-10" required placeholder="••••••••">
+                            <button type="button" @click="show=!show" class="absolute right-3 top-1/2 -translate-y-1/2 text-ink-500 hover:text-ink-700">
+                                <span x-show="!show" x-cloak>👁️‍🗨️</span>
+                                <span x-show="show" x-cloak>👁️‍🗨️</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <label class="flex items-center gap-2 text-sm text-ink-600">
+                        <input type="checkbox" name="remember" class="rounded border-slate-300 text-brand-600 focus:ring-brand-500">
+                        Ingat saya di perangkat ini
+                    </label>
+
+                    <button type="submit" class="btn-primary w-full text-base py-3 group">
+                        Login
+                        <span class="transition group-hover:translate-x-1">→</span>
+                    </button>
+                </form>
+
+                <div class="mt-8 text-center text-xs text-ink-500">
+                    Lupa password? Hubungi admin sekolah.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Auto-refresh CSRF token sebelum submit login (anti 419 di mobile).
+    // Jika halaman sudah lama dibuka & token kadaluwarsa, kita ambil token baru
+    // dari endpoint /csrf-refresh sebelum benar-benar submit form.
+    document.addEventListener('DOMContentLoaded', () => {
+        const form = document.getElementById('login-form');
+        const tokenInput = document.getElementById('csrf-token-input');
+        if (! form || ! tokenInput) return;
+
+        let submitting = false;
+        form.addEventListener('submit', async (e) => {
+            if (submitting) return;
+            e.preventDefault();
+            submitting = true;
+            try {
+                const res = await fetch("{{ route('csrf.refresh') }}", {
+                    method: 'GET',
+                    credentials: 'same-origin',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data && data.token) tokenInput.value = data.token;
+                    // sync meta tag juga
+                    const meta = document.querySelector('meta[name="csrf-token"]');
+                    if (meta && data && data.token) meta.setAttribute('content', data.token);
+                }
+            } catch (err) {
+                // network gagal — tetap submit dengan token yang ada
+            }
+            form.submit();
+        });
+    });
+</script>
+</body>
+</html>

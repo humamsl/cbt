@@ -1,0 +1,79 @@
+<?php
+
+namespace App\Http\Controllers\Datacenter;
+
+use App\Http\Controllers\Controller;
+use App\Models\Guru;
+use App\Models\Jurusan;
+use App\Models\RombonganBelajar;
+use App\Models\TahunAjaran;
+use App\Models\TingkatKelas;
+use Illuminate\Http\Request;
+
+class RombelController extends Controller
+{
+    public function index(Request $r)
+    {
+        $items = RombonganBelajar::with('jurusan', 'tahunAjaran', 'waliKelas')
+            ->when($r->q, fn ($x) => $x->where('nama_rombel', 'like', "%{$r->q}%"))
+            ->when($r->ta, fn ($x) => $x->where('tahun_ajaran_id', $r->ta))
+            ->orderBy('tingkat')->orderBy('nama_rombel')
+            ->paginate(20)->withQueryString();
+        return view('datacenter.rombel.index', [
+            'items' => $items,
+            'tahunAjaran' => TahunAjaran::orderByDesc('id')->get(),
+        ]);
+    }
+
+    public function create()
+    {
+        return view('datacenter.rombel.form', [
+            'item' => new RombonganBelajar(),
+            'jurusan' => Jurusan::orderBy('nama_jurusan')->get(),
+            'guru' => Guru::orderBy('nama_ptk')->get(),
+            'tahunAjaran' => TahunAjaran::orderByDesc('id')->get(),
+            'tingkatList' => TingkatKelas::aktif()->orderBy('nomor')->get(),
+        ]);
+    }
+
+    public function store(Request $r)
+    {
+        RombonganBelajar::create($this->v($r));
+        return redirect()->route('rombel.index')->with('success', 'Rombel ditambahkan.');
+    }
+
+    public function edit(RombonganBelajar $rombel)
+    {
+        return view('datacenter.rombel.form', [
+            'item' => $rombel,
+            'jurusan' => Jurusan::orderBy('nama_jurusan')->get(),
+            'guru' => Guru::orderBy('nama_ptk')->get(),
+            'tahunAjaran' => TahunAjaran::orderByDesc('id')->get(),
+            'tingkatList' => TingkatKelas::aktif()->orderBy('nomor')->get(),
+        ]);
+    }
+
+    public function update(Request $r, RombonganBelajar $rombel)
+    {
+        $rombel->update($this->v($r));
+        return redirect()->route('rombel.index')->with('success', 'Rombel diperbarui.');
+    }
+
+    public function destroy(RombonganBelajar $rombel)
+    {
+        $rombel->delete();
+        return back()->with('success', 'Rombel dihapus.');
+    }
+
+    protected function v(Request $r): array
+    {
+        return $r->validate([
+            'nama_rombel' => 'required|string|max:50',
+            'tingkat' => 'required|integer|between:1,12',
+            'jurusan_id' => 'nullable|exists:jurusan,id',
+            'tahun_ajaran_id' => 'required|exists:tahun_ajaran,id',
+            'wali_kelas_id' => 'nullable|exists:guru,id',
+            'kapasitas' => 'nullable|integer|min:1',
+        ]);
+    }
+}
