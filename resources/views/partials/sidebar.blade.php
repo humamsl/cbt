@@ -4,20 +4,21 @@
 @endphp
 
 <aside
-    class="fixed inset-y-0 left-0 z-30 w-64 bg-white border-r border-slate-100 transform md:translate-x-0 transition-transform"
+    class="fixed inset-y-0 left-0 z-30 w-64 border-r border-black/5 transform md:translate-x-0 transition-transform"
+    style="background-color: #115e59;"
     :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'"
     @click="if (window.innerWidth < 768 && $event.target.closest('a[href]')) sidebarOpen = false">
-    <div class="flex items-center gap-3 px-5 h-16 border-b border-slate-100 bg-gradient-to-r from-white to-brand-50/30">
+    <div class="flex items-center gap-3 px-5 h-16 border-b border-white/15">
         @if($AppCfg['logo'])
-            <img src="{{ Storage::url($AppCfg['logo']) }}" alt="" class="w-10 h-10 object-contain rounded-lg shadow-soft">
+            <img src="{{ Storage::url($AppCfg['logo']) }}" alt="" class="w-10 h-10 object-contain rounded-lg bg-white/90 p-0.5 shadow-soft">
         @else
-            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 grid place-items-center text-white font-bold shadow-soft ring-2 ring-white">
+            <div class="w-10 h-10 rounded-xl bg-white/20 grid place-items-center text-white font-bold shadow-soft ring-2 ring-white/40">
                 {{ mb_substr($AppCfg['app_name'], 0, 1) }}
             </div>
         @endif
         <div class="min-w-0">
-            <div class="text-sm font-bold text-ink-900 leading-tight truncate">{{ $AppCfg['app_name'] }}</div>
-            <div class="text-[11px] text-ink-500 leading-tight truncate">{{ $AppCfg['app_tagline'] }}</div>
+            <div class="text-sm font-bold text-white leading-tight truncate">{{ $AppCfg['app_name'] }}</div>
+            <div class="text-[11px] text-white/70 leading-tight truncate">{{ $AppCfg['app_tagline'] }}</div>
         </div>
     </div>
 
