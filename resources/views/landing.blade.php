@@ -31,8 +31,8 @@
     .btn-red{background:var(--red);color:#fff;box-shadow:0 10px 22px -8px rgba(220,38,38,.6);}
     .btn-glass{background:rgba(255,255,255,.14);color:#fff;border:1.5px solid rgba(255,255,255,.35);backdrop-filter:blur(4px);}
 
-    /* ===== hero foto full-bleed ===== */
-    .hero{position:relative;margin:0 16px;border-radius:28px;overflow:hidden;min-height:520px;
+    /* ===== style hero header (paling atas) ===== */
+    .hero{position:relative;overflow:hidden;min-height:520px;
         @if($AppCfg['login_bg'])
             background:
                 linear-gradient(100deg, rgba(10,8,8,.88) 10%, rgba(10,8,8,.55) 45%, rgba(10,8,8,.15) 75%),
@@ -45,7 +45,7 @@
         @endif
     }
     .hero-inner{position:relative;z-index:2;padding:112px 56px 70px;max-width:620px;color:#fff;}
-    h1{font-size:40px;font-weight:800;line-height:1.18;margin:0 0 16px;letter-spacing:-.01em;}
+    h1{font-size:50px;font-weight:800;line-height:1.18;margin:0 0 16px;letter-spacing:-.01em;}
     h1 .accent{color:var(--amber);}
     .hero p.lead{font-size:15.5px;color:rgba(255,255,255,.82);line-height:1.7;margin:0 0 26px;max-width:460px;}
     .proof{display:flex;align-items:center;gap:14px;margin-top:30px;}
@@ -112,21 +112,21 @@
         .float-strip{grid-template-columns:1fr;margin:-40px 20px 0;}
         .float-strip .item + .item::before{display:none;}
         .m-row{grid-template-columns:1fr;}
-        h1{font-size:30px;}
+        h1{font-size:45px;}
     }
 </style>
 </head>
 <body>
 
 <div style="position:relative;">
-    <div class="topbar">
+    <!-- <div class="topbar">
         <div class="wrap row">
             <div class="brand">
                 @if($AppCfg['logo'])
                     <img src="{{ Storage::url($AppCfg['logo']) }}" alt="" class="logo-img">
                 @else
                     <div class="logo-fallback">{{ mb_substr($AppCfg['app_name'], 0, 1) }}</div>
-                @endif
+                @endif 
                 <div>
                     <div class="name">{{ $AppCfg['app_name'] }}</div>
                     <div class="tag">{{ $AppCfg['app_tagline'] }}</div>
@@ -134,12 +134,12 @@
             </div>
             <a href="#modul" class="btn btn-glass">Pilih Aplikasi ↓</a>
         </div>
-    </div>
+    </div> -->
 
     <section class="hero">
         <div class="hero-inner">
-            <h1>Digital Learning,<br>Management <span class="accent">System</span></h1>
-            <p class="lead">Selamat Datang di Sistem Manajemen Pembelajaran Digital SMP Negeri 1 Indonesia. &amp; </p>
+            <h1>Digital Learning<br>Management System<span class="accent"> Demo</span></h1>
+            <p class="lead">Selamat Datang di Sistem Manajemen Pembelajaran Digital SMP Negeri 1 Indonesia. </p>
             <!-- <a href="#modul" class="btn btn-red">Pilih Aplikasi Anda →</a> -->
 
             @php $totalOrang = ($stats['siswa'] ?? 0) + ($stats['guru'] ?? 0); @endphp
@@ -164,16 +164,23 @@
 
     <div class="float-strip">
         <div class="item">
-            <div class="ic">🔐</div>
-            <div><b>SSO Terintegrasi</b><span>Satu akun untuk semua modul</span></div>
+            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" class="bi bi-lock" viewBox="0 0 20 16">
+                <path fill-rule="evenodd" d="M8 0a4 4 0 0 1 4 4v2.05a2.5 2.5 0 0 1 2 2.45v5a2.5 2.5 0 0 1-2.5 2.5h-7A2.5 2.5 0 0 1 2 13.5v-5a2.5 2.5 0 0 1 2-2.45V4a4 4 0 0 1 4-4M4.5 7A1.5 1.5 0 0 0 3 8.5v5A1.5 1.5 0 0 0 4.5 15h7a1.5 1.5 0 0 0 1.5-1.5v-5A1.5 1.5 0 0 0 11.5 7zM8 1a3 3 0 0 0-3 3v2h6V4a3 3 0 0 0-3-3"/>
+            </svg>
+            <div><b>Login Protect</b><span>Keamanan Login akun</span></div>
         </div>
         <div class="item">
-            <div class="ic">🛡</div>
-            <div><b>Anti-Cheat 7 Lapis</b><span>Ujian lebih aman &amp; terjaga</span></div>
+            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" class="bi bi-shield" viewBox="0 0 20 16">
+                <path d="M5.338 1.59a61 61 0 0 0-2.837.856.48.48 0 0 0-.328.39c-.554 4.157.726 7.19 2.253 9.188a10.7 10.7 0 0 0 2.287 2.233c.346.244.652.42.893.533q.18.085.293.118a1 1 0 0 0 .101.025 1 1 0 0 0 .1-.025q.114-.034.294-.118c.24-.113.547-.29.893-.533a10.7 10.7 0 0 0 2.287-2.233c1.527-1.997 2.807-5.031 2.253-9.188a.48.48 0 0 0-.328-.39c-.651-.213-1.75-.56-2.837-.855C9.552 1.29 8.531 1.067 8 1.067c-.53 0-1.552.223-2.662.524zM5.072.56C6.157.265 7.31 0 8 0s1.843.265 2.928.56c1.11.3 2.229.655 2.887.87a1.54 1.54 0 0 1 1.044 1.262c.596 4.477-.787 7.795-2.465 9.99a11.8 11.8 0 0 1-2.517 2.453 7 7 0 0 1-1.048.625c-.28.132-.581.24-.829.24s-.548-.108-.829-.24a7 7 0 0 1-1.048-.625 11.8 11.8 0 0 1-2.517-2.453C1.928 10.487.545 7.169 1.141 2.692A1.54 1.54 0 0 1 2.185 1.43 63 63 0 0 1 5.072.56"/>
+            </svg>
+            <div><b>Protected</b><span>Ujian lebih aman &amp; terjaga</span></div>
         </div>
         <div class="item">
-            <div class="ic">🔄</div>
-            <div><b>Data Selalu Update</b><span>Sinkron real-time antar modul</span></div>
+            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" class="bi bi-arrow-repeat" viewBox="0 0 20 16">
+                <path d="M11.534 7h3.932a.25.25 0 0 1 .192.41l-1.966 2.36a.25.25 0 0 1-.384 0l-1.966-2.36a.25.25 0 0 1 .192-.41m-11 2h3.932a.25.25 0 0 0 .192-.41L2.692 6.23a.25.25 0 0 0-.384 0L.342 8.59A.25.25 0 0 0 .534 9"/>
+                <path fill-rule="evenodd" d="M8 3c-1.552 0-2.94.707-3.857 1.818a.5.5 0 1 1-.771-.636A6.002 6.002 0 0 1 13.917 7H12.9A5 5 0 0 0 8 3M3.1 9a5.002 5.002 0 0 0 8.757 2.182.5.5 0 1 1 .771.636A6.002 6.002 0 0 1 2.083 9z"/>
+            </svg>
+            <div><b>Data Integration</b><span>Sinkron data real-time</span></div>
         </div>
     </div>
 </div>
@@ -200,7 +207,7 @@
                     </svg>
                 </div>
                 <b class="title">Data Center</b>
-                <span class="sub">Pusat Data Sekolah — Login khusus Admin</span>
+                <span class="sub">Pusat Data Sekolah</span>
             </a>
         </div>
 
@@ -214,7 +221,7 @@
                     </svg>
                 </div>
                 <b class="title">CBT</b>
-                <span class="sub">Computer Based Test — Admin, Guru &amp; Siswa</span>
+                <span class="sub">Computer Based Test</span>
             </a>
             <div class="soft-card muted">
                 <div class="pill">Segera Hadir</div>
@@ -237,7 +244,7 @@
                     </svg>
                 </div>
                 <b class="title">Perpustakaan</b>
-                <span class="sub">Perpustakaan Hybrid</span>
+                <span class="sub">Perpustakaan Digital</span>
             </div>
         </div>
     </div>

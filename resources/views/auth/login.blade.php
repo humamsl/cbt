@@ -54,8 +54,9 @@
 <body class="h-full bg-slate-50">
 <div class="min-h-screen grid lg:grid-cols-5">
 
-    <!-- KIRI: hero -->
-    <div class="hidden lg:flex lg:col-span-3 flex-col justify-between p-12 login-hero relative overflow-hidden">
+    <!-- KIRI: hero — tampil juga di mobile (background/gambar dari Settings > Halaman Login
+         ikut tampil, tidak lagi disembunyikan / halaman kosong abu-abu di layar kecil) -->
+    <div class="flex lg:col-span-3 flex-col justify-between p-12 login-hero relative overflow-hidden" style="min-height: 440px;">
         <!-- Decorative shapes -->
         <div class="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-white/5 blur-3xl"></div>
         <div class="absolute -bottom-32 -left-12 w-96 h-96 rounded-full bg-white/5 blur-3xl"></div>
@@ -110,17 +111,8 @@
     <!-- KANAN: form -->
     <div class="lg:col-span-2 flex items-center justify-center p-6 sm:p-12 bg-slate-50">
         <div class="w-full max-w-md">
-            <div class="lg:hidden flex items-center gap-3 mb-8">
-                @if($AppCfg['logo'])
-                    <img src="{{ Storage::url($AppCfg['logo']) }}" alt="" class="w-11 h-11 object-contain">
-                @else
-                    <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 grid place-items-center text-white font-bold text-lg shadow-soft">
-                        {{ mb_substr($AppCfg['app_name'], 0, 1) }}
-                    </div>
-                @endif
-                <div class="text-base font-bold text-ink-900">{{ $AppCfg['app_name'] }}</div>
-            </div>
-
+            {{-- Logo mobile kecil dihapus — sekarang panel hero di atas (dengan logo,
+                 nama sekolah & background) sudah tampil di semua ukuran layar. --}}
             <div>
                 <h2 class="text-3xl font-bold text-ink-900">{{ $moduleTitle }}</h2>
                 <p class="text-sm text-ink-500 mt-1.5">{{ $moduleSubtitle }}</p>
