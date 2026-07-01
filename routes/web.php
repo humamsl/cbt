@@ -4,6 +4,7 @@ use App\Http\Controllers\AccountStatusController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BackupController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\LandingController;
 use App\Http\Controllers\OtpController;
 use App\Http\Controllers\ProfilController;
 use App\Http\Controllers\SettingController;
@@ -26,20 +27,36 @@ use App\Http\Controllers\Cbt\MonitoringController;
 use App\Http\Controllers\Cbt\UjianController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', fn () => redirect()->route('login'));
+// Landing page publik — portal pemilihan modul (Data Center & CBT)
+Route::get('/', [LandingController::class, 'index'])->name('landing');
 
-//   Halaman status akun (selalu accessible, tanpa auth)  
+//   Halaman status akun (selalu accessible, tanpa auth)
 Route::get('/account/suspended', [AccountStatusController::class, 'suspended'])->name('account.suspended');
 Route::get('/account/locked',    [AccountStatusController::class, 'locked'])->name('account.locked');
 Route::get('/account/inactive',  [AccountStatusController::class, 'inactive'])->name('account.inactive');
 
-// Guest
+// Guest — login umum (legacy, dipertahankan agar link/redirect lama tetap jalan)
 Route::middleware('guest:admin,guru,siswa')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login'])
         ->middleware('throttle:30,1')   // anti brute-force
         ->name('login.post');
 });
+
+// Login modul (Data Center / CBT) — SENGAJA tidak pakai middleware 'guest',
+// karena pindah modul (mis. Admin dari Data Center mau ke CBT) harus tetap
+// bisa membuka form login walau sedang login di modul lain. AuthController
+// yang menangani: kalau modul berbeda -> paksa logout & wajib login ulang;
+// kalau modul sama -> langsung ke dashboard (tidak perlu login ulang).
+Route::get('/data-center/login', [AuthController::class, 'showLogin'])
+    ->defaults('module', 'datacenter')->name('datacenter.login');
+Route::post('/data-center/login', [AuthController::class, 'login'])
+    ->defaults('module', 'datacenter')->middleware('throttle:30,1')->name('datacenter.login.post');
+
+Route::get('/cbt/login', [AuthController::class, 'showLogin'])
+    ->defaults('module', 'cbt')->name('cbt.login');
+Route::post('/cbt/login', [AuthController::class, 'login'])
+    ->defaults('module', 'cbt')->middleware('throttle:30,1')->name('cbt.login.post');
 
 // Endpoint refresh CSRF token — dipakai login form di mobile sebelum submit
 // untuk menghindari 419 saat halaman lama di-cache browser.

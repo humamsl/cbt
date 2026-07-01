@@ -17,8 +17,19 @@ class AuthController extends Controller
     public const MAX_ATTEMPTS = 5;
     public const LOCK_MINUTES = 15;
 
-    public function showLogin(Request $request)
+    public function showLogin(Request $request, ?string $module = null)
     {
+        // Pintu login modul (Data Center / CBT): kalau user sedang login di
+        // modul LAIN, wajib login ulang untuk pindah -> logout paksa dulu.
+        // Kalau modul yang dituju SAMA dengan yang sedang aktif, tidak perlu
+        // login ulang, langsung saja ke dashboard.
+        if ($module && $this->currentGuardName()) {
+            if (session('active_module') === $module) {
+                return redirect()->route('dashboard');
+            }
+            $this->forceLogout($request);
+        }
+
         // Pastikan halaman login TIDAK di-cache oleh browser (penyebab 419 di mobile)
         // dan kunci CSRF selalu segar tiap akses.
         if (! $request->session()->has('_token')) {
@@ -26,18 +37,31 @@ class AuthController extends Controller
         }
 
         return response()
-            ->view('auth.login')
+            ->view('auth.login', [
+                'module'       => $module,
+                'allowedRoles' => $this->allowedRolesFor($module),
+                'postRoute'    => $this->postRouteFor($module),
+            ])
             ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
             ->header('Pragma', 'no-cache')
             ->header('Expires', '0');
     }
 
-    public function login(Request $request)
+    public function login(Request $request, ?string $module = null)
     {
+        // Jaga-jaga: kalau form ke-submit saat sesi lama (modul lain) masih
+        // menempel (mis. tab lama), paksa logout dulu sebelum memproses
+        // percobaan login yang baru.
+        if ($module && $this->currentGuardName() && session('active_module') !== $module) {
+            $this->forceLogout($request);
+        }
+
+        $allowedRoles = $this->allowedRolesFor($module);
+
         $data = $request->validate([
             'username' => 'required|string|max:100',
             'password' => 'required|string|max:100',
-            'role'     => 'required|in:admin,guru,siswa',
+            'role'     => 'required|in:'.implode(',', $allowedRoles),
         ]);
 
         $remember = (bool) $request->boolean('remember');
@@ -105,6 +129,15 @@ class AuthController extends Controller
         RateLimiter::clear($rateKey);
         $request->session()->regenerate();
 
+        // Simpan konteks modul yang dipakai untuk login (menentukan tampilan
+        // sidebar setelah masuk). Login umum (module null) tidak mengubah
+        // konteks lama — perilaku lama (tampilkan semua menu) tetap berjalan.
+        if ($module) {
+            $request->session()->put('active_module', $module);
+        } else {
+            $request->session()->forget('active_module');
+        }
+
         // ===== SINGLE SIGN-ON (HANYA SISWA) =====
         // Admin & guru tidak terikat SSO — mereka boleh login di banyak perangkat.
         if ($guard === 'siswa') {
@@ -134,13 +167,49 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
+        $this->forceLogout($request);
+        return redirect()->route('landing');
+    }
+
+    /** Guard yang sedang login saat ini (admin/guru/siswa), atau null kalau belum login. */
+    protected function currentGuardName(): ?string
+    {
+        foreach (['admin', 'guru', 'siswa'] as $g) {
+            if (Auth::guard($g)->check()) return $g;
+        }
+        return null;
+    }
+
+    /** Logout paksa dari semua guard + bersihkan sesi (dipakai saat logout biasa maupun saat pindah modul). */
+    protected function forceLogout(Request $request): void
+    {
         foreach (['admin', 'guru', 'siswa'] as $g) {
             if (Auth::guard($g)->check()) Auth::guard($g)->logout();
         }
         session()->forget('otp_verified_at');
+        session()->forget('active_module');
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-        return redirect()->route('login');
+    }
+
+    /** Daftar role yang boleh login pada modul tertentu. */
+    protected function allowedRolesFor(?string $module): array
+    {
+        return match ($module) {
+            'datacenter' => ['admin'],
+            'cbt'        => ['admin', 'guru', 'siswa'],
+            default      => ['admin', 'guru', 'siswa'], // login umum (legacy)
+        };
+    }
+
+    /** Nama route tempat form login modul tertentu di-submit. */
+    protected function postRouteFor(?string $module): string
+    {
+        return match ($module) {
+            'datacenter' => 'datacenter.login.post',
+            'cbt'        => 'cbt.login.post',
+            default      => 'login.post',
+        };
     }
 
     protected function credentialsFor(string $guard, array $data): array

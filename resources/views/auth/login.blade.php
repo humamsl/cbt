@@ -1,3 +1,22 @@
+@php
+    // $module / $allowedRoles / $postRoute dikirim oleh AuthController::showLogin().
+    // Default aman jika view ini dipanggil tanpa parameter (back-compat).
+    $module       = $module ?? null;
+    $allowedRoles = $allowedRoles ?? ['admin', 'guru', 'siswa'];
+    $postRoute    = $postRoute ?? 'login.post';
+    $roleLabelMap = ['admin' => 'Admin', 'guru' => 'Guru', 'siswa' => 'Siswa'];
+    $moduleTitle  = match ($module) {
+        'datacenter' => 'Login Data Center',
+        'cbt'        => 'Login CBT',
+        default      => 'Login Akun',
+    };
+    $moduleSubtitle = match ($module) {
+        'datacenter' => 'Khusus untuk Admin sekolah.',
+        'cbt'        => 'Untuk Admin, Guru, dan Siswa.',
+        default      => 'Pilih Login sesuai dengan akun.',
+    };
+    $defaultRole = old('role', $allowedRoles[0] ?? 'admin');
+@endphp
 <!DOCTYPE html>
 <html lang="id" class="h-full">
 <head>
@@ -41,18 +60,23 @@
         <div class="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-white/5 blur-3xl"></div>
         <div class="absolute -bottom-32 -left-12 w-96 h-96 rounded-full bg-white/5 blur-3xl"></div>
 
-        <div class="flex items-center gap-3 relative z-10">
-            @if($AppCfg['logo'])
-                <img src="{{ Storage::url($AppCfg['logo']) }}" alt="" class="w-12 h-12 object-contain bg-white/95 rounded-xl p-1.5 shadow-soft">
-            @else
-                <div class="w-12 h-12 rounded-2xl bg-white/95 grid place-items-center text-brand-700 font-bold text-xl shadow-soft">
-                    {{ mb_substr($AppCfg['app_name'], 0, 1) }}
+        <div class="flex items-center justify-between gap-3 relative z-10">
+            <div class="flex items-center gap-3">
+                @if($AppCfg['logo'])
+                    <img src="{{ Storage::url($AppCfg['logo']) }}" alt="" class="w-12 h-12 object-contain bg-white/95 rounded-xl p-1.5 shadow-soft">
+                @else
+                    <div class="w-12 h-12 rounded-2xl bg-white/95 grid place-items-center text-brand-700 font-bold text-xl shadow-soft">
+                        {{ mb_substr($AppCfg['app_name'], 0, 1) }}
+                    </div>
+                @endif
+                <div>
+                    <div class="text-base font-bold">{{ $AppCfg['app_name'] }}</div>
+                    <div class="text-xs text-white/80">{{ $AppCfg['app_tagline'] }}</div>
                 </div>
-            @endif
-            <div>
-                <div class="text-base font-bold">{{ $AppCfg['app_name'] }}</div>
-                <div class="text-xs text-white/80">{{ $AppCfg['app_tagline'] }}</div>
             </div>
+            <a href="{{ route('landing') }}" class="text-xs font-semibold text-white/85 hover:text-white bg-white/10 hover:bg-white/15 border border-white/20 rounded-full px-3.5 py-2 transition">
+                ← Beranda
+            </a>
         </div>
 
         
@@ -98,8 +122,8 @@
             </div>
 
             <div>
-                <h2 class="text-3xl font-bold text-ink-900">Login Akun</h2>
-                <p class="text-sm text-ink-500 mt-1.5">Pilih Login sesuai dengan akun.</p>
+                <h2 class="text-3xl font-bold text-ink-900">{{ $moduleTitle }}</h2>
+                <p class="text-sm text-ink-500 mt-1.5">{{ $moduleSubtitle }}</p>
 
                 {{-- Flash error (mis. dari 419 redirect) --}}
                 @if(session('error'))
@@ -108,23 +132,33 @@
                     </div>
                 @endif
 
-                <form method="POST" action="{{ route('login.post') }}" class="mt-8 space-y-5"
+                <form method="POST" action="{{ route($postRoute) }}" class="mt-8 space-y-5"
                       id="login-form"
-                      x-data="{ role: '{{ old('role','admin') }}' }">
+                      x-data="{ role: '{{ $defaultRole }}' }">
                     {{-- Token CSRF dengan id supaya JS bisa refresh sebelum submit (anti 419 di mobile) --}}
                     <input type="hidden" name="_token" id="csrf-token-input" value="{{ csrf_token() }}">
 
-                    <div>
-                        <span class="label">Login sebagai</span>
-                        <div class="grid grid-cols-3 gap-1.5 rounded-xl bg-slate-100 p-1.5">
-                            @foreach(['admin' => ' Admin', 'guru' => ' Guru', 'siswa' => ' Siswa'] as $val => $lbl)
-                                <button type="button" @click="role='{{ $val }}'"
-                                        :class="role==='{{ $val }}' ? 'bg-white shadow-soft text-brand-700 ring-1 ring-brand-200' : 'text-ink-600 hover:text-ink-900'"
-                                        class="rounded-lg py-2 text-sm font-semibold transition">{{ $lbl }}</button>
-                            @endforeach
+                    @if(count($allowedRoles) > 1)
+                        <div>
+                            <span class="label">Login sebagai</span>
+                            <div class="grid gap-1.5 rounded-xl bg-slate-100 p-1.5" style="grid-template-columns: repeat({{ count($allowedRoles) }}, minmax(0, 1fr));">
+                                @foreach($allowedRoles as $val)
+                                    <button type="button" @click="role='{{ $val }}'"
+                                            :class="role==='{{ $val }}' ? 'bg-white shadow-soft text-brand-700 ring-1 ring-brand-200' : 'text-ink-600 hover:text-ink-900'"
+                                            class="rounded-lg py-2 text-sm font-semibold transition">{{ $roleLabelMap[$val] ?? ucfirst($val) }}</button>
+                                @endforeach
+                            </div>
+                            <input type="hidden" name="role" :value="role">
                         </div>
-                        <input type="hidden" name="role" :value="role">
-                    </div>
+                    @else
+                        <div>
+                            <span class="label">Login sebagai</span>
+                            <div class="rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-semibold text-ink-700">
+                                {{ $roleLabelMap[$allowedRoles[0]] ?? ucfirst($allowedRoles[0]) }}
+                            </div>
+                            <input type="hidden" name="role" value="{{ $allowedRoles[0] }}">
+                        </div>
+                    @endif
 
                     <div>
                         <label class="label" x-text="role==='admin' ? 'Email' : (role==='guru' ? 'NIP' : 'NISN')"></label>

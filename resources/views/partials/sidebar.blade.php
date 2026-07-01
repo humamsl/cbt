@@ -1,6 +1,21 @@
 @php
     $user = auth()->user();
     $role = $user->user_type ?? 'admin';
+
+    // Konteks modul dari AuthController (diset saat login lewat
+    // /data-center/login atau /cbt/login). null = login umum (legacy) ->
+    // tampilkan semua menu seperti sebelumnya, tidak ada yang berubah.
+    $module = session('active_module');
+
+    $showDatacenter  = $role === 'admin' && in_array($module, [null, 'datacenter'], true);
+    $showCbt         = in_array($role, ['admin', 'guru'], true) && in_array($module, [null, 'cbt'], true);
+    $showTokenSesi   = in_array($module, [null, 'cbt'], true);
+    $canSwitchModule = $role === 'admin'; // hanya Admin yang punya akses ke 2 modul
+    $moduleLabel     = match ($module) {
+        'datacenter' => 'Data Center',
+        'cbt'        => 'Computer Based Test',
+        default      => null,
+    };
 @endphp
 
 <aside
@@ -23,14 +38,27 @@
     </div>
 
     <nav class="px-3 py-4 overflow-y-auto h-[calc(100vh-4rem)]">
+        @if($moduleLabel)
+            <div class="mx-1 mb-3 px-3 py-1.5 rounded-lg bg-white/10 text-white/85 text-[11px] font-semibold text-center">
+                {{ $moduleLabel }}
+            </div>
+        @endif
+
+        @if($canSwitchModule)
+            <a href="{{ route('landing') }}"
+               class="flex items-center justify-center gap-2 mx-1 mb-3 px-3 py-2 rounded-lg bg-white/15 hover:bg-white/25 text-white text-xs font-semibold transition">
+                <x-icon name="grid" class="w-3.5 h-3.5"/> Ganti Modul
+            </a>
+        @endif
+
         <div class="sidebar-section">Beranda</div>
         <a href="{{ route('dashboard') }}"
            class="sidebar-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
             <x-icon name="home"/> Dashboard
         </a>
 
-        {{-- Data Center: HANYA admin --}}
-        @if($role === 'admin')
+        {{-- Data Center: HANYA admin, dan hanya jika sedang dalam konteks modul Data Center --}}
+        @if($showDatacenter)
             <div class="sidebar-section">Data Center</div>
             <a href="{{ route('tahun-ajaran.index') }}" class="sidebar-link {{ request()->routeIs('tahun-ajaran.*') ? 'active' : '' }}">
                 <x-icon name="calendar"/> Tahun Ajaran
@@ -58,8 +86,8 @@
             </a>
         @endif
 
-        {{-- CBT: admin & guru --}}
-        @if($role === 'admin' || $role === 'guru')
+        {{-- CBT: admin & guru, dan hanya jika sedang dalam konteks modul CBT --}}
+        @if($showCbt)
             <div class="sidebar-section">CBT</div>
             <a href="{{ route('topik.index') }}" class="sidebar-link {{ request()->routeIs('topik.*') ? 'active' : '' }}">
                 <x-icon name="bookmark"/> Topik
@@ -90,13 +118,15 @@
 
         @if($role === 'admin')
             <div class="sidebar-section">Administrasi</div>
-            
+
             <a href="{{ route('log-login.index') }}" class="sidebar-link {{ request()->routeIs('log-login.*') ? 'active' : '' }}">
                 <x-icon name="key"/> Log Login
             </a>
-            <a href="{{ route('token-sesi.index') }}" class="sidebar-link {{ request()->routeIs('token-sesi.*') ? 'active' : '' }}">
-                <x-icon name="key"/> Token Sesi
-            </a>
+            @if($showTokenSesi)
+                <a href="{{ route('token-sesi.index') }}" class="sidebar-link {{ request()->routeIs('token-sesi.*') ? 'active' : '' }}">
+                    <x-icon name="key"/> Token Sesi
+                </a>
+            @endif
         @endif
 
     </nav>
