@@ -66,20 +66,15 @@
                 @if($AppCfg['logo'])
                     <img src="{{ Storage::url($AppCfg['logo']) }}" alt="" class="w-12 h-12 object-contain bg-white/95 rounded-xl p-1.5 shadow-soft">
                 @else
-                    <div class="w-12 h-12 rounded-2xl bg-white/95 grid place-items-center text-brand-700 font-bold text-xl shadow-soft">
+                    <div class="w-12 h-12 rounded-xl bg-white/20 grid place-items-center text-white font-bold shadow-soft ring-2 ring-white/40">
                         {{ mb_substr($AppCfg['app_name'], 0, 1) }}
                     </div>
                 @endif
-                <div>
-                    <div class="text-base font-bold">{{ $AppCfg['app_name'] }}</div>
-                    <div class="text-xs text-white/80">{{ $AppCfg['app_tagline'] }}</div>
-                </div>
-            </div>
+            </div> 
             <a href="{{ route('landing') }}" class="text-xs font-semibold text-white/85 hover:text-white bg-white/10 hover:bg-white/15 border border-white/20 rounded-full px-3.5 py-2 transition">
                 ← Beranda
             </a>
         </div>
-
         
         <div class="max-w-xl relative z-10">
             <h1 class="text-4xl xl:text-5xl font-bold leading-tight">{!! $AppCfg['login_title'] !!}</h1>

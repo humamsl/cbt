@@ -234,8 +234,8 @@
                 <b class="title">Presensi</b>
                 <span class="sub">Manajemen Kehadiran</span>
             </div>
-            <div class="soft-card muted">
-                <div class="pill">Segera Hadir</div>
+            <a href="{{ $AppCfg['perpus_url'] ?? 'http://localhost:8000' }}" target="_blank" rel="noopener noreferrer" class="soft-card">
+                <div class="pill" style="background:#f1f2f4;color:var(--ink-500);"></div>
                 <div class="ic">
                     <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M12 6h18l6 6v30a2 2 0 0 1-2 2H12a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z"/>
@@ -245,7 +245,7 @@
                 </div>
                 <b class="title">Perpustakaan</b>
                 <span class="sub">Perpustakaan Digital</span>
-            </div>
+            </a>
         </div>
     </div>
 </section>
