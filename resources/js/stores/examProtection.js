@@ -16,10 +16,14 @@ import { reactive } from 'vue';
  * proteksi tidak ikut lepas kalau salah satu komponen tampilan disembunyikan
  * (siklus hidup komponen tampilan != siklus hidup sesi ujian).
  *
- * Logic di bawah ini adalah portingan LANGSUNG dari fungsi cbtExam() (Alpine)
- * yang sebelumnya ada di show.blade.php -- threshold, urutan try/catch, dan
- * kondisi mobile/desktop SENGAJA disalin persis (tidak "diperbaiki") supaya
- * tidak ada regresi perilaku baru akibat migrasi framework.
+ * Logic di bawah ini awalnya adalah portingan LANGSUNG dari fungsi cbtExam() (Alpine)
+ * yang sebelumnya ada di show.blade.php -- threshold & urutan try/catch disalin persis
+ * supaya tidak ada regresi perilaku dari migrasi framework. Sejak itu ditambah 1 fitur
+ * baru khusus mobile (di luar scope migrasi awal, atas permintaan eksplisit): deteksi
+ * heuristik split-screen/multi-window (violation type 'split_screen', lihat
+ * _attachSplitScreenDetection()). Sempat juga dicoba mewajibkan fullscreen di mobile
+ * (bukan cuma desktop), tapi di-revert lagi atas permintaan user -- fullscreen tetap
+ * HANYA di desktop seperti semula.
  */
 export const examProtectionStore = reactive({
     // ---- state proteksi ----
@@ -92,23 +96,29 @@ export const examProtectionStore = reactive({
 
         if (!this.isMobile) {
             // === DESKTOP: WAJIB FULLSCREEN ===
-            try {
-                await document.documentElement.requestFullscreen({ navigationUI: 'hide' });
-                this.isFullscreen = true;
-            } catch (e) {
-                this.logViolation('fullscreen_denied', 'Browser menolak fullscreen');
-            }
-
-            document.addEventListener('fullscreenchange', () => {
-                this.isFullscreen = !!document.fullscreenElement;
-                if (!this.isFullscreen) {
-                    this.logViolation('fullscreen_exit');
-                    // Coba paksa masuk fullscreen lagi
-                    setTimeout(() => {
-                        document.documentElement.requestFullscreen?.().catch(() => {});
-                    }, 100);
+            // (Sempat dicoba juga di mobile atas permintaan, tapi di-revert lagi
+            // atas permintaan user -- fullscreen HANYA di desktop, seperti semula.)
+            // Guard `document.fullscreenEnabled` supaya browser yang memang tidak
+            // mendukung Fullscreen API tidak ikut dicatat sebagai pelanggaran.
+            if (document.fullscreenEnabled) {
+                try {
+                    await document.documentElement.requestFullscreen({ navigationUI: 'hide' });
+                    this.isFullscreen = true;
+                } catch (e) {
+                    this.logViolation('fullscreen_denied', 'Browser menolak fullscreen');
                 }
-            });
+
+                document.addEventListener('fullscreenchange', () => {
+                    this.isFullscreen = !!document.fullscreenElement;
+                    if (!this.isFullscreen) {
+                        this.logViolation('fullscreen_exit');
+                        // Coba paksa masuk fullscreen lagi
+                        setTimeout(() => {
+                            document.documentElement.requestFullscreen?.().catch(() => {});
+                        }, 100);
+                    }
+                });
+            }
         } else {
             // === MOBILE: deteksi orientasi & rotasi yang aneh ===
             if (screen.orientation && screen.orientation.lock) {
@@ -118,14 +128,66 @@ export const examProtectionStore = reactive({
                 this.logViolation('orientation_change', screen.orientation?.type);
             });
 
-            // Mobile: deteksi touch dengan multi-finger (split-screen di Android sering memicu)
+            // Mobile: deteksi touch dengan multi-finger (indikasi split-screen/gesture aneh)
             document.addEventListener('touchstart', (e) => {
                 if (e.touches.length > 2) this.logViolation('multi_touch');
             }, { passive: true });
+
+            // Mobile: deteksi layar terbelah (split-screen / multi-window Android)
+            this._attachSplitScreenDetection();
         }
 
         this.attachCommonHandlers();
         this.onExamStarted?.();
+    },
+
+    /**
+     * Heuristik deteksi split-screen/multi-window di mobile (BUKAN API resmi --
+     * tidak ada event browser khusus untuk ini). Caranya: rekam luas viewport
+     * (window.innerWidth x innerHeight) sebagai baseline saat ujian dimulai, lalu
+     * bandingkan setiap resize berikutnya terhadap baseline itu (BUKAN terhadap
+     * screen.width x height fisik -- sengaja begitu supaya heuristik ini tetap
+     * akurat walau mobile TIDAK dalam mode fullscreen, karena address bar/nav bar
+     * browser sudah otomatis "mengurangi" viewport dari ukuran layar fisik meski
+     * tidak sedang di-split sama sekali). Kalau viewport tiba-tiba menyusut jauh
+     * dari baseline TANPA disertai rotasi layar (orientationchange), itu indikasi
+     * kuat aplikasi sedang di-split. Baseline dikalibrasi ulang setelah rotasi
+     * selesai (karena lebar/tinggi memang tertukar saat rotasi). Di-debounce
+     * supaya tidak spam tiap kali resize kecil terjadi, dan tidak dobel-lapor
+     * selama masih dalam kondisi split yang sama.
+     */
+    _attachSplitScreenDetection() {
+        let baselineArea = window.innerWidth * window.innerHeight;
+        let recentOrientationChange = false;
+        let inSplitScreen = false;
+        let resizeTimer = null;
+
+        screen.orientation?.addEventListener('change', () => {
+            recentOrientationChange = true;
+            setTimeout(() => {
+                recentOrientationChange = false;
+                // Kalibrasi ulang baseline setelah rotasi selesai & UI settle.
+                baselineArea = window.innerWidth * window.innerHeight;
+            }, 800);
+        });
+
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                if (recentOrientationChange) return;
+
+                const ratio = (window.innerWidth * window.innerHeight) / baselineArea;
+
+                if (ratio < 0.85) {
+                    if (!inSplitScreen) {
+                        inSplitScreen = true;
+                        this.logViolation('split_screen');
+                    }
+                } else {
+                    inSplitScreen = false;
+                }
+            }, 300);
+        });
     },
 
     attachCommonHandlers() {

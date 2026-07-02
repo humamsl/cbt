@@ -54,8 +54,7 @@ class UjianController extends Controller
             ->latest()->paginate(12);
 
         // Status attempt siswa ini per quiz (blokir/sedang/selesai) supaya
-        // tombol "Mulai Ujian" di view bisa disesuaikan (terkunci kalau
-        // diblokir, tidak bisa diklik lagi kalau sudah selesai).
+        // tombol "Mulai Ujian" di view bisa dikunci kalau attempt-nya diblokir.
         $statusUjian = QuizAttempt::petaStatusUntukSiswa($quizzes->pluck('id'), $siswa->id);
 
         return view('cbt.ujian.list', compact('quizzes', 'statusUjian'));
@@ -65,21 +64,58 @@ class UjianController extends Controller
     {
         $siswa = $r->user();
 
-        // Tolak kalau ada attempt terblokir aktif → siswa harus minta buka blokir ke admin
+        // Tolak kalau ada attempt terblokir aktif → siswa harus minta buka blokir ke admin.
+        // CATATAN: JANGAN tambahkan filter is_done=false di sini. Attempt yang
+        // diblokir (blockAndFinalize()) selalu ikut di-finalize() juga, yang
+        // artinya is_done ikut jadi true di saat bersamaan is_blocked jadi true.
+        // Kalau filter is_done=false dipasang, attempt yang sudah diblokir
+        // TIDAK PERNAH ketemu query ini lagi -- akibatnya siswa yang diblokir
+        // bisa langsung klik "Mulai Ujian" ulang dan firstOrCreate() di bawah
+        // malah membuatkan attempt BARU (karena kondisi is_done=false pada baris
+        // lama sudah tidak cocok), lolos begitu saja dari blokir.
         $blocked = QuizAttempt::where('quiz_id', $quiz->id)
             ->where('siswa_id', $siswa->id)
             ->where('is_blocked', true)
-            ->where('is_done', false)
             ->first();
         if ($blocked) {
             return redirect()->route('siswa.ujian.blocked', [$quiz, $blocked]);
         }
 
-        // Lock IP
         $existing = QuizAttempt::where('quiz_id', $quiz->id)
             ->where('siswa_id', $siswa->id)
             ->where('is_done', false)
             ->first();
+
+        // Wajib token sesi -- DICEK SETIAP KALI tombol "Mulai Ujian" ditekan
+        // selama require_session_token aktif, TANPA terkecuali. Sebelumnya
+        // pengecekan ini digantungkan pada "! $existing" (anggapan: kalau
+        // sudah ada attempt aktif berarti sekadar melanjutkan) -- itu lubang
+        // keamanan: begitu ada baris QuizAttempt is_done=false untuk siswa+quiz
+        // ini (misalnya dari percobaan sebelumnya), token APAPUN jadi diterima
+        // karena blok pengecekan dilewati sepenuhnya. Sekarang token selalu
+        // divalidasi ulang; form di halaman daftar/dashboard juga selalu
+        // menampilkan input token selama require_session_token = true, jadi
+        // ini konsisten dengan apa yang dilihat siswa.
+        if ($quiz->require_session_token) {
+            $token = strtoupper(trim((string) $r->input('token')));
+            $sessionToken = $quiz->sessionToken;
+
+            $valid = $token !== ''
+                && $sessionToken
+                && $sessionToken->is_active
+                && strtoupper($sessionToken->token) === $token
+                && (! $sessionToken->valid_from || now()->gte($sessionToken->valid_from))
+                && (! $sessionToken->valid_upto || now()->lte($sessionToken->valid_upto));
+
+            if (! $valid) {
+                return back()->withErrors(
+                    ['token' => 'Token sesi tidak valid, sudah tidak berlaku, atau belum diatur oleh admin.'],
+                    'quiz'.$quiz->id
+                );
+            }
+        }
+
+        // Lock IP
         if ($existing && $existing->ip_address && $existing->ip_address !== $r->ip()) {
             abort(409, 'Sesi ujian Anda sudah dibuka dari perangkat/IP lain.');
         }

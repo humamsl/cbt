@@ -307,6 +307,40 @@
     </div>
     </div>
 
+    {{-- Token Sesi --}}
+    <div class="pt-3 border-t border-slate-100" x-data="{ requireToken: {{ (int) ($item->require_session_token ?? 0) }} }">
+        <div class="flex items-center gap-2 text-sm font-semibold text-ink-900 mb-3">
+            <span>🔑 Token Sesi</span>
+        </div>
+        <div class="grid md:grid-cols-2 gap-4">
+            <div>
+                <label class="label">Wajibkan Token Sesi</label>
+                <select name="require_session_token" class="select mt-1.5" x-model.number="requireToken">
+                    <option value="0">Tidak</option>
+                    <option value="1">Ya</option>
+                </select>
+                <p class="text-xs text-ink-500 mt-1">Kalau "Ya", siswa wajib memasukkan token sesi yang benar sebelum bisa memulai ujian ini.</p>
+            </div>
+
+            <div x-show="requireToken === 1" x-cloak>
+                <label class="label">Pilih Token Sesi <span class="text-rose-500">*</span></label>
+                <select name="session_token_id" class="select mt-1.5" :required="requireToken === 1">
+                    <option value="">-- Pilih Token --</option>
+                    @foreach($sessionTokens as $st)
+                        <option value="{{ $st->id }}" @selected(($item->session_token_id ?? null) == $st->id)>
+                            {{ $st->token }}@if($st->nama_sesi) — {{ $st->nama_sesi }}@endif@if(! $st->is_active) (nonaktif)@endif
+                        </option>
+                    @endforeach
+                </select>
+                @error('session_token_id')<p class="mt-1 text-xs text-rose-600">{{ $message }}</p>@enderror
+                <p class="text-xs text-ink-500 mt-1">
+                    Belum ada token yang cocok?
+                    <a href="{{ route('token-sesi.create') }}" class="text-brand-600 hover:underline" target="_blank">Buat token sesi baru</a>.
+                </p>
+            </div>
+        </div>
+    </div>
+
     <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
         <a href="{{ route('tes.index') }}" class="btn-secondary">Batal</a>
         <button class="btn-primary">{{ $item->exists ? 'Simpan' : 'Lanjut: Pilih Soal' }}</button>

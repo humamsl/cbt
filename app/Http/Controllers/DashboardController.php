@@ -26,8 +26,7 @@ class DashboardController extends Controller
                 ->latest()->limit(6)->get();
 
             // Status attempt siswa ini per quiz (blokir/sedang/selesai) supaya
-            // tombol "Mulai Ujian" di view bisa disesuaikan (terkunci kalau
-            // diblokir, tidak bisa diklik lagi kalau sudah selesai).
+            // tombol "Mulai Ujian" di view bisa dikunci kalau attempt-nya diblokir.
             $statusUjian = QuizAttempt::petaStatusUntukSiswa($ujianTersedia->pluck('id'), $user->id);
 
             return view('dashboard.siswa', [

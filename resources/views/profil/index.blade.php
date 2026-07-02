@@ -14,6 +14,7 @@
 
     <form method="POST" action="{{ route('profil.password') }}" class="card card-pad space-y-4 lg:col-span-2">
         @csrf
+        @method('PUT')
         <h3 class="font-semibold text-ink-900">Ubah Password</h3>
         <x-field name="current_password" type="password" label="Password Saat Ini" required/>
         <x-field name="password" type="password" label="Password Baru" required/>

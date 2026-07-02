@@ -50,6 +50,14 @@ class QuizAttempt extends Model
      * sedang dikerjakan, dan tidak bisa diklik lagi kalau sudah selesai
      * (dicek terhadap Quiz::max_attempts di view, bukan di sini).
      *
+     * PENTING soal 'attempt_blokir': JANGAN tambahkan syarat "! $a->is_done".
+     * QuizAttempt yang diblokir (lewat UjianController::blockAndFinalize())
+     * selalu ikut di-finalize() juga di baris kode yang sama -- jadi begitu
+     * is_blocked jadi true, is_done JUGA ikut jadi true di attempt yang sama.
+     * Kalau syarat "! is_done" dipasang, attempt yang sudah diblokir tidak
+     * akan pernah cocok lagi di sini, sehingga tombol "Mulai Ujian" tidak
+     * pernah terkunci meskipun siswanya sudah jelas diblokir.
+     *
      * Return: [quiz_id => [
      *   'attempt_blokir'   => QuizAttempt|null,  // attempt aktif yang diblokir
      *   'attempt_sedang'   => QuizAttempt|null,  // attempt yang sedang dikerjakan (belum submit)
@@ -73,10 +81,10 @@ class QuizAttempt extends Model
             $milik = $attemptsPerQuiz->get($quizId, collect());
 
             $peta[$quizId] = [
-                'attempt_blokir' => $milik->first(fn ($a) => $a->is_blocked && ! $a->is_done),
+                'attempt_blokir' => $milik->first(fn ($a) => $a->is_blocked),
                 'attempt_sedang' => $milik->first(fn ($a) => ! $a->is_done && ! $a->is_blocked && $a->time_start),
-                'attempt_terbaru_selesai' => $milik->first(fn ($a) => $a->is_done),
-                'jumlah_selesai' => $milik->where('is_done', true)->count(),
+                'attempt_terbaru_selesai' => $milik->first(fn ($a) => $a->is_done && ! $a->is_blocked),
+                'jumlah_selesai' => $milik->where('is_done', true)->where('is_blocked', false)->count(),
             ];
         }
 

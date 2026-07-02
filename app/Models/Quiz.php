@@ -36,6 +36,7 @@ class Quiz extends Model
 
     public function tahunAjaran() { return $this->belongsTo(TahunAjaran::class); }
     public function creator() { return $this->belongsTo(Guru::class, 'created_by_guru_id'); }
+    public function sessionToken() { return $this->belongsTo(SessionToken::class); }
 
     public function questions() { return $this->hasMany(QuizQuestion::class)->orderBy('order'); }
     public function attempts() { return $this->hasMany(QuizAttempt::class); }

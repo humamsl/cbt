@@ -8,6 +8,7 @@ use App\Models\Question;
 use App\Models\Quiz;
 use App\Models\QuizQuestion;
 use App\Models\RombonganBelajar;
+use App\Models\SessionToken;
 use App\Models\TahunAjaran;
 use App\Models\TingkatKelas;
 use Illuminate\Http\Request;
@@ -175,6 +176,7 @@ class TesController extends Controller
             'tahunAjaran' => TahunAjaran::orderByDesc('id')->get(),
             'tingkatList' => TingkatKelas::aktif()->orderBy('nomor')->get(),
             'selectedRombelIds' => $item->exists ? $item->rombelTargets->pluck('id')->toArray() : [],
+            'sessionTokens' => SessionToken::orderByDesc('id')->get(),
         ];
     }
 
@@ -198,6 +200,7 @@ class TesController extends Controller
             'show_score' => 'nullable|in:0,1',
             'is_published' => 'nullable|boolean',
             'require_session_token' => 'nullable|boolean',
+            'session_token_id' => 'nullable|required_if:require_session_token,1|exists:session_tokens,id',
             'proteksi_mode' => 'required|in:logout_otomatis,blokir,peringatan,tanpa_proteksi',
             'max_violations' => 'nullable|integer|min:1|max:99',
         ]);
@@ -229,6 +232,9 @@ class TesController extends Controller
         $data['show_score']        = (int) ($r->input('show_score', 1));
         $data['is_published'] = $r->boolean('is_published');
         $data['require_session_token'] = $r->boolean('require_session_token');
+        // Kalau toggle-nya "Tidak", bersihkan pilihan token supaya tidak ada
+        // token nyangkut yang tidak pernah dicek (require_session_token=false).
+        $data['session_token_id'] = $data['require_session_token'] ? ($data['session_token_id'] ?? null) : null;
         $data['max_violations'] = (int) ($data['max_violations'] ?? 5);
 
         if (! isset($data['slug'])) {

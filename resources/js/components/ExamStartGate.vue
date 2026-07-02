@@ -12,8 +12,8 @@ import { examProtectionStore as store } from '../stores/examProtection';
 
             <div class="mt-5 text-left text-sm text-ink-700 bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-1.5">
                 <div class="font-semibold text-amber-800 mb-1">⚠ Aturan ketat ujian:</div>
-                <div :class="store.isMobile ? 'hidden' : ''">• Layar otomatis <strong>fullscreen</strong> &mdash; jangan keluar</div>
-                <div :class="store.isMobile ? '' : 'hidden'">• Jangan keluar / pindah aplikasi</div>
+                <div :class="store.isMobile ? '' : 'hidden'">• Jangan keluar / pindah aplikasi lain</div>
+                <div :class="store.isMobile ? '' : 'hidden'">• Jangan gunakan mode layar terbagi (split-screen)</div>
                 <div>• Jangan pindah tab / window browser</div>
                 <div>• Dilarang copy / paste / klik kanan</div>
                 <div>• Dilarang membuka DevTools (F12)</div>
