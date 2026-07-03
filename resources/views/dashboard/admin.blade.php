@@ -28,12 +28,14 @@
         </div>
     </div>
 
-    {{-- Stat cards row 1 --}}
+    @php $dcUrl = rtrim(config('services.datacenter.app_url'), '/'); @endphp
+
+    {{-- Stat cards row 1 (data induk — dikelola & di-link ke aplikasi Data Center) --}}
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <x-stat-card label="Total Siswa" :value="number_format($stats['siswa'])" icon="users" tone="brand" href="{{ route('siswa.index') }}"/>
-        <x-stat-card label="Total Guru" :value="number_format($stats['guru'])" icon="user-tie" tone="emerald" href="{{ route('guru.index') }}"/>
-        <x-stat-card label="Mata Pelajaran" :value="$stats['mapel']" icon="book" tone="sky" href="{{ route('mapel.index') }}"/>
-        <x-stat-card label="Rombongan Belajar" :value="$stats['rombel']" icon="grid" tone="amber" href="{{ route('rombel.index') }}"/>
+        <x-stat-card label="Total Siswa" :value="number_format($stats['siswa'])" icon="users" tone="brand" href="{{ $dcUrl }}/siswa"/>
+        <x-stat-card label="Total Guru" :value="number_format($stats['guru'])" icon="user-tie" tone="emerald" href="{{ $dcUrl }}/guru"/>
+        <x-stat-card label="Mata Pelajaran" :value="$stats['mapel']" icon="book" tone="sky" href="{{ $dcUrl }}/mapel"/>
+        <x-stat-card label="Rombongan Belajar" :value="$stats['rombel']" icon="grid" tone="amber" href="{{ $dcUrl }}/rombel"/>
     </div>
 
     {{-- Stat cards row 2 --}}

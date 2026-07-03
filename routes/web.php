@@ -4,20 +4,9 @@ use App\Http\Controllers\AccountStatusController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BackupController;
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\LandingController;
 use App\Http\Controllers\OtpController;
 use App\Http\Controllers\ProfilController;
 use App\Http\Controllers\SettingController;
-use App\Http\Controllers\Datacenter\SekolahController;
-use App\Http\Controllers\Datacenter\TahunAjaranController;
-use App\Http\Controllers\Datacenter\JurusanController;
-use App\Http\Controllers\Datacenter\MataPelajaranController;
-use App\Http\Controllers\Datacenter\RombelController;
-use App\Http\Controllers\Datacenter\GuruController;
-use App\Http\Controllers\Datacenter\GuruMapelController;
-use App\Http\Controllers\Datacenter\SiswaController;
-use App\Http\Controllers\Datacenter\TingkatKelasController;
-use App\Http\Controllers\Datacenter\PeriodikalController;
 use App\Http\Controllers\LogLoginController;
 use App\Http\Controllers\Cbt\TopikController;
 use App\Http\Controllers\Cbt\BankSoalController;
@@ -26,10 +15,19 @@ use App\Http\Controllers\Cbt\TokenSesiController;
 use App\Http\Controllers\Cbt\HasilController;
 use App\Http\Controllers\Cbt\MonitoringController;
 use App\Http\Controllers\Cbt\UjianController;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
-// Landing page publik — portal pemilihan modul (Data Center & CBT)
-Route::get('/', [LandingController::class, 'index'])->name('landing');
+// Landing page publik (portal pemilihan aplikasi) sekarang jadi project
+// terpisah — lihat "landing-page". Root di sini langsung ke login/dashboard.
+Route::get('/', function () {
+    foreach (['admin', 'guru', 'siswa'] as $g) {
+        if (Auth::guard($g)->check()) {
+            return redirect()->route('dashboard');
+        }
+    }
+    return redirect()->route('login');
+});
 
 //   Halaman status akun (selalu accessible, tanpa auth)
 Route::get('/account/suspended', [AccountStatusController::class, 'suspended'])->name('account.suspended');
@@ -44,16 +42,6 @@ Route::middleware('guest:admin,guru,siswa')->group(function () {
         ->name('login.post');
 });
 
-// Login modul (Data Center / CBT) — SENGAJA tidak pakai middleware 'guest',
-// karena pindah modul (mis. Admin dari Data Center mau ke CBT) harus tetap
-// bisa membuka form login walau sedang login di modul lain. AuthController
-// yang menangani: kalau modul berbeda -> paksa logout & wajib login ulang;
-// kalau modul sama -> langsung ke dashboard (tidak perlu login ulang).
-Route::get('/data-center/login', [AuthController::class, 'showLogin'])
-    ->defaults('module', 'datacenter')->name('datacenter.login');
-Route::post('/data-center/login', [AuthController::class, 'login'])
-    ->defaults('module', 'datacenter')->middleware('throttle:30,1')->name('datacenter.login.post');
-
 Route::get('/cbt/login', [AuthController::class, 'showLogin'])
     ->defaults('module', 'cbt')->name('cbt.login');
 Route::post('/cbt/login', [AuthController::class, 'login'])
@@ -66,7 +54,7 @@ Route::get('/csrf-refresh', function () {
         ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
 })->name('csrf.refresh');
 
-//  Authenticated (semua proteksi diterapkan)  
+//  Authenticated (semua proteksi diterapkan)
 Route::middleware([
     'auth:admin,guru,siswa',
     'sso',             // single sign-on: kick session lama
@@ -88,64 +76,7 @@ Route::middleware([
     Route::get('/profil', [ProfilController::class, 'index'])->name('profil.index');
     Route::put('/profil/password', [ProfilController::class, 'updatePassword'])->name('profil.password');
 
-    // DATA CENTER (HANYA admin)
-    Route::middleware(['role:admin', 'rbac'])->group(function () {
-        Route::get('/sekolah', [SekolahController::class, 'edit'])->name('sekolah.edit');
-        Route::put('/sekolah', [SekolahController::class, 'update'])->name('sekolah.update');
-
-        Route::resource('tahun-ajaran', TahunAjaranController::class)
-            ->except('show')->parameters(['tahun-ajaran' => 'tahunAjaran']);
-        Route::resource('jurusan', JurusanController::class)->except('show');
-        Route::resource('mapel', MataPelajaranController::class)->except('show')
-            ->parameters(['mapel' => 'mapel']);
-        Route::resource('rombel', RombelController::class)->except('show')
-            ->parameters(['rombel' => 'rombel']);
-
-        // Master Tingkat Kelas (dropdown sumber)
-        Route::resource('tingkat-kelas', TingkatKelasController::class)
-            ->except('show')->parameters(['tingkat-kelas' => 'tingkatKelas']);
-
-        // --- Import/Export Guru (sebelum resource) ---
-        Route::get('/guru/import',          [GuruController::class, 'importForm'])->name('guru.import.form');
-        Route::post('/guru/import',         [GuruController::class, 'importStore'])->name('guru.import.store');
-        Route::get('/guru/import-template', [GuruController::class, 'importTemplate'])->name('guru.import.template');
-        Route::get('/guru/export/excel',    [GuruController::class, 'exportExcel'])->name('guru.export.excel');
-        Route::resource('guru', GuruController::class)->except('show');
-        Route::post('/guru/{guru}/unlock', [GuruController::class, 'unlock'])->name('guru.unlock');
-
-        // Data Guru ↔ Mapel ↔ Rombel (import/export HARUS sebelum resource)
-        Route::get('/guru-mapel/import',          [GuruMapelController::class, 'importForm'])->name('guru-mapel.import.form');
-        Route::post('/guru-mapel/import',         [GuruMapelController::class, 'importStore'])->name('guru-mapel.import.store');
-        Route::get('/guru-mapel/import-template', [GuruMapelController::class, 'importTemplate'])->name('guru-mapel.import.template');
-        Route::get('/guru-mapel/export/excel',    [GuruMapelController::class, 'exportExcel'])->name('guru-mapel.export.excel');
-        Route::resource('guru-mapel', GuruMapelController::class)
-            ->except('show')->parameters(['guru-mapel' => 'guruMapel']);
-
-        // --- Import/Export Siswa (sebelum resource) ---
-        Route::get('/siswa/import',          [SiswaController::class, 'importForm'])->name('siswa.import.form');
-        Route::post('/siswa/import',         [SiswaController::class, 'importStore'])->name('siswa.import.store');
-        Route::get('/siswa/import-template', [SiswaController::class, 'importTemplate'])->name('siswa.import.template');
-        Route::get('/siswa/export/excel',    [SiswaController::class, 'exportExcel'])->name('siswa.export.excel');
-        Route::resource('siswa', SiswaController::class)->except('show');
-        Route::post('/siswa/{siswa}/unlock', [SiswaController::class, 'unlock'])->name('siswa.unlock');
-
-        // Administrasi Periodikal (kenaikan kelas / kelulusan antar tahun ajaran)
-        Route::prefix('periodikal')->name('periodikal.')->group(function () {
-            Route::get('/semua',               [PeriodikalController::class, 'semuaForm'])->name('semua.form');
-            Route::post('/semua',              [PeriodikalController::class, 'semuaProses'])->name('semua.proses');
-            Route::post('/duplikasi-struktur', [PeriodikalController::class, 'duplikasiStruktur'])->name('duplikasi-struktur');
-
-            Route::get('/per-rombel',  [PeriodikalController::class, 'perRombelForm'])->name('per-rombel.form');
-            Route::post('/per-rombel', [PeriodikalController::class, 'perRombelProses'])->name('per-rombel.proses');
-
-            Route::get('/koreksi',                          [PeriodikalController::class, 'koreksiIndex'])->name('koreksi.index');
-            Route::get('/koreksi/{riwayatPeriodikal}/edit',  [PeriodikalController::class, 'koreksiEdit'])->name('koreksi.edit');
-            Route::put('/koreksi/{riwayatPeriodikal}',       [PeriodikalController::class, 'koreksiUpdate'])->name('koreksi.update');
-            Route::delete('/koreksi/{riwayatPeriodikal}',    [PeriodikalController::class, 'koreksiUndo'])->name('koreksi.undo');
-        });
-    });
-
-    // CBT (admin & guru) 
+    // CBT (admin & guru)
     Route::middleware(['role:admin,guru', 'rbac'])->group(function () {
         Route::resource('topik', TopikController::class)->except('show')
             ->parameters(['topik' => 'topik']);
@@ -186,7 +117,7 @@ Route::middleware([
         Route::get('/hasil/analisis-butir',          [HasilController::class, 'analisisButir'])->name('hasil.analisis');
         Route::get('/hasil/analisis-butir/export',   [HasilController::class, 'exportAnalisisButir'])->name('hasil.analisis.export');
         Route::get('/hasil/{attempt}',               [HasilController::class, 'detail'])->name('hasil.detail');
-        
+
     });
 
     // Modul ultra-sensitif: hanya admin (tanpa guru)

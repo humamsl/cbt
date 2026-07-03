@@ -2,33 +2,24 @@
 
 namespace App\Services\Backup;
 
-use App\Models\Guru;
 use App\Models\Question;
 use App\Models\QuestionOption;
 use App\Models\QuestionType;
-use App\Models\Siswa;
-use App\Services\Master\GuruExcelService;
-use App\Services\Master\SiswaExcelService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use ZipArchive;
 
 /**
- * Backup / Restore data master (guru, siswa, bank soal) ke / dari satu file ZIP.
+ * Backup / Restore Bank Soal (satu-satunya data yang masih dimiliki CBT
+ * sendiri — guru & siswa sekarang dikelola di aplikasi Data Center) ke / dari
+ * satu file ZIP.
  * Format isi:
- *   guru.xlsx       — Excel kompatibel dgn GuruExcelService::HEADERS
- *   siswa.xlsx      — Excel kompatibel dgn SiswaExcelService::HEADERS
  *   bank-soal.json  — Soal + opsi (anti-loss kolom HTML)
  *   meta.json       — info backup (versi & tanggal)
  */
 class BackupService
 {
-    public function __construct(
-        protected GuruExcelService $guruSvc,
-        protected SiswaExcelService $siswaSvc,
-    ) {}
-
     /** Build backup ZIP & return BinaryFileResponse untuk download. */
     public function downloadZip(array $modules): BinaryFileResponse
     {
@@ -48,14 +39,6 @@ class BackupService
             'modules'    => $modules,
         ];
 
-        if (in_array('guru', $modules, true)) {
-            $zip->addFromString('guru.xlsx', $this->guruXlsxBinary());
-            $meta['count_guru'] = Guru::count();
-        }
-        if (in_array('siswa', $modules, true)) {
-            $zip->addFromString('siswa.xlsx', $this->siswaXlsxBinary());
-            $meta['count_siswa'] = Siswa::count();
-        }
         if (in_array('bank-soal', $modules, true)) {
             $zip->addFromString('bank-soal.json', $this->bankSoalJson());
             $meta['count_questions'] = Question::count();
@@ -71,7 +54,7 @@ class BackupService
     }
 
     /**
-     * Restore dari ZIP. Return array ringkasan: ['guru' => [success, failed, errors], ...]
+     * Restore dari ZIP. Return array ringkasan: ['bank-soal' => [...]]
      */
     public function restoreZip(UploadedFile $file): array
     {
@@ -87,16 +70,6 @@ class BackupService
 
         $summary = [];
 
-        if (is_file("$tmpDir/guru.xlsx")) {
-            $upload = new UploadedFile("$tmpDir/guru.xlsx", 'guru.xlsx', null, null, true);
-            $r = $this->guruSvc->import($upload);
-            $summary['guru'] = ['success' => $r->success, 'failed' => $r->failed, 'errors' => $r->errors];
-        }
-        if (is_file("$tmpDir/siswa.xlsx")) {
-            $upload = new UploadedFile("$tmpDir/siswa.xlsx", 'siswa.xlsx', null, null, true);
-            $r = $this->siswaSvc->import($upload);
-            $summary['siswa'] = ['success' => $r->success, 'failed' => $r->failed, 'errors' => $r->errors];
-        }
         if (is_file("$tmpDir/bank-soal.json")) {
             $summary['bank-soal'] = $this->restoreBankSoalJson(file_get_contents("$tmpDir/bank-soal.json"));
         }
@@ -108,22 +81,6 @@ class BackupService
     }
 
     /* ---------- internal ---------- */
-
-    protected function guruXlsxBinary(): string
-    {
-        $stream = $this->guruSvc->export();
-        ob_start();
-        $stream->sendContent();
-        return ob_get_clean();
-    }
-
-    protected function siswaXlsxBinary(): string
-    {
-        $stream = $this->siswaSvc->export();
-        ob_start();
-        $stream->sendContent();
-        return ob_get_clean();
-    }
 
     /** Bank soal di-export ke JSON karena ada HTML / longtext. */
     protected function bankSoalJson(): string

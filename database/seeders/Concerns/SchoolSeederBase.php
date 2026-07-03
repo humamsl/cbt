@@ -88,13 +88,6 @@ abstract class SchoolSeederBase extends Seeder
             ['dashboard/index', 'Lihat Dashboard', 'umum'],
             ['profil/index',    'Lihat Profil',     'umum'],
             ['profil/password', 'Ubah Password',    'umum'],
-            ['sekolah/edit',    'Edit Profil Sekolah','datacenter'],
-            ['tahun-ajaran/*',  'Kelola Tahun Ajaran','datacenter'],
-            ['jurusan/*',       'Kelola Jurusan',     'datacenter'],
-            ['mapel/*',         'Kelola Mapel',       'datacenter'],
-            ['rombel/*',        'Kelola Rombel',      'datacenter'],
-            ['guru/*',          'Kelola Guru',        'datacenter'],
-            ['siswa/*',         'Kelola Siswa',       'datacenter'],
             ['topik/*',         'Kelola Topik',       'cbt'],
             ['bank-soal/*',     'Kelola Bank Soal',   'cbt'],
             ['tes/*',           'Kelola Tes',         'cbt'],
@@ -109,15 +102,13 @@ abstract class SchoolSeederBase extends Seeder
             ['monitoring/reset','Reset Attempt',      'admin'],
             ['monitoring/lihat','Lihat Detail',       'admin'],
             ['log-login/index', 'Log Login',          'admin'],
-            ['tingkat-kelas/*', 'Kelola Tingkat Kelas','datacenter'],
-            ['guru-mapel/*',    'Data Guru Mapel','datacenter'],
         ];
         $allIds = [];
         $opIds = [];
         foreach ($list as [$perm, $label, $group]) {
             $p = Permission::firstOrCreate(['permission' => $perm], ['label' => $label, 'group' => $group]);
             $allIds[] = $p->id;
-            if (in_array($group, ['umum', 'datacenter']) && !in_array($perm, ['sekolah/edit', 'guru/*'])) {
+            if ($group === 'umum') {
                 $opIds[] = $p->id;
             }
         }

@@ -1,21 +1,7 @@
 @php
     $user = auth()->user();
     $role = $user->user_type ?? 'admin';
-
-    // Konteks modul dari AuthController (diset saat login lewat
-    // /data-center/login atau /cbt/login). null = login umum (legacy) ->
-    // tampilkan semua menu seperti sebelumnya, tidak ada yang berubah.
-    $module = session('active_module');
-
-    $showDatacenter  = $role === 'admin' && in_array($module, [null, 'datacenter'], true);
-    $showCbt         = in_array($role, ['admin', 'guru'], true) && in_array($module, [null, 'cbt'], true);
-    $showTokenSesi   = in_array($module, [null, 'cbt'], true);
-    $canSwitchModule = $role === 'admin'; // hanya Admin yang punya akses ke 2 modul
-    $moduleLabel     = match ($module) {
-        'datacenter' => 'Data Center',
-        'cbt'        => 'Computer Based Test',
-        default      => null,
-    };
+    $showCbt = in_array($role, ['admin', 'guru'], true);
 @endphp
 
 <aside
@@ -38,16 +24,10 @@
     </div>
 
     <nav class="px-3 py-4 overflow-y-auto h-[calc(100vh-4rem)]">
-        @if($moduleLabel)
-            <div class="mx-1 mb-3 px-3 py-1.5 rounded-lg bg-white/10 text-white/85 text-[11px] font-semibold text-center">
-                {{ $moduleLabel }}
-            </div>
-        @endif
-
-        @if($canSwitchModule)
-            <a href="{{ route('landing') }}"
+        @if($role === 'admin')
+            <a href="{{ config('services.landing.app_url') }}"
                class="flex items-center justify-center gap-2 mx-1 mb-3 px-3 py-2 rounded-lg bg-white/15 hover:bg-white/25 text-white text-xs font-semibold transition">
-                <x-icon name="grid" class="w-3.5 h-3.5"/> Ganti Modul
+                <x-icon name="grid" class="w-3.5 h-3.5"/> Ganti Aplikasi
             </a>
         @endif
 
@@ -57,47 +37,7 @@
             <x-icon name="home"/> Dashboard
         </a>
 
-        {{-- Data Center: HANYA admin, dan hanya jika sedang dalam konteks modul Data Center --}}
-        @if($showDatacenter)
-            <div class="sidebar-section">Data Center</div>
-            <a href="{{ route('tahun-ajaran.index') }}" class="sidebar-link {{ request()->routeIs('tahun-ajaran.*') ? 'active' : '' }}">
-                <x-icon name="calendar"/> Tahun Ajaran
-            </a>
-            <a href="{{ route('jurusan.index') }}" class="sidebar-link {{ request()->routeIs('jurusan.*') ? 'active' : '' }}">
-                <x-icon name="layers"/> Jurusan
-            </a>
-            <a href="{{ route('mapel.index') }}" class="sidebar-link {{ request()->routeIs('mapel.*') ? 'active' : '' }}">
-                <x-icon name="book"/> Mata Pelajaran
-            </a>
-            <a href="{{ route('tingkat-kelas.index') }}" class="sidebar-link {{ request()->routeIs('tingkat-kelas.*') ? 'active' : '' }}">
-                <x-icon name="layers"/> Tingkat Kelas
-            </a>
-            <a href="{{ route('rombel.index') }}" class="sidebar-link {{ request()->routeIs('rombel.*') ? 'active' : '' }}">
-                <x-icon name="grid"/> Rombongan Belajar
-            </a>
-            <a href="{{ route('guru.index') }}" class="sidebar-link {{ request()->routeIs('guru.*') ? 'active' : '' }}">
-                <x-icon name="user-tie"/> Data Guru
-            </a>
-            <a href="{{ route('guru-mapel.index') }}" class="sidebar-link {{ request()->routeIs('guru-mapel.*') ? 'active' : '' }}">
-                <x-icon name="bookmark"/> Guru Mapel
-            </a>
-            <a href="{{ route('siswa.index') }}" class="sidebar-link {{ request()->routeIs('siswa.*') ? 'active' : '' }}">
-                <x-icon name="users"/> Data Siswa
-            </a>
-
-            <div class="sidebar-section">Administrasi Periodikal</div>
-            <a href="{{ route('periodikal.semua.form') }}" class="sidebar-link {{ request()->routeIs('periodikal.semua.*') ? 'active' : '' }}">
-                <x-icon name="arrow-right"/> Proses Semua Siswa
-            </a>
-            <a href="{{ route('periodikal.per-rombel.form') }}" class="sidebar-link {{ request()->routeIs('periodikal.per-rombel.*') ? 'active' : '' }}">
-                <x-icon name="user"/> Proses Siswa Per Rombel
-            </a>
-            <a href="{{ route('periodikal.koreksi.index') }}" class="sidebar-link {{ request()->routeIs('periodikal.koreksi.*') ? 'active' : '' }}">
-                <x-icon name="edit"/> Koreksi Hasil Periodikal
-            </a>
-        @endif
-
-        {{-- CBT: admin & guru, dan hanya jika sedang dalam konteks modul CBT --}}
+        {{-- CBT: admin & guru --}}
         @if($showCbt)
             <div class="sidebar-section">CBT</div>
             <a href="{{ route('topik.index') }}" class="sidebar-link {{ request()->routeIs('topik.*') ? 'active' : '' }}">
@@ -133,11 +73,9 @@
             <a href="{{ route('log-login.index') }}" class="sidebar-link {{ request()->routeIs('log-login.*') ? 'active' : '' }}">
                 <x-icon name="key"/> Log Login
             </a>
-            @if($showTokenSesi)
-                <a href="{{ route('token-sesi.index') }}" class="sidebar-link {{ request()->routeIs('token-sesi.*') ? 'active' : '' }}">
-                    <x-icon name="key"/> Token Sesi
-                </a>
-            @endif
+            <a href="{{ route('token-sesi.index') }}" class="sidebar-link {{ request()->routeIs('token-sesi.*') ? 'active' : '' }}">
+                <x-icon name="key"/> Token Sesi
+            </a>
         @endif
 
     </nav>

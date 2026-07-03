@@ -31,26 +31,21 @@
       x-show="!['backup','restore'].includes(tab)">
     @csrf @method('PUT')
 
-    {{-- ============ TAB IDENTITAS SEKOLAH ============ --}}
+    {{-- ============ TAB IDENTITAS SEKOLAH (read-only, dikelola di app Data Center) ============ --}}
     <div x-show="tab==='identitas'" x-cloak class="card card-pad space-y-4">
-        <div class="grid md:grid-cols-2 gap-4">
-            <x-field name="npsn" label="NPSN" :value="$sekolah->npsn"/>
-            <x-field name="nama_sekolah" label="Nama Sekolah" :value="$sekolah->nama_sekolah" required/>
-            <x-field type="select" name="jenjang" label="Jenjang" :value="$sekolah->jenjang"
-                     :options="['SD'=>'SD','SMP'=>'SMP','SMA'=>'SMA','SMK'=>'SMK','MA'=>'MA','MTs'=>'MTs']" required/>
-            <x-field name="telepon" label="Telepon" :value="$sekolah->telepon"/>
-            <x-field name="email" type="email" label="Email" :value="$sekolah->email"/>
-            <x-field name="website" label="Website" :value="$sekolah->website"/>
-            <x-field name="kepala_sekolah" label="Kepala Sekolah" :value="$sekolah->kepala_sekolah"/>
-            <x-field name="nip_kepala_sekolah" label="NIP Kepala Sekolah" :value="$sekolah->nip_kepala_sekolah"/>
+        <div class="rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm p-3">
+            Identitas sekolah sekarang dikelola di aplikasi <strong>Data Center</strong>
+            ({{ rtrim(config('services.datacenter.app_url'), '/') }}). Data di bawah ini
+            hanya salinan (read-only), tersinkron via <code>datacenter:sync</code> atau saat guru/siswa login.
         </div>
-        <x-field name="alamat" label="Alamat" :value="$sekolah->alamat"/>
-        <div class="grid md:grid-cols-4 gap-4">
-            <x-field name="kelurahan" label="Kelurahan" :value="$sekolah->kelurahan"/>
-            <x-field name="kecamatan" label="Kecamatan" :value="$sekolah->kecamatan"/>
-            <x-field name="kabupaten" label="Kabupaten" :value="$sekolah->kabupaten"/>
-            <x-field name="provinsi" label="Provinsi" :value="$sekolah->provinsi"/>
+        <div class="grid md:grid-cols-2 gap-4 opacity-70 pointer-events-none">
+            <x-field name="npsn" label="NPSN" :value="$sekolah->npsn" disabled/>
+            <x-field name="nama_sekolah" label="Nama Sekolah" :value="$sekolah->nama_sekolah" disabled/>
+            <x-field name="telepon" label="Telepon" :value="$sekolah->telepon" disabled/>
+            <x-field name="email" type="email" label="Email" :value="$sekolah->email" disabled/>
+            <x-field name="kepala_sekolah" label="Kepala Sekolah" :value="$sekolah->kepala_sekolah" disabled/>
         </div>
+        <x-field name="alamat" label="Alamat" :value="$sekolah->alamat" disabled class="opacity-70 pointer-events-none"/>
     </div>
 
     {{-- ============ TAB LOGO SEKOLAH ============ --}}
@@ -229,30 +224,14 @@
 <div x-show="tab==='backup'" x-cloak class="grid lg:grid-cols-2 gap-6">
     <form method="POST" action="{{ route('backup.download') }}" class="card card-pad space-y-4">
         @csrf
-        <h3 class="font-semibold text-ink-900">💾 Backup Data ke ZIP</h3>
+        <h3 class="font-semibold text-ink-900">💾 Backup Bank Soal ke ZIP</h3>
         <p class="text-sm text-ink-600">
-            Pilih modul yang ingin di-backup. Hasilnya 1 file <code>.zip</code> berisi data Excel
-            & JSON yang bisa dipakai untuk migrasi atau restore di server lain.
+            Data guru & siswa sekarang dikelola di aplikasi Data Center — backup untuk
+            data tersebut dilakukan dari sana. Di sini hanya Bank Soal (data milik CBT).
         </p>
         <div class="space-y-2">
-            <label class="flex items-center gap-3 p-3 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer">
-                <input type="checkbox" name="modules[]" value="guru" checked
-                       class="rounded text-brand-600 focus:ring-brand-500">
-                <div>
-                    <div class="font-semibold text-sm text-ink-900">Data Guru</div>
-                    <div class="text-xs text-ink-500">NIP, nama, kontak, status kepegawaian, dsb.</div>
-                </div>
-            </label>
-            <label class="flex items-center gap-3 p-3 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer">
-                <input type="checkbox" name="modules[]" value="siswa" checked
-                       class="rounded text-brand-600 focus:ring-brand-500">
-                <div>
-                    <div class="font-semibold text-sm text-ink-900">Data Siswa</div>
-                    <div class="text-xs text-ink-500">NISN, nama, rombel, orang tua, dsb.</div>
-                </div>
-            </label>
-            <label class="flex items-center gap-3 p-3 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer">
-                <input type="checkbox" name="modules[]" value="bank-soal" checked
+            <label class="flex items-center gap-3 p-3 rounded-lg border border-slate-200 bg-slate-50">
+                <input type="checkbox" checked disabled
                        class="rounded text-brand-600 focus:ring-brand-500">
                 <div>
                     <div class="font-semibold text-sm text-ink-900">Bank Soal</div>
@@ -268,9 +247,7 @@
     <div class="card card-pad space-y-3 text-sm">
         <h3 class="font-semibold text-ink-900">ℹ️ Tentang Backup</h3>
         <ul class="list-disc pl-5 text-ink-600 space-y-1">
-            <li>File <code>guru.xlsx</code> dan <code>siswa.xlsx</code> kompatibel dengan menu Import masing-masing.</li>
             <li>File <code>bank-soal.json</code> berisi soal + opsi (HTML rich-text aman).</li>
-            <li>Password user <strong>tidak di-export</strong> demi keamanan — saat restore, akun baru pakai NIP/NISN sebagai password default.</li>
             <li>Simpan file di lokasi aman & rutin (mingguan/bulanan).</li>
         </ul>
     </div>
@@ -281,9 +258,9 @@
     <form method="POST" action="{{ route('backup.restore') }}" enctype="multipart/form-data"
           class="card card-pad space-y-4">
         @csrf
-        <h3 class="font-semibold text-ink-900">♻️ Restore dari Backup ZIP</h3>
+        <h3 class="font-semibold text-ink-900">♻️ Restore Bank Soal dari Backup ZIP</h3>
         <p class="text-xs text-rose-600 bg-rose-50 border border-rose-200 rounded p-2">
-            ⚠️ Restore akan <strong>menambah & meng-update</strong> data berdasarkan NIP / NISN / judul soal.
+            ⚠️ Restore akan <strong>menambah & meng-update</strong> soal berdasarkan judul soal.
             Pastikan ZIP berasal dari aplikasi CBT ini.
         </p>
         <label class="block">
@@ -322,10 +299,8 @@
     <div class="card card-pad space-y-3 text-sm">
         <h3 class="font-semibold text-ink-900">ℹ️ Tentang Restore</h3>
         <ul class="list-disc pl-5 text-ink-600 space-y-1">
-            <li><strong>Guru</strong>: data dengan NIP yang sudah ada → di-update; NIP baru → akun dibuat.</li>
-            <li><strong>Siswa</strong>: data dengan NISN yang sudah ada → di-update; NISN baru → akun dibuat. Rombel dipasang otomatis kalau ada di TA aktif.</li>
             <li><strong>Bank Soal</strong>: kombinasi <em>judul + mapel</em> jadi kunci unik. Soal yang sudah ada → opsi di-reset & dibangun ulang.</li>
-            <li>Untuk migrasi penuh: pastikan tabel <em>jurusan, tahun ajaran, mapel, rombel</em> di server tujuan sudah dibuat dulu.</li>
+            <li>Untuk migrasi penuh: pastikan <em>mata pelajaran</em> sudah tersinkron dari Data Center (<code>php artisan datacenter:sync</code>) sebelum restore.</li>
         </ul>
     </div>
 </div>

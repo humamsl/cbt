@@ -9,12 +9,10 @@ class BackupController extends Controller
 {
     public function download(Request $r, BackupService $svc)
     {
-        $modules = (array) $r->input('modules', ['guru', 'siswa', 'bank-soal']);
-        $modules = array_values(array_intersect($modules, ['guru', 'siswa', 'bank-soal']));
-        if (empty($modules)) {
-            return back()->with('error', 'Pilih minimal 1 modul untuk di-backup.');
-        }
-        return $svc->downloadZip($modules);
+        // Guru & siswa sekarang dikelola di aplikasi Data Center (CBT hanya
+        // menyimpan cache) — backup data induk mereka dilakukan dari sana,
+        // bukan dari CBT. Hanya Bank Soal (data milik CBT) yang di-backup di sini.
+        return $svc->downloadZip(['bank-soal']);
     }
 
     public function restore(Request $r, BackupService $svc)

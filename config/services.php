@@ -18,4 +18,16 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
+
+    // Aplikasi Data Center (provider data induk sekolah) — CBT adalah klien.
+    'datacenter' => [
+        'api_url' => env('DATACENTER_API_URL', 'http://127.0.0.1:8001/api'),
+        'token' => env('DATACENTER_API_TOKEN'),
+        'app_url' => env('DATACENTER_APP_URL', 'http://127.0.0.1:8001'),
+    ],
+
+    // Landing page publik sekolah (project terpisah — lihat "landing-page")
+    'landing' => [
+        'app_url' => env('LANDING_APP_URL', 'http://127.0.0.1:8003'),
+    ],
 ];

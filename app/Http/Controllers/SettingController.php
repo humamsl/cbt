@@ -66,26 +66,10 @@ class SettingController extends Controller
 
     public function update(Request $request)
     {
-        // ---- Identitas sekolah ----
-        $sek = $request->validate([
-            'npsn' => 'nullable|string|max:20',
-            'nama_sekolah' => 'required|string|max:255',
-            'jenjang' => 'required|string|max:20',
-            'alamat' => 'nullable|string|max:255',
-            'kelurahan' => 'nullable|string|max:100',
-            'kecamatan' => 'nullable|string|max:100',
-            'kabupaten' => 'nullable|string|max:100',
-            'provinsi' => 'nullable|string|max:100',
-            'telepon' => 'nullable|string|max:30',
-            'email' => 'nullable|email|max:100',
-            'website' => 'nullable|string|max:100',
-            'kepala_sekolah' => 'nullable|string|max:255',
-            'nip_kepala_sekolah' => 'nullable|string|max:30',
-        ]);
-
-        $sekolah = Sekolah::first();
-        if ($sekolah) $sekolah->update($sek);
-        else Sekolah::create($sek);
+        // Identitas sekolah (NPSN, alamat, kepala sekolah, dst) dikelola di
+        // aplikasi Data Center sekarang — CBT hanya menampilkan salinannya
+        // (lihat SettingController::index & `datacenter:sync`), tidak lagi
+        // mengeditnya di sini.
 
         // ---- File upload (logo, favicon, login_bg) ----
         $request->validate([

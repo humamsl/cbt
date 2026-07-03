@@ -3,9 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Models\Guru;
+use App\Models\GuruMapel;
+use App\Models\Jurusan;
 use App\Models\LoginAttempt;
+use App\Models\MataPelajaran;
+use App\Models\RombonganBelajar;
 use App\Models\Siswa;
+use App\Models\SiswaRombel;
+use App\Models\TahunAjaran;
 use App\Models\User;
+use App\Services\DatacenterClient;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -76,36 +83,17 @@ class AuthController extends Controller
             ]);
         }
 
-        // ---- Cek akun apakah sudah terkunci ----
-        $existing = $this->findUser($guard, $data['username']);
-        if ($existing && ! empty($existing->locked_until) && $existing->locked_until > now()) {
-            $this->logAttempt($request, $data, false);
-            $minutes = now()->diffInMinutes($existing->locked_until);
-            throw ValidationException::withMessages([
-                'username' => "Akun dikunci sementara. Coba lagi dalam {$minutes} menit.",
-            ]);
+        $result = $guard === 'admin'
+            ? $this->attemptAdmin($request, $data, $remember, $rateKey)
+            : $this->attemptRemote($request, $guard, $data, $remember, $rateKey);
+
+        // attemptAdmin/attemptRemote mengembalikan RedirectResponse kalau akun
+        // ditemukan tapi statusnya bukan 'active' (suspended/locked/inactive).
+        if ($result instanceof \Illuminate\Http\RedirectResponse) {
+            return $result;
         }
 
-        $credentials = $this->credentialsFor($guard, $data);
-        $ok = Auth::guard($guard)->attempt($credentials, $remember);
-
-        $this->logAttempt($request, $data, $ok);
-        RateLimiter::hit($rateKey, 60 * 10);
-
-        if (! $ok) {
-            if ($existing) {
-                $count = (int) ($existing->failed_login_count ?? 0) + 1;
-                $updates = ['failed_login_count' => $count];
-
-                if ($count >= self::MAX_ATTEMPTS) {
-                    $updates['locked_until'] = now()->addMinutes(self::LOCK_MINUTES);
-                    $updates['failed_login_count'] = 0;
-                }
-                DB::table($existing->getTable())
-                    ->where($existing->getKeyName(), $existing->getKey())
-                    ->update($updates);
-            }
-
+        if (! $result) {
             throw ValidationException::withMessages([
                 'username' => 'Kombinasi username dan password salah.',
             ]);
@@ -113,18 +101,6 @@ class AuthController extends Controller
 
         // ---- Sukses ----
         $user = Auth::guard($guard)->user();
-
-        // Cek status akun
-        $status = strtolower((string) ($user->account_status ?? 'active'));
-        if ($status !== 'active') {
-            Auth::guard($guard)->logout();
-            return redirect()->route('account.'.$status);
-        }
-
-        // Reset failed_login_count
-        DB::table($user->getTable())
-            ->where($user->getKeyName(), $user->getKey())
-            ->update(['failed_login_count' => 0, 'locked_until' => null, 'last_seen_at' => now()]);
 
         RateLimiter::clear($rateKey);
         $request->session()->regenerate();
@@ -165,10 +141,189 @@ class AuthController extends Controller
         return redirect()->intended(route('dashboard'));
     }
 
+    /** Login admin — sepenuhnya lokal (User tetap dikelola langsung di CBT). */
+    protected function attemptAdmin(Request $request, array $data, bool $remember, string $rateKey): bool|\Illuminate\Http\RedirectResponse
+    {
+        $existing = User::where('email', $data['username'])->first();
+        if ($existing && ! empty($existing->locked_until) && $existing->locked_until > now()) {
+            $this->logAttempt($request, $data, false);
+            $minutes = now()->diffInMinutes($existing->locked_until);
+            throw ValidationException::withMessages([
+                'username' => "Akun dikunci sementara. Coba lagi dalam {$minutes} menit.",
+            ]);
+        }
+
+        $ok = Auth::guard('admin')->attempt(['email' => $data['username'], 'password' => $data['password']], $remember);
+
+        $this->logAttempt($request, $data, $ok);
+        RateLimiter::hit($rateKey, 60 * 10);
+
+        if (! $ok) {
+            if ($existing) {
+                $count = (int) ($existing->failed_login_count ?? 0) + 1;
+                $updates = ['failed_login_count' => $count];
+                if ($count >= self::MAX_ATTEMPTS) {
+                    $updates['locked_until'] = now()->addMinutes(self::LOCK_MINUTES);
+                    $updates['failed_login_count'] = 0;
+                }
+                DB::table($existing->getTable())->where('id', $existing->id)->update($updates);
+            }
+            return false;
+        }
+
+        $user = Auth::guard('admin')->user();
+        $status = strtolower((string) ($user->account_status ?? 'active'));
+        if ($status !== 'active') {
+            Auth::guard('admin')->logout();
+            return redirect()->route('account.'.$status);
+        }
+
+        DB::table('users')->where('id', $user->id)
+            ->update(['failed_login_count' => 0, 'locked_until' => null, 'last_seen_at' => now()]);
+
+        return true;
+    }
+
+    /**
+     * Login guru/siswa — password TIDAK pernah dicek lokal. Diverifikasi via
+     * API Data Center (satu-satunya pemilik password), lalu baris cache lokal
+     * (guru/siswa) di-upsert dari respons API supaya siswa/guru yang baru
+     * ditambahkan di Data Center langsung bisa login di CBT tanpa sinkronisasi
+     * manual (lihat DatacenterClient & upsertSiswaFromDatacenter/upsertGuruFromDatacenter).
+     */
+    protected function attemptRemote(Request $request, string $guard, array $data, bool $remember, string $rateKey): bool|\Illuminate\Http\RedirectResponse
+    {
+        $client = app(DatacenterClient::class);
+        $response = $guard === 'guru'
+            ? $client->verifyGuru($data['username'], $data['password'])
+            : $client->verifySiswa($data['username'], $data['password']);
+
+        RateLimiter::hit($rateKey, 60 * 10);
+        $this->logAttempt($request, $data, $response->successful());
+
+        if ($response->status() === 423) {
+            throw ValidationException::withMessages([
+                'username' => $response->json('message', 'Akun dikunci sementara.'),
+            ]);
+        }
+
+        if ($response->status() === 403) {
+            $status = strtolower((string) $response->json('account_status', 'inactive'));
+            return redirect()->route('account.'.($status === 'active' ? 'inactive' : $status));
+        }
+
+        if (! $response->successful()) {
+            return false;
+        }
+
+        $payload = (array) $response->json('data', []);
+
+        $user = DB::transaction(fn () => $guard === 'guru'
+            ? $this->upsertGuruFromDatacenter($payload)
+            : $this->upsertSiswaFromDatacenter($payload));
+
+        Auth::guard($guard)->login($user, $remember);
+
+        return true;
+    }
+
+    protected function upsertSiswaFromDatacenter(array $data): Siswa
+    {
+        $siswa = Siswa::updateOrCreate(['id' => $data['id']], [
+            'nisn' => $data['nisn'], 'nis' => $data['nis'] ?? null,
+            'nama_siswa' => $data['nama_siswa'], 'jenis_kelamin' => $data['jenis_kelamin'] ?? null,
+            'tempat_lahir' => $data['tempat_lahir'] ?? null, 'tanggal_lahir' => $data['tanggal_lahir'] ?? null,
+            'agama' => $data['agama'] ?? null, 'alamat' => $data['alamat'] ?? null,
+            'nomor_hp' => $data['nomor_hp'] ?? null, 'email' => $data['email'] ?? null,
+            'nama_ayah' => $data['nama_ayah'] ?? null, 'nama_ibu' => $data['nama_ibu'] ?? null,
+            'nomor_hp_ortu' => $data['nomor_hp_ortu'] ?? null, 'foto' => $data['foto'] ?? null,
+            'is_aktif' => $data['is_aktif'] ?? true,
+        ]);
+
+        $rs = $data['rombel_sekarang'] ?? null;
+        $rombelData = $rs['rombel'] ?? null;
+        if ($rs && $rombelData) {
+            $this->ensureTahunAjaranStub($rombelData['tahun_ajaran_id']);
+
+            $jurusanId = $rombelData['jurusan_id'] ?? null;
+            if ($jurusanId && ! Jurusan::whereKey($jurusanId)->exists()) $jurusanId = null;
+            $waliId = $rombelData['wali_kelas_id'] ?? null;
+            if ($waliId && ! Guru::whereKey($waliId)->exists()) $waliId = null;
+
+            RombonganBelajar::updateOrCreate(['id' => $rombelData['id']], [
+                'nama_rombel' => $rombelData['nama_rombel'], 'tingkat' => $rombelData['tingkat'],
+                'jurusan_id' => $jurusanId, 'tahun_ajaran_id' => $rombelData['tahun_ajaran_id'],
+                'wali_kelas_id' => $waliId, 'kapasitas' => $rombelData['kapasitas'] ?? 36,
+            ]);
+
+            SiswaRombel::updateOrCreate(['id' => $rs['id']], [
+                'siswa_id' => $siswa->id,
+                'rombongan_belajar_id' => $rombelData['id'],
+                'tahun_ajaran_id' => $rombelData['tahun_ajaran_id'],
+            ]);
+        }
+
+        return $siswa;
+    }
+
+    protected function upsertGuruFromDatacenter(array $data): Guru
+    {
+        $guru = Guru::updateOrCreate(['id' => $data['id']], [
+            'nip' => $data['nip'], 'nama_ptk' => $data['nama_ptk'], 'email' => $data['email'] ?? null,
+            'nomor_hp' => $data['nomor_hp'] ?? null, 'jenis_kelamin' => $data['jenis_kelamin'] ?? null,
+            'tempat_lahir' => $data['tempat_lahir'] ?? null, 'tanggal_lahir' => $data['tanggal_lahir'] ?? null,
+            'alamat' => $data['alamat'] ?? null, 'jabatan' => $data['jabatan'] ?? null,
+            'status_kepegawaian' => $data['status_kepegawaian'] ?? null, 'foto' => $data['foto'] ?? null,
+            'is_aktif' => $data['is_aktif'] ?? true,
+        ]);
+
+        foreach (($data['guru_mapel'] ?? []) as $gm) {
+            $mapelData = $gm['mapel'] ?? null;
+            if (! $mapelData) continue;
+
+            MataPelajaran::updateOrCreate(['id' => $mapelData['id']], [
+                'kode_mapel' => $mapelData['kode_mapel'] ?? ('MP-'.$mapelData['id']),
+                'nama_mapel' => $mapelData['nama_mapel'] ?? ('Mapel #'.$mapelData['id']),
+            ]);
+
+            $rombelData = $gm['rombel'] ?? null;
+            $rombelId = null;
+            if ($rombelData) {
+                $this->ensureTahunAjaranStub($gm['tahun_ajaran_id']);
+                RombonganBelajar::updateOrCreate(['id' => $rombelData['id']], [
+                    'nama_rombel' => $rombelData['nama_rombel'],
+                    'tingkat' => $rombelData['tingkat'] ?? 10,
+                    'tahun_ajaran_id' => $gm['tahun_ajaran_id'],
+                ]);
+                $rombelId = $rombelData['id'];
+            }
+
+            GuruMapel::updateOrCreate(['id' => $gm['id']], [
+                'guru_id' => $guru->id,
+                'mata_pelajaran_id' => $mapelData['id'],
+                'rombongan_belajar_id' => $rombelId,
+                'tahun_ajaran_id' => $gm['tahun_ajaran_id'],
+            ]);
+        }
+
+        return $guru;
+    }
+
+    /** Baris placeholder TahunAjaran (di-lengkapi otomatis oleh `datacenter:sync`). */
+    protected function ensureTahunAjaranStub(int $id): void
+    {
+        TahunAjaran::firstOrCreate(['id' => $id], [
+            'kode_tahun_ajaran' => 'TA-'.$id,
+            'nama_tahun_ajaran' => 'Tahun Ajaran #'.$id,
+            'semester' => 'Ganjil',
+            'is_aktif' => false,
+        ]);
+    }
+
     public function logout(Request $request)
     {
         $this->forceLogout($request);
-        return redirect()->route('landing');
+        return redirect()->away(config('services.landing.app_url'));
     }
 
     /** Guard yang sedang login saat ini (admin/guru/siswa), atau null kalau belum login. */
@@ -196,7 +351,6 @@ class AuthController extends Controller
     protected function allowedRolesFor(?string $module): array
     {
         return match ($module) {
-            'datacenter' => ['admin'],
             'cbt'        => ['admin', 'guru', 'siswa'],
             default      => ['admin', 'guru', 'siswa'], // login umum (legacy)
         };
@@ -206,28 +360,8 @@ class AuthController extends Controller
     protected function postRouteFor(?string $module): string
     {
         return match ($module) {
-            'datacenter' => 'datacenter.login.post',
             'cbt'        => 'cbt.login.post',
             default      => 'login.post',
-        };
-    }
-
-    protected function credentialsFor(string $guard, array $data): array
-    {
-        return match ($guard) {
-            'admin' => ['email' => $data['username'], 'password' => $data['password']],
-            'guru'  => ['nip'   => $data['username'], 'password' => $data['password']],
-            'siswa' => ['nisn'  => $data['username'], 'password' => $data['password']],
-        };
-    }
-
-    protected function findUser(string $guard, string $username): ?object
-    {
-        return match ($guard) {
-            'admin' => User::where('email', $username)->first(),
-            'guru'  => Guru::where('nip', $username)->first(),
-            'siswa' => Siswa::where('nisn', $username)->first(),
-            default => null,
         };
     }
 
