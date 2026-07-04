@@ -101,7 +101,10 @@ function bankSoalPage() {
             this.loading = true;
             this.content = '';
             try {
-                const res = await fetch(`/bank-soal/${id}/preview`, {
+                // Pakai route() supaya URL menyertakan base path aplikasi (mis. /cbt)
+                // — fetch hardcoded "/bank-soal/..." akan 404 saat app di subfolder.
+                const url = `{{ route('bank-soal.preview', ['bankSoal' => '__ID__']) }}`.replace('__ID__', id);
+                const res = await fetch(url, {
                     headers: { 'X-Requested-With': 'XMLHttpRequest' }
                 });
                 if (! res.ok) throw new Error('Gagal memuat (' + res.status + ')');
