@@ -29,8 +29,8 @@
     <meta http-equiv="Expires" content="0">
     <!--Backgroundlogin-->
     <title>Login &middot; {{ $AppCfg['app_name'] }}</title>
-    @if($AppCfg['favicon'])
-        <link rel="icon" href="{{ Storage::url($AppCfg['favicon']) }}">
+    @if($AppCfg['favicon_url'])
+        <link rel="icon" href="{{ $AppCfg['favicon_url'] }}">
     @endif
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
@@ -63,8 +63,8 @@
 
         <div class="flex items-center justify-between gap-3 relative z-10">
             <div class="flex items-center gap-3">
-                @if($AppCfg['logo'])
-                    <img src="{{ Storage::url($AppCfg['logo']) }}" alt="" class="w-12 h-12 object-contain bg-white/95 rounded-xl p-1.5 shadow-soft">
+                @if($AppCfg['logo_url'])
+                    <img src="{{ $AppCfg['logo_url'] }}" alt="" class="w-12 h-12 object-contain bg-white/95 rounded-xl p-1.5 shadow-soft">
                 @else
                     <div class="w-12 h-12 rounded-xl bg-white/20 grid place-items-center text-white font-bold shadow-soft ring-2 ring-white/40">
                         {{ mb_substr($AppCfg['app_name'], 0, 1) }}

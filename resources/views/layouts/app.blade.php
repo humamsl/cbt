@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Dashboard') &middot; {{ $AppCfg['app_name'] }}</title>
-    @if($AppCfg['favicon'])
-        <link rel="icon" href="{{ Storage::url($AppCfg['favicon']) }}">
+    @if($AppCfg['favicon_url'])
+        <link rel="icon" href="{{ $AppCfg['favicon_url'] }}">
     @endif
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>

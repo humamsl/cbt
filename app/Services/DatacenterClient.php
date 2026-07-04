@@ -98,4 +98,15 @@ class DatacenterClient
     {
         return (array) $this->http()->get('/v1/guru-mapel')->json('data', []);
     }
+
+    /**
+     * Branding sekolah (nama + logo + favicon) dari Data Center sebagai sumber
+     * tunggal. Endpoint publik tanpa token; timeout pendek supaya tidak
+     * memperlambat render halaman kalau Data Center lambat/mati. Pemanggil
+     * (AppServiceProvider) meng-cache hasilnya.
+     */
+    public function branding(): array
+    {
+        return (array) $this->http()->timeout(3)->get('/v1/public/branding')->json('data', []);
+    }
 }

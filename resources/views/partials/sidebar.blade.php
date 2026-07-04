@@ -10,8 +10,8 @@
     :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'"
     @click="if (window.innerWidth < 768 && $event.target.closest('a[href]')) sidebarOpen = false">
     <div class="flex items-center gap-3 px-5 h-16 border-b border-white/15">
-        @if($AppCfg['logo'])
-            <img src="{{ Storage::url($AppCfg['logo']) }}" alt="" class="w-10 h-10 object-contain rounded-lg bg-white/90 p-0.5 shadow-soft">
+        @if($AppCfg['logo_url'])
+            <img src="{{ $AppCfg['logo_url'] }}" alt="" class="w-10 h-10 object-contain rounded-lg bg-white/90 p-0.5 shadow-soft">
         @else
             <div class="w-10 h-10 rounded-xl bg-white/20 grid place-items-center text-white font-bold shadow-soft ring-2 ring-white/40">
                 {{ mb_substr($AppCfg['app_name'], 0, 1) }}
