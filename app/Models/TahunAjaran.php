@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class TahunAjaran extends Model
 {
+    /** Baca/tulis langsung ke database Data Center (sumber tunggal), real-time. */
+    protected $connection = 'mysql_datacenter';
     protected $table = 'tahun_ajaran';
     protected $guarded = ['id'];
 

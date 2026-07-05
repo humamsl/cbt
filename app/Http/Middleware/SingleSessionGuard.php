@@ -5,7 +5,6 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 
 /**
  * SINGLE SIGN ON GUARD.
@@ -37,12 +36,10 @@ class SingleSessionGuard
 
         // Jika belum pernah di-set → set sekarang (sesi pertama)
         if (empty($storedSid)) {
-            DB::table($user->getTable())
-                ->where($user->getKeyName(), $user->getKey())
-                ->update([
-                    'current_session_id' => $currentSid,
-                    'current_device' => substr((string) $request->userAgent(), 0, 100),
-                ]);
+            $user->forceFill([
+                'current_session_id' => $currentSid,
+                'current_device' => substr((string) $request->userAgent(), 0, 100),
+            ])->save();
             return $next($request);
         }
 

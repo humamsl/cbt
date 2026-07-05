@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class RombonganBelajar extends Model
 {
+    /** Baca/tulis langsung ke database Data Center (sumber tunggal), real-time. */
+    protected $connection = 'mysql_datacenter';
     protected $table = 'rombongan_belajar';
     protected $guarded = ['id'];
 

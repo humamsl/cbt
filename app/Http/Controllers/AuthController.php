@@ -3,17 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Guru;
-use App\Models\GuruMapel;
-use App\Models\Jurusan;
 use App\Models\LoginAttempt;
-use App\Models\MataPelajaran;
-use App\Models\RombonganBelajar;
 use App\Models\Siswa;
-use App\Models\SiswaRombel;
-use App\Models\TahunAjaran;
 use App\Models\User;
-use App\Services\DatacenterClient;
-use App\Services\DatacenterSync;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -121,12 +113,10 @@ class AuthController extends Controller
             $hadOtherSession = ! empty($user->current_session_id)
                             && $user->current_session_id !== session()->getId();
 
-            DB::table($user->getTable())
-                ->where($user->getKeyName(), $user->getKey())
-                ->update([
-                    'current_session_id' => session()->getId(),
-                    'current_device'     => substr((string) $request->userAgent(), 0, 100),
-                ]);
+            $user->forceFill([
+                'current_session_id' => session()->getId(),
+                'current_device'     => substr((string) $request->userAgent(), 0, 100),
+            ])->save();
 
             if ($hadOtherSession) {
                 session()->flash('error', '⚠ Akun Anda sebelumnya aktif di perangkat lain. Perangkat tersebut otomatis di-logout.');
@@ -186,58 +176,54 @@ class AuthController extends Controller
     }
 
     /**
-     * Login guru/siswa — password TIDAK pernah dicek lokal. Diverifikasi via
-     * API Data Center (satu-satunya pemilik password), lalu baris cache lokal
-     * (guru/siswa) di-upsert dari respons API supaya siswa/guru yang baru
-     * ditambahkan di Data Center langsung bisa login di CBT tanpa sinkronisasi
-     * manual (lihat DatacenterClient & upsertSiswaFromDatacenter/upsertGuruFromDatacenter).
+     * Login guru/siswa — model Guru/Siswa terhubung LANGSUNG ke database Data
+     * Center (connection 'mysql_datacenter', lihat App\Models\Guru/Siswa), jadi
+     * Auth::attempt() di sini mengecek password persis terhadap baris asli di
+     * Data Center secara real-time. Tidak ada API call, tidak ada cache lokal,
+     * tidak perlu sinkronisasi manual — sama seperti login admin di bawah.
      */
     protected function attemptRemote(Request $request, string $guard, array $data, bool $remember, string $rateKey): bool|\Illuminate\Http\RedirectResponse
     {
-        $client = app(DatacenterClient::class);
-        $response = $guard === 'guru'
-            ? $client->verifyGuru($data['username'], $data['password'])
-            : $client->verifySiswa($data['username'], $data['password']);
+        $model = $guard === 'guru' ? Guru::class : Siswa::class;
+        $usernameField = $guard === 'guru' ? 'nip' : 'nisn';
 
-        RateLimiter::hit($rateKey, 60 * 10);
-        $this->logAttempt($request, $data, $response->successful());
-
-        if ($response->status() === 423) {
+        $existing = $model::where($usernameField, $data['username'])->first();
+        if ($existing && ! empty($existing->locked_until) && $existing->locked_until > now()) {
+            $this->logAttempt($request, $data, false);
+            $minutes = now()->diffInMinutes($existing->locked_until);
             throw ValidationException::withMessages([
-                'username' => $response->json('message', 'Akun dikunci sementara.'),
+                'username' => "Akun dikunci sementara. Coba lagi dalam {$minutes} menit.",
             ]);
         }
 
-        if ($response->status() === 403) {
-            $status = strtolower((string) $response->json('account_status', 'inactive'));
-            return redirect()->route('account.'.($status === 'active' ? 'inactive' : $status));
-        }
+        $ok = Auth::guard($guard)->attempt([$usernameField => $data['username'], 'password' => $data['password']], $remember);
 
-        if (! $response->successful()) {
+        $this->logAttempt($request, $data, $ok);
+        RateLimiter::hit($rateKey, 60 * 10);
+
+        if (! $ok) {
+            if ($existing) {
+                $count = (int) ($existing->failed_login_count ?? 0) + 1;
+                $updates = ['failed_login_count' => $count];
+                if ($count >= self::MAX_ATTEMPTS) {
+                    $updates['locked_until'] = now()->addMinutes(self::LOCK_MINUTES);
+                    $updates['failed_login_count'] = 0;
+                }
+                $existing->forceFill($updates)->save();
+            }
             return false;
         }
 
-        $payload = (array) $response->json('data', []);
+        $user = Auth::guard($guard)->user();
+        $status = strtolower((string) ($user->account_status ?? 'active'));
+        if ($status !== 'active') {
+            Auth::guard($guard)->logout();
+            return redirect()->route('account.'.($status === 'active' ? 'inactive' : $status));
+        }
 
-        $user = DB::transaction(fn () => $guard === 'guru'
-            ? $this->upsertGuruFromDatacenter($payload)
-            : $this->upsertSiswaFromDatacenter($payload));
-
-        Auth::guard($guard)->login($user, $remember);
+        $user->forceFill(['failed_login_count' => 0, 'locked_until' => null, 'last_seen_at' => now()])->save();
 
         return true;
-    }
-
-    // Upsert siswa/guru dari Data Center dipindah ke App\Services\DatacenterSync
-    // supaya dipakai bersama oleh login (lazy per-orang) & `datacenter:sync` (bulk).
-    protected function upsertSiswaFromDatacenter(array $data): Siswa
-    {
-        return app(DatacenterSync::class)->upsertSiswa($data);
-    }
-
-    protected function upsertGuruFromDatacenter(array $data): Guru
-    {
-        return app(DatacenterSync::class)->upsertGuru($data);
     }
 
     public function logout(Request $request)

@@ -5,7 +5,6 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 
 class UpdateUserLastSeen
 {
@@ -23,9 +22,10 @@ class UpdateUserLastSeen
         Cache::put($key, true, now()->addMinute());
 
         try {
-            DB::table($user->getTable())
-                ->where($user->getKeyName(), $user->getKey())
-                ->update(['last_seen_at' => now()]);
+            // forceFill()->save() otomatis pakai connection milik model ($user
+            // bisa Guru/Siswa yang terhubung ke DB Data Center, atau User/admin
+            // di DB lokal — DB::table(...) polos akan salah sasaran utk yang pertama.
+            $user->forceFill(['last_seen_at' => now()])->save();
         } catch (\Throwable $e) {
             // ignore — kolom mungkin belum ter-migrate
         }

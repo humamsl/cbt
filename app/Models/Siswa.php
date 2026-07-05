@@ -12,6 +12,12 @@ class Siswa extends Authenticatable
 {
     use HasFactory, Notifiable, HasRbac;
 
+    /**
+     * Baca/tulis langsung ke database Data Center (sumber tunggal), real-time —
+     * termasuk autentikasi login (password siswa TIDAK disimpan/dicek di CBT,
+     * cek langsung ke baris asli di Data Center via koneksi ini).
+     */
+    protected $connection = 'mysql_datacenter';
     protected $table = 'siswa';
     protected $guarded = ['id'];
     protected $hidden = ['password', 'remember_token'];
