@@ -89,6 +89,11 @@ class DatacenterClient
         return (array) $this->http()->get('/v1/rombel')->json('data', []);
     }
 
+    public function tingkatKelas(): array
+    {
+        return (array) $this->http()->get('/v1/tingkat-kelas')->json('data', []);
+    }
+
     public function sekolah(): ?array
     {
         return $this->http()->get('/v1/sekolah')->json('data');
@@ -97,6 +102,37 @@ class DatacenterClient
     public function guruMapel(): array
     {
         return (array) $this->http()->get('/v1/guru-mapel')->json('data', []);
+    }
+
+    /** Semua siswa (menyertakan rombel_sekarang) — loop seluruh halaman paginasi. */
+    public function allSiswa(): array
+    {
+        return $this->fetchAllPaginated('/v1/siswa');
+    }
+
+    /** Semua guru (menyertakan guru_mapel) — loop seluruh halaman paginasi. */
+    public function allGuru(): array
+    {
+        return $this->fetchAllPaginated('/v1/guru');
+    }
+
+    /**
+     * Ambil seluruh data dari endpoint yang paginated (respons Laravel paginator:
+     * { data, current_page, last_page, ... }) dengan menelusuri semua halaman.
+     */
+    protected function fetchAllPaginated(string $path, int $perPage = 200): array
+    {
+        $all = [];
+        $page = 1;
+        do {
+            $res  = (array) $this->http()->get($path, ['per_page' => $perPage, 'page' => $page])->json();
+            $data = $res['data'] ?? [];
+            $all  = array_merge($all, $data);
+            $last = (int) ($res['last_page'] ?? 1);
+            $page++;
+        } while ($page <= $last && ! empty($data));
+
+        return $all;
     }
 
     /**
