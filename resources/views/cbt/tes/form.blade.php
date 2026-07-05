@@ -25,13 +25,42 @@
       })">
     @csrf @if($item->exists) @method('PUT') @endif
 
+    @if($errors->any())
+        <div class="p-3 rounded-lg bg-rose-50 border border-rose-200 text-sm">
+            <div class="font-semibold text-rose-700 mb-1">Gagal menyimpan, periksa lagi:</div>
+            <ul class="list-disc pl-5 text-rose-600 text-xs space-y-0.5">
+                @foreach($errors->all() as $err)<li>{{ $err }}</li>@endforeach
+            </ul>
+        </div>
+    @endif
+
     {{-- Nama Ujian --}}
     <x-field name="name" label="Nama Ujian" :value="$item->name" required placeholder="Contoh: ASTS Ganjil"/>
 
     {{-- Mata Pelajaran + Metode Target --}}
     <div class="grid md:grid-cols-2 gap-4">
-        <x-field type="select" name="mata_pelajaran_id" label="Mata Pelajaran" :value="$item->mata_pelajaran_id" required
-                 :options="$mapel->pluck('nama_mapel', 'id')->toArray()"/>
+        <div>
+            <label class="label" for="mata_pelajaran_id">
+                Mata Pelajaran
+                @if(! $canPilihUjianUmum)<span class="text-rose-500">*</span>@endif
+            </label>
+            <select name="mata_pelajaran_id" id="mata_pelajaran_id" class="select">
+                @if($canPilihUjianUmum)
+                    <option value="" {{ old('mata_pelajaran_id', $item->mata_pelajaran_id) ? '' : 'selected' }}>
+                        🌐 Ujian Umum (Semua Mapel — Bank Soal gabungan)
+                    </option>
+                @else
+                    <option value="">— Pilih —</option>
+                @endif
+                @foreach($mapel->pluck('nama_mapel', 'id') as $val => $lbl)
+                    <option value="{{ $val }}" @selected(old('mata_pelajaran_id', $item->mata_pelajaran_id) == $val)>{{ $lbl }}</option>
+                @endforeach
+            </select>
+            @if($canPilihUjianUmum)
+                <p class="mt-1 text-xs text-ink-500">Pilih "Ujian Umum" untuk tes yang soalnya diambil dari semua mapel sekaligus (mis. tes siswa baru / PPDB).</p>
+            @endif
+            @error('mata_pelajaran_id')<p class="mt-1 text-xs text-rose-600">{{ $message }}</p>@enderror
+        </div>
 
         <div>
             <label class="label">Metode Target <span class="text-rose-500">*</span></label>
@@ -81,6 +110,11 @@
                 <input type="hidden" name="rombongan_belajar_ids[]" :value="id">
             </template>
             @error('rombongan_belajar_ids')<p class="mt-1 text-xs text-rose-600">{{ $message }}</p>@enderror
+            @foreach($errors->keys() as $key)
+                @if(str_starts_with($key, 'rombongan_belajar_ids.'))
+                    <p class="mt-1 text-xs text-rose-600">{{ $errors->first($key) }}</p>
+                @endif
+            @endforeach
         </div>
 
         <div x-show="mode === 'per_tingkat'" x-cloak>

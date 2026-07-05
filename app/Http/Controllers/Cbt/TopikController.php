@@ -95,7 +95,7 @@ class TopikController extends Controller
         $user = $r->user();
         $rules = [
             'topic'             => 'required|string|max:255',
-            'mata_pelajaran_id' => ['required', 'exists:mata_pelajaran,id'],
+            'mata_pelajaran_id' => ['required', 'exists:mysql_datacenter.mata_pelajaran,id'],
             'tingkat'           => 'nullable|integer|between:1,12',
             'parent_id'         => 'nullable|exists:topics,id',
             'is_active'         => 'nullable|boolean',

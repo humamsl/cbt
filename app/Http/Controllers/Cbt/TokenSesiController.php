@@ -55,7 +55,7 @@ class TokenSesiController extends Controller
         return $r->validate([
             'token' => 'required|string|max:12|unique:session_tokens,token,'.$id,
             'nama_sesi' => 'nullable|string|max:100',
-            'tahun_ajaran_id' => 'nullable|exists:tahun_ajaran,id',
+            'tahun_ajaran_id' => 'nullable|exists:mysql_datacenter.tahun_ajaran,id',
             'valid_from' => 'nullable|date',
             'valid_upto' => 'nullable|date|after_or_equal:valid_from',
             'is_active' => 'nullable|boolean',

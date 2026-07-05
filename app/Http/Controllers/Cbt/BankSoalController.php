@@ -226,7 +226,7 @@ class BankSoalController extends Controller
             'title' => 'required|string|max:255',
             'question' => 'required|string',
             'question_type_id' => 'required|exists:question_types,id',
-            'mata_pelajaran_id' => 'nullable|exists:mata_pelajaran,id',
+            'mata_pelajaran_id' => 'nullable|exists:mysql_datacenter.mata_pelajaran,id',
             'topic_id' => 'nullable|exists:topics,id',
             'tingkat' => 'nullable|integer|between:1,12',
             'is_active' => 'nullable|boolean',

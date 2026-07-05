@@ -19,7 +19,7 @@
                 <div class="min-w-0 flex-1">
                     <div class="flex items-center gap-2 flex-wrap mb-1">
                         <span class="{{ $t->status_badge }}">{{ ucfirst($t->status) }}</span>
-                        <span class="badge-muted">{{ optional($t->mapel)->nama_mapel ?? '-' }}</span>
+                        <span class="badge-muted">{{ optional($t->mapel)->nama_mapel ?? '🌐 Ujian Umum' }}</span>
                         @foreach($t->rombelTargets as $rb)
                             <span class="badge-info">{{ $rb->nama_rombel }}</span>
                         @endforeach

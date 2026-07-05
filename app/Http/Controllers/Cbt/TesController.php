@@ -172,6 +172,9 @@ class TesController extends Controller
         return [
             'item' => $item,
             'mapel' => $mapelList,
+            // Ujian Umum (semua mapel, mata_pelajaran_id kosong) hanya boleh dibuat
+            // admin — guru tetap wajib pilih salah satu mapel yang diajarnya.
+            'canPilihUjianUmum' => ! $this->shouldScope($user),
             'rombel' => $rombelQuery->orderBy('tingkat')->orderBy('nama_rombel')->get(),
             'tahunAjaran' => TahunAjaran::orderByDesc('id')->get(),
             'tingkatList' => TingkatKelas::aktif()->orderBy('nomor')->get(),
@@ -182,16 +185,31 @@ class TesController extends Controller
 
     protected function v(Request $r): array
     {
+        // Ujian Umum (semua mapel) hanya boleh dibuat admin — kosongkan
+        // mata_pelajaran_id diperbolehkan HANYA untuk admin, guru tetap wajib.
+        // PENTING: rule exists: HARUS diberi prefix connection "mysql_datacenter."
+        // karena tabel ini sekarang live di database Data Center (lihat
+        // App\Models\RombonganBelajar dkk) — tanpa prefix, Laravel diam-diam
+        // mengecek tabel lokal cbt yang basi/kosong, sehingga ID yang sebenarnya
+        // valid (baru ditambahkan di Data Center) ditolak validasi.
+        $mapelRule = $this->shouldScope($r->user())
+            ? 'required|exists:mysql_datacenter.mata_pelajaran,id'
+            : 'nullable|exists:mysql_datacenter.mata_pelajaran,id';
+
         $data = $r->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'mata_pelajaran_id' => 'required|exists:mata_pelajaran,id',
+            'mata_pelajaran_id' => $mapelRule,
             'target_mode' => 'required|in:per_kelas,per_tingkat',
             'rombongan_belajar_ids' => 'required_if:target_mode,per_kelas|array',
-            'rombongan_belajar_ids.*' => 'exists:rombongan_belajar,id',
+            'rombongan_belajar_ids.*' => 'exists:mysql_datacenter.rombongan_belajar,id',
             'target_tingkat' => 'required_if:target_mode,per_tingkat|array',
-            'target_tingkat.*' => 'integer|between:1,12',
-            'tahun_ajaran_id' => 'nullable|exists:tahun_ajaran,id',
+            // nullable: select "Pilih Tingkat" tetap ada di DOM (cuma disembunyikan
+            // via x-show, bukan dihapus) saat mode "Per Kelas" dipilih, jadi tetap
+            // ikut ter-submit dgn nilai kosong "" — harus lolos validasi di sini,
+            // nanti di-null-kan eksplisit oleh logika mode per_kelas di bawah.
+            'target_tingkat.*' => 'nullable|integer|between:1,12',
+            'tahun_ajaran_id' => 'nullable|exists:mysql_datacenter.tahun_ajaran,id',
             'duration' => 'required|integer|min:1',
             'valid_from' => 'nullable|date',
             'valid_upto' => 'nullable|date|after_or_equal:valid_from',

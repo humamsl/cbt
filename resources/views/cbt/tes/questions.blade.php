@@ -63,6 +63,9 @@
     <div class="card">
         <div class="card-header">
             <h3 class="text-base font-semibold">Bank Soal Tersedia</h3>
+            @unless($tes->mata_pelajaran_id)
+                <p class="text-xs text-brand-600 mt-0.5">🌐 Ujian Umum — menampilkan soal dari SEMUA mata pelajaran.</p>
+            @endunless
         </div>
         <form method="GET" class="px-6 pt-4 flex gap-2">
             <input name="q" value="{{ request('q') }}" class="input" placeholder="Cari soal di bank...">
