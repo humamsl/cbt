@@ -106,7 +106,7 @@ class DatabaseSeeder extends Seeder
         // --- Tahun ajaran ---
         $ta = TahunAjaran::updateOrCreate(
             ['kode_tahun_ajaran' => '2526'],
-            ['nama_tahun_ajaran' => '2025/2026', 'semester' => 'Ganjil', 'is_aktif' => true,
+            ['nama_tahun_ajaran' => '2025/2026', 'is_aktif' => true,
              'tanggal_mulai' => now()->setDate(2025, 7, 15), 'tanggal_selesai' => now()->setDate(2026, 6, 30)]
         );
 

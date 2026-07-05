@@ -35,9 +35,9 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
         .login-hero {
-            @if($AppCfg['login_bg'])
+            @if($AppCfg['login_bg_url'])
                 background-image: linear-gradient(135deg, rgb(0 23 24 / 40%), rgb(15 23 42 / 80%)),
-                                  url('{{ Storage::url($AppCfg['login_bg']) }}');
+                                  url('{{ $AppCfg['login_bg_url'] }}');
                 background-size: cover;
                 background-position: center;
             @else

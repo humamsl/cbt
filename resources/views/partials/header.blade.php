@@ -26,7 +26,7 @@
             @if($th = \App\Models\TahunAjaran::aktif())
                 <span class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-brand-50 text-brand-700 ring-1 ring-brand-200">
                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                    TA {{ $th->nama_tahun_ajaran }} &middot; {{ $th->semester }}
+                    TA {{ $th->nama_tahun_ajaran }}
                 </span>
             @endif
             <div x-data="{ open: false }" class="relative">

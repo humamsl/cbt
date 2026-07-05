@@ -3,27 +3,21 @@
 namespace App\Http\Controllers;
 
 use App\Models\AppSetting;
-use App\Models\Sekolah;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 
+/**
+ * Identitas sekolah, logo, halaman login, dan identitas aplikasi sekarang
+ * dikelola terpusat di aplikasi Data Center (menu Pengaturan Aplikasi) supaya
+ * seragam di semua aplikasi — lihat Data Center\PengaturanController &
+ * Api\PublicStatsController::branding(). CBT hanya menyisakan Proteksi IP
+ * (khusus ujian siswa) dan Backup/Restore Bank Soal (data milik CBT sendiri).
+ */
 class SettingController extends Controller
 {
     public function index(Request $request)
     {
-        $sekolah = Sekolah::first() ?? new Sekolah();
         return view('setting.index', [
-            'sekolah' => $sekolah,
             'app' => [
-                'app_name'              => AppSetting::get('app_name', config('app.name')),
-                'app_tagline'           => AppSetting::get('app_tagline', 'Sistem Informasi Sekolah Terintegrasi'),
-                'theme_color'           => AppSetting::get('theme_color', '#0d9488'),
-                'logo'                  => AppSetting::get('logo'),
-                'favicon'               => AppSetting::get('favicon'),
-                'login_bg'              => AppSetting::get('login_bg'),
-                'login_title'           => AppSetting::get('login_title', 'Selamat datang di platform CBT Modern sekolah Anda.'),
-                'login_subtitle'        => AppSetting::get('login_subtitle', 'Kelola data guru, siswa, kelas, dan ujian online dalam satu dashboard yang cepat, aman, dan mudah digunakan.'),
-                'footer_text'           => AppSetting::get('footer_text'),
                 'ip_protection_enabled' => (bool) AppSetting::get('ip_protection_enabled', false),
                 'allowed_ips'           => (string) AppSetting::get('allowed_ips', ''),
             ],
@@ -66,73 +60,21 @@ class SettingController extends Controller
 
     public function update(Request $request)
     {
-        // Identitas sekolah (NPSN, alamat, kepala sekolah, dst) dikelola di
-        // aplikasi Data Center sekarang — CBT hanya menampilkan salinannya
-        // (lihat SettingController::index & `datacenter:sync`), tidak lagi
-        // mengeditnya di sini.
-
-        // ---- File upload (logo, favicon, login_bg) ----
-        $request->validate([
-            'logo'     => 'nullable|image|mimes:png,jpg,jpeg,svg,webp|max:2048',
-            'favicon'  => 'nullable|image|mimes:png,ico,svg|max:512',
-            'login_bg' => 'nullable|image|mimes:png,jpg,jpeg,webp|max:5120',
-        ]);
-
-        foreach (['logo', 'favicon', 'login_bg'] as $field) {
-            if ($request->hasFile($field)) {
-                // hapus file lama
-                $oldPath = AppSetting::get($field);
-                if ($oldPath && Storage::disk('public')->exists($oldPath)) {
-                    Storage::disk('public')->delete($oldPath);
-                }
-                $path = $request->file($field)->store('settings', 'public');
-                AppSetting::set($field, $path, 'file', 'tampilan', ucfirst($field));
-            }
-        }
-
-        // ---- Setting teks & warna ----
-        $textKeys = [
-            'app_name'       => 'string',
-            'app_tagline'    => 'string',
-            'login_title'    => 'string',
-            'login_subtitle' => 'string',
-            'footer_text'    => 'string',
-            'theme_color'    => 'color',
-        ];
-        foreach ($textKeys as $key => $type) {
-            $val = $request->input($key);
-            if ($val !== null) {
-                AppSetting::set($key, $val, $type === 'color' ? 'color' : 'text', 'tampilan');
-            }
-        }
-
-        // ---- Hapus file (jika user klik tombol hapus) ----
-        foreach ((array) $request->input('remove_file', []) as $field) {
-            $oldPath = AppSetting::get($field);
-            if ($oldPath && Storage::disk('public')->exists($oldPath)) {
-                Storage::disk('public')->delete($oldPath);
-            }
-            AppSetting::set($field, null, 'file', 'tampilan');
-        }
-
         // ---- Proteksi IP (CIDR) untuk ujian siswa ----
-        if ($request->has('ip_protection_enabled') || $request->has('allowed_ips')) {
-            $enabled = $request->boolean('ip_protection_enabled');
-            $raw = (string) $request->input('allowed_ips', '');
+        $enabled = $request->boolean('ip_protection_enabled');
+        $raw = (string) $request->input('allowed_ips', '');
 
-            // Validasi tiap baris CIDR (best-effort, biar admin tahu kalau salah ketik)
-            $invalid = [];
-            foreach (\App\Http\Middleware\CheckExamIp::parseList($raw) as $line) {
-                if (! $this->isValidCidrOrIp($line)) $invalid[] = $line;
-            }
-            if ($invalid) {
-                return back()->with('error', 'Format IP/CIDR tidak valid: '.implode(', ', $invalid));
-            }
-
-            AppSetting::set('ip_protection_enabled', $enabled ? 1 : 0, 'bool', 'proteksi');
-            AppSetting::set('allowed_ips', $raw, 'text', 'proteksi');
+        // Validasi tiap baris CIDR (best-effort, biar admin tahu kalau salah ketik)
+        $invalid = [];
+        foreach (\App\Http\Middleware\CheckExamIp::parseList($raw) as $line) {
+            if (! $this->isValidCidrOrIp($line)) $invalid[] = $line;
+        }
+        if ($invalid) {
+            return back()->with('error', 'Format IP/CIDR tidak valid: '.implode(', ', $invalid));
         }
 
+        AppSetting::set('ip_protection_enabled', $enabled ? 1 : 0, 'bool', 'proteksi');
+        AppSetting::set('allowed_ips', $raw, 'text', 'proteksi');
         AppSetting::flush();
 
         return back()->with('success', 'Pengaturan berhasil disimpan.');

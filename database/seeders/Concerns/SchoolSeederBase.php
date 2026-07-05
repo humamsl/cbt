@@ -184,7 +184,6 @@ abstract class SchoolSeederBase extends Seeder
             ['kode_tahun_ajaran' => '2526'],
             [
                 'nama_tahun_ajaran' => '2025/2026',
-                'semester' => 'Ganjil',
                 'is_aktif' => true,
                 'tanggal_mulai' => now()->setDate(2025, 7, 15),
                 'tanggal_selesai' => now()->setDate(2026, 6, 30),

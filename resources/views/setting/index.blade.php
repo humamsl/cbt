@@ -3,17 +3,19 @@
 @section('breadcrumb', 'Admin / Pengaturan')
 
 @section('content')
-<x-page-header title="Pengaturan Aplikasi" subtitle="Identitas sekolah, logo, tema, tampilan, dan pencadangan data"/>
+<x-page-header title="Pengaturan Aplikasi" subtitle="Proteksi IP dan pencadangan data"/>
 
-<div x-data="{ tab: 'identitas' }" class="space-y-6">
+<div class="rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm p-3 mb-4">
+    Identitas sekolah, logo, dan halaman login sekarang dikelola terpusat di aplikasi <strong>Data Center</strong>
+    supaya seragam di semua aplikasi.
+    <a href="{{ rtrim(config('services.datacenter.app_url'), '/') }}/pengaturan" target="_blank" class="text-brand-600 font-semibold hover:underline">Atur di Data Center &rarr;</a>
+</div>
+
+<div x-data="{ tab: 'ip' }" class="space-y-6">
 
     {{-- Tab navigation (di luar form supaya bisa share state dengan tab backup/restore) --}}
     <div class="flex gap-1 bg-white rounded-xl p-1 shadow-soft border border-slate-100 w-fit overflow-x-auto">
         @foreach([
-            'identitas' => ' Identitas Sekolah',
-            'tampilan'  => ' Logo Sekolah',
-            'login'     => ' Halaman Login',
-            'aplikasi'  => ' Identitas Aplikasi',
             'ip'        => ' Proteksi IP',
             'backup'    => ' Backup',
             'restore'   => ' Restore',
@@ -26,118 +28,10 @@
         @endforeach
     </div>
 
-<form method="POST" action="{{ route('setting.update') }}" enctype="multipart/form-data"
+<form method="POST" action="{{ route('setting.update') }}"
       class="space-y-6"
       x-show="!['backup','restore'].includes(tab)">
     @csrf @method('PUT')
-
-    {{-- ============ TAB IDENTITAS SEKOLAH (read-only, dikelola di app Data Center) ============ --}}
-    <div x-show="tab==='identitas'" x-cloak class="card card-pad space-y-4">
-        <div class="rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm p-3">
-            Identitas sekolah sekarang dikelola di aplikasi <strong>Data Center</strong>
-            ({{ rtrim(config('services.datacenter.app_url'), '/') }}). Data di bawah ini
-            hanya salinan (read-only), tersinkron via <code>datacenter:sync</code> atau saat guru/siswa login.
-        </div>
-        <div class="grid md:grid-cols-2 gap-4 opacity-70 pointer-events-none">
-            <x-field name="npsn" label="NPSN" :value="$sekolah->npsn" disabled/>
-            <x-field name="nama_sekolah" label="Nama Sekolah" :value="$sekolah->nama_sekolah" disabled/>
-            <x-field name="telepon" label="Telepon" :value="$sekolah->telepon" disabled/>
-            <x-field name="email" type="email" label="Email" :value="$sekolah->email" disabled/>
-            <x-field name="kepala_sekolah" label="Kepala Sekolah" :value="$sekolah->kepala_sekolah" disabled/>
-        </div>
-        <x-field name="alamat" label="Alamat" :value="$sekolah->alamat" disabled class="opacity-70 pointer-events-none"/>
-    </div>
-
-    {{-- ============ TAB LOGO SEKOLAH ============ --}}
-    <div x-show="tab==='tampilan'" x-cloak class="grid lg:grid-cols-2 gap-6">
-        {{-- Logo aplikasi --}}
-        <div class="card card-pad space-y-4">
-            <h3 class="font-semibold text-ink-900">Logo Sekolah</h3>
-            <p class="text-xs text-ink-500">Tampil di sidebar, header, dan halaman login. Format: PNG/JPG/SVG, max 2MB.</p>
-
-            @if($app['logo'])
-                <div class="rounded-xl bg-gradient-to-br from-slate-50 to-slate-100 p-6 grid place-items-center border border-slate-200">
-                    <img src="{{ Storage::url($app['logo']) }}" alt="Logo" class="max-h-32 max-w-full object-contain">
-                </div>
-                <label class="flex items-center gap-2 text-xs text-rose-600">
-                    <input type="checkbox" name="remove_file[]" value="logo" class="rounded border-slate-300 text-rose-600 focus:ring-rose-500">
-                    Hapus logo saat ini
-                </label>
-            @else
-                <div class="rounded-xl border-2 border-dashed border-slate-200 p-6 text-center text-sm text-ink-500">
-                    Belum ada logo
-                </div>
-            @endif
-
-            <input type="file" name="logo" accept="image/*" class="input file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-brand-50 file:text-brand-700 file:font-semibold">
-            @error('logo')<p class="text-xs text-rose-600">{{ $message }}</p>@enderror
-        </div>
-
-        {{-- Favicon --}}
-        <div class="card card-pad space-y-4">
-            <h3 class="font-semibold text-ink-900">Favicon</h3>
-            <p class="text-xs text-ink-500">Tampil di tab browser. Format: PNG/ICO/SVG, max 512KB. Disarankan 32×32 px.</p>
-
-            @if($app['favicon'])
-                <div class="rounded-xl bg-gradient-to-br from-slate-50 to-slate-100 p-6 grid place-items-center border border-slate-200">
-                    <img src="{{ Storage::url($app['favicon']) }}" alt="Favicon" class="w-12 h-12 object-contain">
-                </div>
-                <label class="flex items-center gap-2 text-xs text-rose-600">
-                    <input type="checkbox" name="remove_file[]" value="favicon" class="rounded border-slate-300 text-rose-600 focus:ring-rose-500">
-                    Hapus favicon
-                </label>
-            @else
-                <div class="rounded-xl border-2 border-dashed border-slate-200 p-6 text-center text-sm text-ink-500">
-                    Belum ada favicon
-                </div>
-            @endif
-
-            <input type="file" name="favicon" accept="image/*" class="input file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-brand-50 file:text-brand-700 file:font-semibold">
-        </div>
-    </div>
-
-    {{-- ============ TAB LOGIN ============ --}}
-    <div x-show="tab==='login'" x-cloak class="card card-pad space-y-4">
-        <h3 class="font-semibold text-ink-900">Background Halaman Login</h3>
-        <p class="text-xs text-ink-500">Gambar akan ditampilkan sebagai latar di halaman login. Format: PNG/JPG/WEBP, max 5MB. Saran ukuran 1920×1080.</p>
-
-        @if($app['login_bg'])
-            <div class="rounded-xl overflow-hidden border border-slate-200 relative h-48 bg-slate-100">
-                <img src="{{ Storage::url($app['login_bg']) }}" alt="" class="w-full h-full object-cover">
-                <div class="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent"></div>
-                <div class="absolute bottom-3 left-3 text-white text-xs font-semibold drop-shadow">Preview</div>
-            </div>
-            <label class="flex items-center gap-2 text-xs text-rose-600">
-                <input type="checkbox" name="remove_file[]" value="login_bg" class="rounded border-slate-300 text-rose-600 focus:ring-rose-500">
-                Hapus background saat ini (kembali ke gradient default)
-            </label>
-        @else
-            <div class="rounded-xl border-2 border-dashed border-slate-200 p-12 text-center text-sm text-ink-500 bg-gradient-to-br from-slate-50 to-slate-100">
-                Belum ada background custom — menggunakan gradient default
-            </div>
-        @endif
-
-        <input type="file" name="login_bg" accept="image/*" class="input file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-brand-50 file:text-brand-700 file:font-semibold">
-
-        <div class="border-t border-slate-100 pt-4 grid md:grid-cols-2 gap-4">
-            <x-field name="login_title" label="Judul Halaman Login" :value="$app['login_title']"
-                     help="Headline besar di kiri halaman login"/>
-            <x-field name="login_subtitle" label="Sub-judul" :value="$app['login_subtitle']"
-                     help="Deskripsi pendek di bawah headline"/>
-        </div>
-    </div>
-
-    {{-- ============ TAB APLIKASI ============ --}}
-    <div x-show="tab==='aplikasi'" x-cloak class="card card-pad space-y-4">
-        <h3 class="font-semibold text-ink-900">Identitas Aplikasi</h3>
-        <div class="grid md:grid-cols-2 gap-4">
-            <x-field name="app_name" label="Nama Aplikasi" :value="$app['app_name']" required
-                     help="Tampil di judul tab browser & sidebar"/>
-            <x-field name="app_tagline" label="Tagline" :value="$app['app_tagline']"/>
-        </div>
-        <x-field name="footer_text" label="Teks Footer" :value="$app['footer_text']"
-                 placeholder="© 2026 Nama Sekolah. Hak cipta dilindungi."/>
-    </div>
 
     {{-- ============ TAB PROTEKSI IP ============ --}}
     <div x-show="tab==='ip'" x-cloak class="space-y-4">
