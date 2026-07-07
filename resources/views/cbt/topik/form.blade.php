@@ -17,11 +17,25 @@
         <x-field type="select" name="mata_pelajaran_id" label="Mapel" :value="$item->mata_pelajaran_id" required
                  :options="$mapel->mapWithKeys(fn($m) => [$m->id => $m->kode_mapel.' — '.$m->nama_mapel])->toArray()"/>
 
-        <x-field type="select" name="tingkat"
-                 :label="$isGuru ? 'Tingkat Kelas (wajib)' : 'Tingkat Kelas (opsional)'"
-                 :value="$item->tingkat"
-                 :required="$isGuru"
-                 :options="$tingkat->mapWithKeys(fn($t) => [$t->nomor => $t->nama])->toArray()"/>
+        <div>
+            <x-field type="select" name="tingkat"
+                     :label="$isGuru ? 'Tingkat Kelas (wajib)' : 'Tingkat Kelas (opsional)'"
+                     :value="$item->tingkat"
+                     :required="$isGuru"
+                     :options="$tingkat->mapWithKeys(fn($t) => [$t->nomor => $t->nama])->toArray()"/>
+            @if($isGuru && $tingkatKosong)
+                <p class="mt-1 text-xs text-rose-600">
+                    Anda belum ditugaskan ke rombel manapun pada tahun ajaran ini, sehingga tidak ada
+                    pilihan tingkat kelas. Hubungi admin untuk mengatur penugasan mapel &amp; rombel Anda.
+                </p>
+            @elseif($isGuru && !empty($tingkatBelumAktif))
+                <p class="mt-1 text-xs text-rose-600">
+                    Anda mengajar di rombel tingkat {{ implode(', ', $tingkatBelumAktif) }}, tapi tingkat
+                    tersebut belum ada / belum diaktifkan di menu Master &raquo; Tingkat Kelas (Data Center).
+                    Hubungi admin untuk menambahkan atau mengaktifkannya.
+                </p>
+            @endif
+        </div>
     </div>
 
     <x-field type="checkbox" name="is_active" :value="$item->is_active ?? true"/>

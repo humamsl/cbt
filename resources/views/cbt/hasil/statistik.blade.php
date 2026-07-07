@@ -3,16 +3,7 @@
 @section('breadcrumb', 'CBT / Hasil / Statistik')
 
 @section('content')
-<x-page-header title="Statistik Nilai Ujian" subtitle="Ringkasan distribusi nilai per ujian">
-    @if($quiz)
-        <x-slot:action>
-            <a href="{{ route('hasil.statistik.export', ['quiz' => $quiz->id, 'kkm' => request('kkm', 70)]) }}"
-               class="btn-primary">
-                <x-icon name="chart" class="w-4 h-4"/> Export Statistik (Excel)
-            </a>
-        </x-slot:action>
-    @endif
-</x-page-header>
+<x-page-header title="Statistik Nilai Ujian" subtitle="Ringkasan distribusi nilai per ujian"></x-page-header>
 
 @include('cbt.hasil._nav', ['active' => 'statistik'])
 
@@ -37,6 +28,37 @@
         Pilih ujian untuk melihat statistik.
     </div>
 @else
+    {{-- EXPORT "HASIL NILAI TES" — lengkapi detail lembar cetak sebelum export --}}
+    <form method="GET" action="{{ route('hasil.statistik.export') }}" class="card card-pad mb-4">
+        <div class="flex items-center justify-between mb-3">
+            <h3 class="font-semibold text-ink-900">Export Hasil Nilai Tes (Excel)</h3>
+            <button class="btn-primary">
+                <x-icon name="chart" class="w-4 h-4"/> Export
+            </button>
+        </div>
+        <input type="hidden" name="quiz" value="{{ $quiz->id }}">
+        <div class="grid md:grid-cols-3 gap-2">
+            <input type="text" name="nama_tes" value="{{ request('nama_tes', $quiz->name) }}"
+                   class="input" placeholder="Nama Tes (mis. Uraian)">
+            <input type="text" name="materi_pokok" value="{{ request('materi_pokok') }}"
+                   class="input" placeholder="Materi Pokok">
+            <select name="semester" class="select">
+                <option value="">-- Semester --</option>
+                <option value="Ganjil" @selected(request('semester')==='Ganjil')>Ganjil</option>
+                <option value="Genap" @selected(request('semester')==='Genap')>Genap</option>
+            </select>
+            <input type="text" name="tujuan_pembelajaran" value="{{ request('tujuan_pembelajaran') }}"
+                   class="input md:col-span-2" placeholder="Tujuan Pembelajaran">
+            <input type="date" name="tanggal_tes"
+                   value="{{ request('tanggal_tes', optional($quiz->valid_from)->format('Y-m-d')) }}"
+                   class="input">
+            <input type="number" name="kktp" value="{{ request('kktp', request('kkm', 70)) }}" min="0" max="100"
+                   class="input" placeholder="KKTP (default 70)">
+            <input type="text" name="kelas_semester_tahun" value="{{ request('kelas_semester_tahun') }}"
+                   class="input md:col-span-2" placeholder="Kelas/Semester/Tahun (kosongkan = otomatis)">
+        </div>
+    </form>
+
     {{-- HEADER KARTU INFO --}}
     <div class="card card-pad mb-4 flex flex-wrap gap-4 items-center justify-between">
         <div>
@@ -193,8 +215,8 @@
         </div>
     </div>
 
-    {{-- Chart.js + Alpine helper --}}
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    {{-- Chart.js (self-hosted via npm + Vite) + Alpine helper --}}
+    @vite(['resources/js/charts.js'])
     <script>
         function perSoalTable(cfg) {
             return {

@@ -8,9 +8,11 @@ use App\Models\MataPelajaran;
 use App\Models\Quiz;
 use App\Models\QuizAttempt;
 use App\Models\RombonganBelajar;
+use App\Models\Sekolah;
 use App\Models\TingkatKelas;
 use App\Services\Hasil\HasilReportService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 
 class HasilController extends Controller
 {
@@ -88,11 +90,58 @@ class HasilController extends Controller
         return view('cbt.hasil.statistik', compact('quiz', 'quizzes', 'stats'));
     }
 
+    /**
+     * Export "HASIL NILAI TES" — format lembar analisis hasil ujian per kelas
+     * (DATA UMUM + tabel nilai siswa + rekapitulasi + tanda tangan Kepala
+     * Sekolah/Guru Mapel), sesuai format cetak yang dipakai sekolah.
+     */
     public function exportStatistik(Request $r, HasilReportService $svc)
     {
-        $quiz  = Quiz::with('mapel', 'questions')->findOrFail($r->quiz);
-        $stats = $this->computeStatistik($quiz, (int) ($r->kkm ?? 70));
-        return $svc->exportStatistik($quiz, $stats);
+        $kktp = (int) ($r->kktp ?? $r->kkm ?? 70);
+
+        $quiz = Quiz::with('mapel', 'questions', 'creator', 'rombel', 'tahunAjaran')->findOrFail($r->quiz);
+
+        $attempts = QuizAttempt::with('siswa.rombelSekarang.rombel')
+            ->where('quiz_id', $quiz->id)
+            ->where('is_done', true)
+            ->get()
+            ->sortBy(fn ($a) => optional($a->siswa)->nama_siswa)
+            ->values();
+
+        $sekolah = Sekolah::first();
+
+        $meta = [
+            'nama_sekolah'        => optional($sekolah)->nama_sekolah ?? '-',
+            'kota'                => optional($sekolah)->kabupaten ?? '-',
+            'mapel'               => optional($quiz->mapel)->nama_mapel ?? '-',
+            'kelas_semester_tahun'=> $r->kelas_semester_tahun ?: $this->deriveKelasLabel($quiz, $attempts, $r->semester),
+            'nama_tes'            => $r->nama_tes ?: $quiz->name,
+            'materi_pokok'        => $r->materi_pokok ?: '-',
+            'tujuan_pembelajaran' => $r->tujuan_pembelajaran ?: '-',
+            'tanggal_tes'         => $r->tanggal_tes ? Carbon::parse($r->tanggal_tes) : ($quiz->valid_from ?? now()),
+            'kktp'                => $kktp,
+            'nama_pengajar'       => optional($quiz->creator)->nama_ptk ?? optional($r->user())->nama_ptk ?? '-',
+            'nip_pengajar'        => optional($quiz->creator)->nip ?? '-',
+            'kepala_sekolah'      => optional($sekolah)->kepala_sekolah ?? '-',
+            'nip_kepala_sekolah'  => optional($sekolah)->nip_kepala_sekolah ?? '-',
+            'total_marks'         => $quiz->total_marks ?: 100,
+        ];
+
+        return $svc->exportStatistik($quiz, $attempts, $meta);
+    }
+
+    /** Label "Tingkat-Rombel" dari data quiz atau (fallback) rombel mayoritas peserta. */
+    protected function deriveKelasLabel(Quiz $quiz, $attempts, ?string $semester = null): string
+    {
+        $rombel = $quiz->rombel;
+        if (! $rombel) {
+            $rombel = $attempts->map(fn ($a) => optional(optional($a->siswa)->rombelSekarang)->rombel)
+                ->filter()->first();
+        }
+        $kelas = $rombel ? ($rombel->tingkat . '-' . $rombel->nama_rombel) : '-';
+        $tahun = optional($quiz->tahunAjaran)->nama_tahun_ajaran ?? optional(\App\Models\TahunAjaran::aktif())->nama_tahun_ajaran ?? '-';
+
+        return trim($kelas . ($semester ? '/' . strtoupper($semester) : '') . '/' . $tahun, '/');
     }
 
     /* ============================================================

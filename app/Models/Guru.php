@@ -49,11 +49,9 @@ class Guru extends Authenticatable
         return $this->locked_until && $this->locked_until->isFuture();
     }
 
-    public function getProfilePhotoUrlAttribute(): string
+    public function getProfilePhotoUrlAttribute(): ?string
     {
-        return $this->foto
-            ? asset('storage/'.$this->foto)
-            : 'https://ui-avatars.com/api/?name='.urlencode($this->nama_ptk).'&background=059669&color=fff';
+        return $this->foto ? asset('storage/'.$this->foto) : null;
     }
 
     public function guruMapel()

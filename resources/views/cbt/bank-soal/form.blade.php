@@ -26,8 +26,8 @@
 @endphp
 
 @push('head')
-{{-- TinyMCE 7 community (free, self-hosted via jsdelivr CDN, tanpa API key, tanpa lisensi premium) --}}
-<script src="https://cdn.jsdelivr.net/npm/tinymce@7/tinymce.min.js" referrerpolicy="origin"></script>
+{{-- TinyMCE 7 community (free, self-hosted lokal via public/vendor/tinymce, tanpa API key, tanpa lisensi premium, tidak butuh internet) --}}
+<script src="{{ asset('vendor/tinymce/tinymce.min.js') }}"></script>
 <style>
     .tox-tinymce { border-radius: 0.75rem !important; border-color: rgb(226 232 240) !important; }
     .symbol-btn { @apply px-2 py-1 rounded border border-slate-200 hover:bg-brand-50 hover:border-brand-300 text-sm font-medium transition; }

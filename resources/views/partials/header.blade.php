@@ -7,6 +7,7 @@
         'guru'  => 'bg-emerald-50 text-emerald-700 ring-emerald-200',
         'siswa' => 'bg-sky-50 text-sky-700 ring-sky-200',
     ][$role] ?? 'bg-slate-100 text-slate-600 ring-slate-200';
+    $initials = collect(preg_split('/\s+/', trim($name)))->filter()->map(fn ($w) => mb_strtoupper(mb_substr($w, 0, 1)))->take(2)->implode('');
 @endphp
 <header class="sticky top-0 z-20 bg-white/95 backdrop-blur-md border-b border-slate-100/10">
     <div class="flex items-center justify-between h-16 px-4 md:px-8 gap-2">
@@ -31,8 +32,14 @@
             @endif
             <div x-data="{ open: false }" class="relative">
                 <button @click="open=!open" class="flex items-center gap-2.5 group">
-                    <img src="{{ $user->profile_photo_url ?? 'https://ui-avatars.com/api/?background=0d9488&color=fff&bold=true&name='.urlencode($name) }}"
-                         alt="" class="w-9 h-9 rounded-full ring-2 ring-white shadow-soft object-cover group-hover:ring-brand-200 transition">
+                    @if($user->profile_photo_url)
+                        <img src="{{ $user->profile_photo_url }}" alt=""
+                             class="w-9 h-9 rounded-full ring-2 ring-white shadow-soft object-cover group-hover:ring-brand-200 transition">
+                    @else
+                        <div class="w-9 h-9 rounded-full ring-2 ring-white shadow-soft bg-brand-600 text-white flex items-center justify-center text-xs font-bold group-hover:ring-brand-200 transition">
+                            {{ $initials }}
+                        </div>
+                    @endif
                     <div class="hidden sm:block min-w-0 text-left">
                         <div class="text-sm font-semibold text-ink-900 truncate max-w-[160px]">{{ $name }}</div>
                         <div class="text-[10px] uppercase tracking-wider font-bold inline-flex px-1.5 py-0.5 rounded ring-1 {{ $roleBadge }}">{{ $role }}</div>

@@ -107,66 +107,186 @@ class HasilReportService
     }
 
     /* ============================================================
-     * EXPORT STATISTIK PER QUIZ
+     * EXPORT STATISTIK PER QUIZ — format "HASIL NILAI TES"
+     * (DATA UMUM + tabel nilai per siswa + rekapitulasi + tanda tangan)
      * ============================================================ */
-    public function exportStatistik(Quiz $quiz, array $stats): StreamedResponse
+    public function exportStatistik(Quiz $quiz, Collection $attempts, array $meta): StreamedResponse
     {
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
-        $sheet->setTitle('Statistik');
+        $sheet->setTitle('Hasil Nilai Tes');
 
-        $sheet->setCellValue('A1', 'STATISTIK NILAI UJIAN');
-        $sheet->mergeCells('A1:D1');
+        $totalMarks = (float) ($meta['total_marks'] ?: 100);
+        $kktp = (float) ($meta['kktp'] ?? 70);
+
+        // Hitung skor & nilai (0-100) tiap siswa dari skor mentah (quiz_attempts.score).
+        $siswaRows = [];
+        foreach ($attempts as $a) {
+            $siswa = $a->siswa;
+            $skor  = (float) ($a->score ?? 0);
+            $nilai = $totalMarks > 0 ? round($skor / $totalMarks * 100, 2) : 0;
+            $siswaRows[] = [
+                'nama'  => mb_strtoupper(optional($siswa)->nama_siswa ?? '-'),
+                'skor'  => $skor,
+                'nilai' => $nilai,
+                'tuntas'=> $nilai >= $kktp,
+            ];
+        }
+
+        $n = count($siswaRows);
+        $nilaiList = array_column($siswaRows, 'nilai');
+        $jumlah   = array_sum($nilaiList);
+        $rata     = $n ? $jumlah / $n : 0;
+        $tertinggi= $n ? max($nilaiList) : 0;
+        $terendah = $n ? min($nilaiList) : 0;
+        $simpangan= $this->stddev($nilaiList, $rata);
+        $tuntas   = count(array_filter($siswaRows, fn ($s) => $s['tuntas']));
+        $belum    = $n - $tuntas;
+        $diAtas   = count(array_filter($nilaiList, fn ($v) => $v > $rata));
+        $diBawah  = count(array_filter($nilaiList, fn ($v) => $v < $rata));
+
+        // ------- JUDUL -------
+        $lastCol = 'E';
+        $sheet->setCellValue('A1', 'HASIL NILAI TES');
+        $sheet->mergeCells("A1:{$lastCol}1");
         $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
         $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $sheet->getStyle("A1:{$lastCol}1")->getBorders()->getBottom()
+            ->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_MEDIUM);
+        $sheet->getStyle("A1:{$lastCol}1")->getBorders()->getTop()
+            ->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_MEDIUM);
+        $sheet->getRowDimension(1)->setRowHeight(22);
 
-        $sheet->setCellValue('A3', 'Ujian');
-        $sheet->setCellValueExplicit('B3', $quiz->name, DataType::TYPE_STRING);
-        $sheet->setCellValue('A4', 'Mapel');
-        $sheet->setCellValueExplicit('B4', optional($quiz->mapel)->nama_mapel ?? '-', DataType::TYPE_STRING);
-        $sheet->setCellValue('A5', 'Total Soal');
-        $sheet->setCellValue('B5', $stats['total_soal'] ?? 0);
-
-        $row = 7;
-        $sheet->setCellValue("A{$row}", 'Metrik');
-        $sheet->setCellValue("B{$row}", 'Nilai');
-        $sheet->getStyle("A{$row}:B{$row}")->getFont()->setBold(true)->getColor()->setRGB('FFFFFF');
-        $sheet->getStyle("A{$row}:B{$row}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('1F47F5');
-        $row++;
-
-        $rows = [
-            ['Total peserta',          $stats['total_peserta'] ?? 0],
-            ['Peserta selesai',        $stats['peserta_selesai'] ?? 0],
-            ['Rata-rata',              number_format($stats['mean'] ?? 0, 2)],
-            ['Median',                 number_format($stats['median'] ?? 0, 2)],
-            ['Nilai tertinggi',        number_format($stats['max'] ?? 0, 2)],
-            ['Nilai terendah',         number_format($stats['min'] ?? 0, 2)],
-            ['Standar deviasi',        number_format($stats['stddev'] ?? 0, 2)],
-            ['% Lulus (≥ KKM)',        number_format($stats['pass_rate'] ?? 0, 1) . '%'],
-            ['KKM',                    $stats['kkm'] ?? 70],
+        // ------- DATA UMUM -------
+        $infoStart = 3;
+        $infoRows = [
+            ['NAMA SEKOLAH', $meta['nama_sekolah']],
+            ['MATA PELAJARAN', $meta['mapel']],
+            ['KELAS/SEMESTER/TAHUN', $meta['kelas_semester_tahun']],
+            ['NAMA TES', $meta['nama_tes']],
+            ['MATERI POKOK', $meta['materi_pokok']],
+            ['TUJUAN PEMBELAJARAN', $meta['tujuan_pembelajaran']],
+            ['TANGGAL TES', $meta['tanggal_tes'] instanceof \DateTimeInterface
+                ? $meta['tanggal_tes']->translatedFormat('d F Y') : (string) $meta['tanggal_tes']],
+            ['KKTP', (string) $kktp],
+            ['NAMA PENGAJAR', $meta['nama_pengajar']],
+            ['NIP', $meta['nip_pengajar']],
         ];
-        foreach ($rows as $r) {
-            $sheet->setCellValueExplicit("A{$row}", (string) $r[0], DataType::TYPE_STRING);
-            $sheet->setCellValueExplicit("B{$row}", (string) $r[1], DataType::TYPE_STRING);
+        $infoEnd = $infoStart + count($infoRows) - 1;
+
+        $sheet->mergeCells("A{$infoStart}:A{$infoEnd}");
+        $sheet->setCellValue("A{$infoStart}", 'DATA UMUM');
+        $sheet->getStyle("A{$infoStart}")->getAlignment()
+            ->setTextRotation(90)->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
+        $sheet->getStyle("A{$infoStart}")->getFont()->setBold(true);
+
+        $row = $infoStart;
+        foreach ($infoRows as [$label, $value]) {
+            $sheet->setCellValueExplicit("B{$row}", $label, DataType::TYPE_STRING);
+            $sheet->getStyle("B{$row}")->getFont()->setBold(true);
+            $sheet->setCellValueExplicit("C{$row}", ':', DataType::TYPE_STRING);
+            $sheet->mergeCells("D{$row}:{$lastCol}{$row}");
+            $sheet->setCellValueExplicit("D{$row}", (string) $value, DataType::TYPE_STRING);
             $row++;
         }
+        $sheet->getStyle("A{$infoStart}:{$lastCol}{$infoEnd}")->getBorders()->getAllBorders()
+            ->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
 
-        // Distribusi nilai
-        $row += 1;
-        $sheet->setCellValue("A{$row}", 'Distribusi Nilai');
-        $sheet->mergeCells("A{$row}:B{$row}");
-        $sheet->getStyle("A{$row}")->getFont()->setBold(true);
+        // ------- TABEL NILAI SISWA -------
+        $row = $infoEnd + 2;
+        $headers = ['No', 'Nama Siswa', 'Jumlah Skor', 'Nilai', 'Keterangan Ketuntasan Belajar'];
+        $sheet->fromArray([$headers], null, "A{$row}");
+        $sheet->getStyle("A{$row}:{$lastCol}{$row}")->getFont()->setBold(true)->getColor()->setRGB('FFFFFF');
+        $sheet->getStyle("A{$row}:{$lastCol}{$row}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('1F47F5');
+        $sheet->getStyle("A{$row}:{$lastCol}{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $tableHeaderRow = $row;
         $row++;
-        foreach (($stats['distribution'] ?? []) as $range => $count) {
-            $sheet->setCellValueExplicit("A{$row}", (string) $range, DataType::TYPE_STRING);
-            $sheet->setCellValue("B{$row}", (int) $count);
+
+        $no = 1;
+        foreach ($siswaRows as $s) {
+            $sheet->setCellValue("A{$row}", $no++);
+            $sheet->setCellValueExplicit("B{$row}", $s['nama'], DataType::TYPE_STRING);
+            $sheet->setCellValue("C{$row}", $s['skor']);
+            $sheet->setCellValue("D{$row}", $s['nilai']);
+            $sheet->setCellValueExplicit("E{$row}", $s['tuntas'] ? 'Tuntas' : 'Belum Tuntas', DataType::TYPE_STRING);
+            $sheet->getStyle("A{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle("C{$row}:D{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
             $row++;
         }
+        if ($row > $tableHeaderRow + 1) {
+            $sheet->getStyle("A{$tableHeaderRow}:{$lastCol}" . ($row - 1))
+                ->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
+        }
 
-        $sheet->getColumnDimension('A')->setWidth(28);
-        $sheet->getColumnDimension('B')->setWidth(20);
+        // ------- REKAPITULASI (2 kolom berdampingan) -------
+        $row += 1;
+        $recapLeft = [
+            ['Jumlah', number_format($jumlah, 0)],
+            ['Rata-rata', number_format($rata, 0)],
+            ['Nilai Tertinggi', number_format($tertinggi, 0)],
+            ['Nilai Terendah', number_format($terendah, 0)],
+            ['Simpangan Baku', number_format($simpangan, 0)],
+        ];
+        $tuntasPct = $n ? round($tuntas / $n * 100) : 0;
+        $belumPct  = $n ? round($belum / $n * 100) : 0;
+        $recapRight = [
+            ['Jumlah Peserta Ujian', $n . ' Orang'],
+            ["Jumlah Yang Tuntas {$tuntasPct}%", $tuntas . ' Orang'],
+            ["Jumlah Yang Belum {$belumPct}%", $belum . ' Orang'],
+            ['Di Atas Rata-rata', $diAtas . ' Orang'],
+            ['Di Bawah Rata-rata', $diBawah . ' Orang'],
+        ];
+        foreach ($recapLeft as $i => [$label, $value]) {
+            $r = $row + $i;
+            $sheet->setCellValueExplicit("A{$r}", $label, DataType::TYPE_STRING);
+            $sheet->setCellValueExplicit("B{$r}", ':', DataType::TYPE_STRING);
+            $sheet->setCellValueExplicit("C{$r}", (string) $value, DataType::TYPE_STRING);
 
-        return $this->stream($spreadsheet, 'statistik-' . $this->slug($quiz->name) . '-' . date('Ymd') . '.xlsx');
+            [$rlabel, $rvalue] = $recapRight[$i];
+            $sheet->setCellValueExplicit("D{$r}", $rlabel . ' :', DataType::TYPE_STRING);
+            $sheet->setCellValueExplicit("E{$r}", (string) $rvalue, DataType::TYPE_STRING);
+        }
+        $row += count($recapLeft) + 2;
+
+        // ------- TANDA TANGAN -------
+        $sheet->setCellValueExplicit("D{$row}", $meta['kota'] . ', ' . now()->translatedFormat('d F Y'), DataType::TYPE_STRING);
+        $sheet->mergeCells("D{$row}:{$lastCol}{$row}");
+        $sheet->getStyle("D{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $row++;
+
+        $sheet->setCellValueExplicit("A{$row}", 'Kepala Sekolah', DataType::TYPE_STRING);
+        $sheet->mergeCells("A{$row}:B{$row}");
+        $sheet->getStyle("A{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $sheet->setCellValueExplicit("D{$row}", 'Guru Mata Pelajaran', DataType::TYPE_STRING);
+        $sheet->mergeCells("D{$row}:{$lastCol}{$row}");
+        $sheet->getStyle("D{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+        $row += 4;
+        $sheet->setCellValueExplicit("A{$row}", $meta['kepala_sekolah'], DataType::TYPE_STRING);
+        $sheet->mergeCells("A{$row}:B{$row}");
+        $sheet->getStyle("A{$row}")->getFont()->setBold(true)->setUnderline(true);
+        $sheet->getStyle("A{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $sheet->setCellValueExplicit("D{$row}", $meta['nama_pengajar'], DataType::TYPE_STRING);
+        $sheet->mergeCells("D{$row}:{$lastCol}{$row}");
+        $sheet->getStyle("D{$row}")->getFont()->setBold(true)->setUnderline(true);
+        $sheet->getStyle("D{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $row++;
+
+        $sheet->setCellValueExplicit("A{$row}", 'NIP ' . $meta['nip_kepala_sekolah'], DataType::TYPE_STRING);
+        $sheet->mergeCells("A{$row}:B{$row}");
+        $sheet->getStyle("A{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $sheet->setCellValueExplicit("D{$row}", 'NIP ' . $meta['nip_pengajar'], DataType::TYPE_STRING);
+        $sheet->mergeCells("D{$row}:{$lastCol}{$row}");
+        $sheet->getStyle("D{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+        // ------- LEBAR KOLOM -------
+        $sheet->getColumnDimension('A')->setWidth(6);
+        $sheet->getColumnDimension('B')->setWidth(26);
+        $sheet->getColumnDimension('C')->setWidth(14);
+        $sheet->getColumnDimension('D')->setWidth(22);
+        $sheet->getColumnDimension('E')->setWidth(24);
+
+        return $this->stream($spreadsheet, 'hasil-nilai-tes-' . $this->slug($quiz->name) . '-' . date('Ymd') . '.xlsx');
     }
 
     /* ============================================================
@@ -261,5 +381,19 @@ class HasilReportService
     protected function slug(string $s): string
     {
         return strtolower(preg_replace('/[^a-zA-Z0-9-]/', '-', $s)) ?: 'report';
+    }
+
+    /** Simpangan baku sampel (n-1). */
+    protected function stddev(array $arr, float $mean): float
+    {
+        $n = count($arr);
+        if ($n < 2) {
+            return 0;
+        }
+        $sum = 0;
+        foreach ($arr as $v) {
+            $sum += ($v - $mean) ** 2;
+        }
+        return sqrt($sum / ($n - 1));
     }
 }

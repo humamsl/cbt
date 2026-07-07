@@ -47,10 +47,8 @@ class User extends Authenticatable
         return $this->email;
     }
 
-    public function getProfilePhotoUrlAttribute(): string
+    public function getProfilePhotoUrlAttribute(): ?string
     {
-        return $this->foto
-            ? asset('storage/'.$this->foto)
-            : 'https://ui-avatars.com/api/?name='.urlencode($this->name).'&background=0d9488&color=fff&bold=true';
+        return $this->foto ? asset('storage/'.$this->foto) : null;
     }
 }

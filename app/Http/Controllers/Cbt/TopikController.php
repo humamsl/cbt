@@ -75,6 +75,9 @@ class TopikController extends Controller
 
     protected function formData($user, Topic $item): array
     {
+        $tingkatKosong = false;
+        $tingkatBelumAktif = [];
+
         if ($this->shouldScope($user)) {
             $mapelIds    = $this->guruMapelIds($user);
             $tingkatList = $this->guruTingkatList($user);
@@ -82,12 +85,21 @@ class TopikController extends Controller
             $tingkat = TingkatKelas::aktif()
                         ->whereIn('nomor', $tingkatList ?: [0])
                         ->orderBy('nomor')->get();
+            $tingkatKosong = empty($tingkatList);
+
+            // Guru sudah punya rombel (tingkat terdeteksi dari guru_mapel), tapi tidak semuanya
+            // muncul di dropdown → berarti nomor tingkat itu belum aktif di master Tingkat Kelas.
+            if (! $tingkatKosong) {
+                $tingkatBelumAktif = collect($tingkatList)
+                    ->diff($tingkat->pluck('nomor'))
+                    ->sort()->values()->toArray();
+            }
         } else {
             $mapel   = MataPelajaran::orderBy('nama_mapel')->get();
             $tingkat = TingkatKelas::aktif()->orderBy('nomor')->get();
         }
 
-        return compact('item', 'mapel', 'tingkat');
+        return compact('item', 'mapel', 'tingkat', 'tingkatKosong', 'tingkatBelumAktif');
     }
 
     protected function v(Request $r): array
