@@ -423,7 +423,7 @@ class HasilController extends Controller
                     );
                     $distribusiOpsi[] = [
                         'label'     => $opt->label ?? '-',
-                        'text'      => strip_tags((string) $opt->option_text),
+                        'text'      => html_entity_decode(strip_tags((string) $opt->option_text)),
                         'is_correct'=> (bool) $opt->is_correct,
                         'count'     => $countOpt,
                         'percent'   => $n ? $countOpt / $n * 100 : 0,

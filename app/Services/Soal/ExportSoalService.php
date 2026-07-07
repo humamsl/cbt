@@ -35,7 +35,7 @@ class ExportSoalService
             if ($q->mapel) $section->addText('#MAPEL: '.$q->mapel->kode_mapel);
             if ($q->tingkat) $section->addText('#TINGKAT: '.$q->tingkat);
             $section->addText('#JUDUL: '.$q->title);
-            $section->addText('#SOAL: '.strip_tags($q->question));
+            $section->addText('#SOAL: '.html_entity_decode(strip_tags($q->question)));
 
             $this->writeWordOptions($section, $q, $jenis);
 

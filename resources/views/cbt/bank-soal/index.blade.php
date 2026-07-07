@@ -45,7 +45,7 @@
                     </span>
                 </div>
                 <div class="font-semibold text-ink-900">{{ $q->title }}</div>
-                <div class="text-sm text-ink-500 mt-1 line-clamp-2">{{ Str::limit(strip_tags($q->question), 200) }}</div>
+                <div class="text-sm text-ink-500 mt-1 line-clamp-2">{{ Str::limit(html_entity_decode(strip_tags($q->question)), 200) }}</div>
             </div>
             <div class="flex items-center gap-1 shrink-0">
                 <button type="button" @click="openPreview({{ $q->id }})"
