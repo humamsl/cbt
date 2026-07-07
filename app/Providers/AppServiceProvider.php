@@ -3,7 +3,8 @@
 namespace App\Providers;
 
 use App\Models\AppSetting;
-use App\Services\DatacenterClient;
+use App\Models\DatacenterAppSetting;
+use App\Models\Sekolah;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
@@ -65,14 +66,31 @@ class AppServiceProvider extends ServiceProvider
     /**
      * Ambil branding dari Data Center secara langsung (tanpa cache) di setiap
      * request, supaya perubahan logo/background di Data Center langsung
-     * kelihatan di CBT. Timeout pendek (3 detik, lihat DatacenterClient::branding())
-     * dan fallback ke [] kalau Data Center mati/lambat, sehingga view tetap
-     * jatuh ke pengaturan lokal — bukan blank/error.
+     * kelihatan di CBT. Baca langsung dari database Data Center (koneksi
+     * 'mysql_datacenter', sama seperti Sekolah/Guru/Siswa) — tidak lagi lewat
+     * HTTP API, jadi tidak ada lagi timeout/dependensi ke Data Center harus
+     * "hidup" sebagai web server hanya untuk menampilkan branding.
+     * Fallback ke [] kalau query gagal (mis. Data Center DB tak terjangkau),
+     * sehingga view tetap jatuh ke pengaturan lokal — bukan blank/error.
      */
     protected function datacenterBranding(): array
     {
         try {
-            return app(DatacenterClient::class)->branding();
+            $sekolah = Sekolah::first();
+            if (! $sekolah) {
+                return [];
+            }
+
+            $baseUrl = rtrim((string) config('services.datacenter.app_url'), '/');
+            $logoUrl = $sekolah->logo ? $baseUrl.'/storage/'.$sekolah->logo : null;
+            $loginBg = DatacenterAppSetting::get('login_bg');
+
+            return [
+                'school_name' => $sekolah->nama_sekolah,
+                'logo'        => $logoUrl,
+                'favicon'     => $logoUrl,
+                'login_bg'    => $loginBg ? $baseUrl.'/storage/'.$loginBg : null,
+            ];
         } catch (\Throwable $e) {
             Log::warning('Gagal mengambil branding Data Center', ['error' => $e->getMessage()]);
             return [];

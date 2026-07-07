@@ -326,7 +326,7 @@
     {{-- Pengacakan --}}
     <div class="pt-3 border-t border-slate-100">
         <div class="flex items-center gap-2 text-sm font-semibold text-ink-900 mb-3">
-            <span>🔀 Pengacakan</span>
+            <span>Pengacakan</span>
         </div>
     <div class="grid md:grid-cols-3 gap-4">
         <x-field type="select" name="randomize" label="Acak Urutan Soal"
@@ -344,7 +344,7 @@
     {{-- Token Sesi --}}
     <div class="pt-3 border-t border-slate-100" x-data="{ requireToken: {{ (int) ($item->require_session_token ?? 0) }} }">
         <div class="flex items-center gap-2 text-sm font-semibold text-ink-900 mb-3">
-            <span>🔑 Token Sesi</span>
+            <span> Token Sesi</span>
         </div>
         <div class="grid md:grid-cols-2 gap-4">
             <div>

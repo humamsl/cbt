@@ -74,7 +74,7 @@
                         </tr>
                     @empty
                         <tr><td colspan="5" class="text-center text-ink-500 py-10">
-                            <div class="text-3xl mb-2">📋</div>
+                            <div class="text-3xl mb-2"></div>
                             <div>Belum ada ujian aktif</div>
                             <a href="{{ route('tes.create') }}" class="text-brand-600 text-xs hover:underline mt-1 inline-block">Buat tes pertama</a>
                         </td></tr>
@@ -106,7 +106,7 @@
                     </li>
                 @empty
                     <li class="px-6 py-8 text-center text-ink-500 text-sm">
-                        <div class="text-3xl mb-2">🎯</div>
+                        <div class="text-3xl mb-2"></div>
                         Belum ada hasil ujian
                     </li>
                 @endforelse
