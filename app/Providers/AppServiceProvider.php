@@ -51,11 +51,11 @@ class AppServiceProvider extends ServiceProvider
                 'favicon'        => $localFav,
                 // URL siap-pakai: pakai logo Data Center bila ada, kalau tidak
                 // jatuh ke file logo lokal (yang di-upload di Setting CBT).
-                'logo_url'       => $branding['logo'] ?? ($localLogo ? Storage::url($localLogo) : null),
-                'favicon_url'    => $branding['favicon'] ?? ($localFav ? Storage::url($localFav) : null),
+                'logo_url'       => $branding['logo'] ?? ($localLogo ? Storage::disk('public')->url($localLogo) : null),
+                'favicon_url'    => $branding['favicon'] ?? ($localFav ? Storage::disk('public')->url($localFav) : null),
                 // Sama seperti logo_url: pakai punya Data Center bila ada,
                 // fallback ke file lokal lama kalau Data Center tak terjangkau.
-                'login_bg_url'   => $branding['login_bg'] ?? ($localLoginBg ? Storage::url($localLoginBg) : null),
+                'login_bg_url'   => $branding['login_bg'] ?? ($localLoginBg ? Storage::disk('public')->url($localLoginBg) : null),
                 'login_title'    => AppSetting::get('login_title', 'Selamat datang di platform CBT Modern sekolah Anda.'),
                 'login_subtitle' => AppSetting::get('login_subtitle', 'Kelola data guru, siswa, kelas, dan ujian online dalam satu dashboard yang cepat, aman, dan mudah digunakan.'),
                 'footer_text'    => AppSetting::get('footer_text'),

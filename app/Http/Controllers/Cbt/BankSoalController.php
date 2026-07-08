@@ -203,7 +203,7 @@ class BankSoalController extends Controller
             }
 
             $path = $r->file('upload')->store('soal', 'public');
-            $url  = \Illuminate\Support\Facades\Storage::url($path);
+            $url  = \Illuminate\Support\Facades\Storage::disk('public')->url($path);
 
             return response()->json([
                 'url'  => $url,
