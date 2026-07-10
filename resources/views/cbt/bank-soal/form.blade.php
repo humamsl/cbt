@@ -303,6 +303,13 @@ function bankSoalForm({ typesMap, currentType, pgCorrect, pgkCorrect, bsAnswer, 
                 automatic_uploads: true,
                 images_upload_handler: imagesUploadHandler,
                 images_file_types: 'png,jpg,jpeg,gif,webp,svg',
+                // Simpan URL persis seperti dikembalikan server (root-relative, mis.
+                // "/cbt/storage/soal/x.png"). Tanpa ini, default TinyMCE (relative_urls:
+                // true) mengubahnya jadi path relatif thd halaman saat disimpan — rapuh,
+                // dan salah saat gambar dilihat dari halaman lain (mis. daftar Bank Soal).
+                relative_urls: false,
+                remove_script_host: false,
+                convert_urls: false,
                 content_style: 'body { font-family: Inter, sans-serif; font-size: 14px; line-height: 1.5; }',
                 setup: (editor) => {
                     editor.on('focus click keyup', () => { lastFocusedEditor = editor; });

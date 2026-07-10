@@ -203,7 +203,10 @@ class BankSoalController extends Controller
             }
 
             $path = $r->file('upload')->store('soal', 'public');
-            $url  = \Illuminate\Support\Facades\Storage::disk('public')->url($path);
+            // Root-relative terhadap base path REQUEST saat ini (mis. "/cbt"), bukan
+            // APP_URL statis — supaya benar dijalankan di balik alias nginx apa pun
+            // tanpa perlu APP_URL menyertakan sub-path tersebut.
+            $url = $r->getBaseUrl().'/storage/'.$path;
 
             return response()->json([
                 'url'  => $url,
