@@ -28,7 +28,7 @@
         </div>
     </div>
 
-    @php $dcUrl = rtrim(config('services.datacenter.app_url'), '/'); @endphp
+    @php $dcUrl = '/datacenter'; @endphp
 
     {{-- Stat cards row 1 (data induk — dikelola & di-link ke aplikasi Data Center) --}}
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">

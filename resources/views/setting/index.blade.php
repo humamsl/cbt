@@ -8,7 +8,7 @@
 <div class="rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm p-3 mb-4">
     Identitas sekolah, logo, dan halaman login sekarang dikelola terpusat di aplikasi <strong>Data Center</strong>
     supaya seragam di semua aplikasi.
-    <a href="{{ rtrim(config('services.datacenter.app_url'), '/') }}/pengaturan" target="_blank" class="text-brand-600 font-semibold hover:underline">Atur di Data Center &rarr;</a>
+    <a href="/datacenter/pengaturan" target="_blank" class="text-brand-600 font-semibold hover:underline">Atur di Data Center &rarr;</a>
 </div>
 
 <div x-data="{ tab: 'ip' }" class="space-y-6">

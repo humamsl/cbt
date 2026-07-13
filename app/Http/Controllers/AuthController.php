@@ -229,7 +229,7 @@ class AuthController extends Controller
     public function logout(Request $request)
     {
         $this->forceLogout($request);
-        return redirect()->away(config('services.landing.app_url'));
+        return redirect('/');
     }
 
     /** Guard yang sedang login saat ini (admin/guru/siswa), atau null kalau belum login. */

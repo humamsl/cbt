@@ -71,7 +71,7 @@
                     </div>
                 @endif
             </div> 
-            <a href="{{ config('services.landing.app_url') }}" class="text-xs font-semibold text-white/85 hover:text-white bg-white/10 hover:bg-white/15 border border-white/20 rounded-full px-3.5 py-2 transition">
+            <a href="../" class="text-xs font-semibold text-white/85 hover:text-white bg-white/10 hover:bg-white/15 border border-white/20 rounded-full px-3.5 py-2 transition">
                 ← Beranda
             </a>
         </div>

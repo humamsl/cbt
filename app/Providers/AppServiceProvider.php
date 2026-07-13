@@ -51,11 +51,11 @@ class AppServiceProvider extends ServiceProvider
                 'favicon'        => $localFav,
                 // URL siap-pakai: pakai logo Data Center bila ada, kalau tidak
                 // jatuh ke file logo lokal (yang di-upload di Setting CBT).
-                'logo_url'       => $branding['logo'] ?? ($localLogo ? Storage::disk('public')->url($localLogo) : null),
-                'favicon_url'    => $branding['favicon'] ?? ($localFav ? Storage::disk('public')->url($localFav) : null),
+                'logo_url'       => $branding['logo'] ?? ($localLogo ? asset('storage/'.$localLogo) : null),
+                'favicon_url'    => $branding['favicon'] ?? ($localFav ? asset('storage/'.$localFav) : null),
                 // Sama seperti logo_url: pakai punya Data Center bila ada,
                 // fallback ke file lokal lama kalau Data Center tak terjangkau.
-                'login_bg_url'   => $branding['login_bg'] ?? ($localLoginBg ? Storage::disk('public')->url($localLoginBg) : null),
+                'login_bg_url'   => $branding['login_bg'] ?? ($localLoginBg ? asset('storage/'.$localLoginBg) : null),
                 'login_title'    => AppSetting::get('login_title', 'Selamat datang di platform CBT Modern sekolah Anda.'),
                 'login_subtitle' => AppSetting::get('login_subtitle', 'Kelola data guru, siswa, kelas, dan ujian online dalam satu dashboard yang cepat, aman, dan mudah digunakan.'),
                 'footer_text'    => AppSetting::get('footer_text'),
@@ -81,15 +81,21 @@ class AppServiceProvider extends ServiceProvider
                 return [];
             }
 
-            $baseUrl = rtrim((string) config('services.datacenter.app_url'), '/');
-            $logoUrl = $sekolah->logo ? $baseUrl.'/storage/'.$sekolah->logo : null;
+            // Path root-relative ('/datacenter/storage/...'), bukan URL absolut dari
+            // config/env — supaya tetap benar diakses lewat domain publik, IP LAN,
+            // atau localhost mana pun tanpa perlu di-set ulang per deployment. Pakai
+            // '/datacenter/...' (bukan '../datacenter/...') karena logo ini tampil di
+            // sidebar/header di semua halaman CBT, termasuk yang nested dalam — path
+            // root-relative selalu benar berapa pun kedalaman URL-nya, sedangkan '../'
+            // cuma benar kalau kedalamannya pas.
+            $logoUrl = $sekolah->logo ? '/datacenter/storage/'.$sekolah->logo : null;
             $loginBg = DatacenterAppSetting::get('login_bg');
 
             return [
                 'school_name' => $sekolah->nama_sekolah,
                 'logo'        => $logoUrl,
                 'favicon'     => $logoUrl,
-                'login_bg'    => $loginBg ? $baseUrl.'/storage/'.$loginBg : null,
+                'login_bg'    => $loginBg ? '/datacenter/storage/'.$loginBg : null,
             ];
         } catch (\Throwable $e) {
             Log::warning('Gagal mengambil branding Data Center', ['error' => $e->getMessage()]);
