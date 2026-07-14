@@ -24,7 +24,7 @@
     <div>
         <div class="text-xs text-ink-500 uppercase tracking-wide mb-1">Pertanyaan</div>
         <div class="prose prose-sm max-w-none border border-slate-200 rounded-lg p-3 bg-slate-50/50">
-            {!! $q->question !!}
+            {!! \App\Support\SoalHtml::render($q->question) !!}
         </div>
     </div>
 
@@ -39,7 +39,7 @@
                         <span class="w-6 h-6 rounded-full grid place-items-center text-xs font-bold shrink-0 {{ $isCorrect ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-700' }}">
                             {{ $opt->label ?: chr(65 + $i) }}
                         </span>
-                        <div class="flex-1 text-sm text-ink-800">{!! $opt->option_text !!}</div>
+                        <div class="flex-1 text-sm text-ink-800">{!! \App\Support\SoalHtml::render($opt->option_text) !!}</div>
                         @if($isCorrect)
                             <span class="text-emerald-600 text-lg">✓</span>
                         @endif
