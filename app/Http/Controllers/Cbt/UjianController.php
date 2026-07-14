@@ -16,40 +16,13 @@ class UjianController extends Controller
     {
         $siswa = $r->user();
 
-        // Ambil rombel siswa di TA aktif (beserta tingkat-nya)
-        $rombelRows = $siswa->siswaRombel()
-            ->whereHas('tahunAjaran', fn ($q) => $q->where('is_aktif', true))
-            ->with('rombel:id,tingkat')->get();
-
-        $rombelIds = $rombelRows->pluck('rombongan_belajar_id')->filter()->unique()->values()->toArray();
-        $tingkatList = $rombelRows->pluck('rombel.tingkat')->filter()->unique()->values()->toArray();
-
+        // Filter target (rombel/tingkat, TA aktif) dipusatkan di scope
+        // Quiz::untukSiswa() — query pivot langsung ke koneksi Data Center,
+        // BUKAN whereHas lintas database yang membaca tabel lokal basi.
         $quizzes = Quiz::with('mapel')
             ->where('is_published', true)
             ->where(function ($q) { $q->whereNull('valid_upto')->orWhere('valid_upto', '>=', now()); })
-            ->where(function ($q) use ($rombelIds, $tingkatList) {
-                // Mode per_kelas → match rombel pivot ATAU legacy single rombel
-                $q->where(function ($x) use ($rombelIds) {
-                    $x->where('target_mode', 'per_kelas')
-                      ->where(function ($y) use ($rombelIds) {
-                          $y->whereHas('rombelTargets', fn ($z) => $z->whereIn('rombongan_belajar.id', $rombelIds ?: [0]))
-                            ->orWhereIn('rombongan_belajar_id', $rombelIds ?: [0]);
-                      });
-                })
-                // Mode per_tingkat → match salah satu tingkat siswa di kolom JSON
-                ->orWhere(function ($x) use ($tingkatList) {
-                    $x->where('target_mode', 'per_tingkat');
-                    if (! empty($tingkatList)) {
-                        $x->where(function ($y) use ($tingkatList) {
-                            foreach ($tingkatList as $tk) {
-                                $y->orWhereJsonContains('target_tingkat', (int) $tk);
-                            }
-                        });
-                    } else {
-                        $x->whereRaw('1=0');
-                    }
-                });
-            })
+            ->untukSiswa($siswa)
             ->withCount('questions')
             ->latest()->paginate(12);
 
@@ -63,6 +36,25 @@ class UjianController extends Controller
     public function start(Quiz $quiz, Request $r)
     {
         $siswa = $r->user();
+
+        // ===== GUARD SERVER-SIDE (jangan andalkan tampilan daftar saja) =====
+        // 1) Quiz harus publish DAN memang ditargetkan ke rombel/tingkat siswa
+        //    ini. Tanpa ini siswa kelas 9 bisa mengerjakan ujian kelas 8 cukup
+        //    dengan menembak URL /ujian/{id}/start walau tidak muncul di daftarnya.
+        if (! $quiz->is_published || ! $quiz->ditargetkanUntukSiswa($siswa)) {
+            abort(403, 'Ujian ini tidak tersedia untuk kelas/tingkat Anda.');
+        }
+
+        // 2) Jadwal: belum mulai → tolak (tombol di view juga terkunci, tapi
+        //    tetap divalidasi di server); sudah lewat → tolak.
+        if ($quiz->belum_dimulai) {
+            return back()->with('error',
+                'Ujian "'.$quiz->name.'" belum dimulai. Ujian dibuka pada '
+                .$quiz->valid_from->format('d M Y H:i').'.');
+        }
+        if ($quiz->sudah_berakhir) {
+            return back()->with('error', 'Waktu ujian "'.$quiz->name.'" sudah berakhir.');
+        }
 
         // Tolak kalau ada attempt terblokir aktif → siswa harus minta buka blokir ke admin.
         // CATATAN: JANGAN tambahkan filter is_done=false di sini. Attempt yang

@@ -19,10 +19,16 @@ class DashboardController extends Controller
         $role = $user->user_type ?? 'admin';
 
         if ($role === 'siswa') {
-            $ujianTersedia = Quiz::where('is_published', true)
+            // WAJIB pakai scope untukSiswa(): tanpa filter ini dashboard
+            // menampilkan SEMUA ujian publish ke semua siswa — siswa kelas 9
+            // bisa melihat & memulai ujian kelas 8 (dan sebaliknya).
+            $ujianTersedia = Quiz::with('mapel')
+                ->where('is_published', true)
                 ->where(function ($q) {
                     $q->whereNull('valid_upto')->orWhere('valid_upto', '>=', now());
                 })
+                ->untukSiswa($user)
+                ->withCount('questions')
                 ->latest()->limit(6)->get();
 
             // Status attempt siswa ini per quiz (blokir/sedang/selesai) supaya

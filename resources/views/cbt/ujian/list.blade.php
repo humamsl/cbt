@@ -27,6 +27,14 @@
                     <x-icon name="key" class="w-4 h-4"/> Ujian Terkunci (Diblokir)
                 </a>
                 <p class="text-xs text-rose-600 text-center mt-1">Diblokir karena pelanggaran. Hubungi admin/guru.</p>
+            @elseif($q->belum_dimulai)
+                <button type="button" disabled
+                        class="btn-secondary w-full justify-center mt-4 opacity-60 cursor-not-allowed">
+                    <x-icon name="clock" class="w-4 h-4"/> Belum Dimulai
+                </button>
+                <p class="text-xs text-ink-500 text-center mt-1">
+                    Ujian dibuka {{ $q->valid_from->format('d M Y \p\u\k\u\l H:i') }}
+                </p>
             @else
                 <form method="POST" action="{{ route('siswa.ujian.start', $q) }}" class="mt-4 space-y-2">
                     @csrf

@@ -77,7 +77,7 @@
                     <span class="badge-muted">{{ $qq->marks }} poin</span>
                 </div>
                 <div class="font-semibold text-ink-900 mb-3">{{ $q->title }}</div>
-                <div class="prose prose-sm max-w-none text-ink-700 mb-4">{!! $q->question !!}</div>
+                <div class="prose prose-sm max-w-none text-ink-700 mb-4">{!! \App\Support\SoalHtml::render($q->question) !!}</div>
 
                 <div class="space-y-2">
                     @foreach($q->options as $opt)
@@ -86,7 +86,7 @@
                                    @checked(($existingAnswers[$qq->id] ?? null)?->question_option_id == $opt->id)
                                    @change="saveAnswer({{ $qq->id }}, $event.target.value)"
                                    class="mt-0.5 text-brand-600 focus:ring-brand-500 border-slate-300">
-                            <div class="text-sm prose prose-sm max-w-none">{!! $opt->option_text !!}</div>
+                            <div class="text-sm prose prose-sm max-w-none">{!! \App\Support\SoalHtml::render($opt->option_text) !!}</div>
                         </label>
                     @endforeach
                 </div>
