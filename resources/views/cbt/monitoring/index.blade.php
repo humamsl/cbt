@@ -16,9 +16,6 @@
             </div>
             <h2 class="text-lg font-bold">Monitoring Ujian Siswa</h2>
         </div>
-        <a href="{{ route('setting.index') }}" class="bg-white/15 hover:bg-white/25 backdrop-blur px-3 py-1.5 rounded-lg text-sm font-semibold transition flex items-center gap-2">
-            <x-icon name="settings" class="w-4 h-4"/> Setting
-        </a>
     </div>
 
     {{-- Filter bar --}}
@@ -27,15 +24,23 @@
             <label class="label">Kelas</label>
             <select name="rombel" class="select" onchange="this.form.submit()">
                 <option value="">Pilih Kelas</option>
-                @foreach($rombels as $r)
-                    <option value="{{ $r->id }}" @selected(request('rombel')==$r->id)>{{ $r->nama_rombel }}</option>
-                @endforeach
+                <optgroup label="Per Tingkat">
+                    @foreach($tingkats as $t)
+                        <option value="t{{ $t }}" @selected(request('rombel')==='t'.$t)>Tingkat {{ $t }}</option>
+                    @endforeach
+                </optgroup>
+                <optgroup label="Per Rombel">
+                    @foreach($rombels as $r)
+                        <option value="{{ $r->id }}" @selected(request('rombel')==$r->id)>{{ $r->nama_rombel }}</option>
+                    @endforeach
+                </optgroup>
             </select>
         </div>
         <div>
             <label class="label">Mata Pelajaran</label>
             <select name="mapel" class="select" onchange="this.form.submit()">
                 <option value="">Pilih Mata Pelajaran</option>
+                <option value="umum" @selected(request('mapel')==='umum')>🌐 Ujian Umum (tanpa mapel)</option>
                 @foreach($mapels as $m)
                     <option value="{{ $m->id }}" @selected(request('mapel')==$m->id)>{{ $m->nama_mapel }}</option>
                 @endforeach
@@ -84,13 +89,21 @@
                     <td class="text-center font-semibold text-ink-500">{{ $items->firstItem() + $idx }}.</td>
                     <td class="font-semibold text-ink-900 max-w-[200px]">{{ $q->name }}</td>
                     <td>
-                        @if($q->rombel)
+                        @if($q->target_mode === 'per_tingkat' && ! empty($q->target_tingkat))
+                            @foreach((array) $q->target_tingkat as $tk)
+                                <span class="badge-info">Tingkat {{ $tk }}</span>
+                            @endforeach
+                        @elseif($q->rombelTargets->isNotEmpty())
+                            @foreach($q->rombelTargets as $rb)
+                                <span class="badge-info">{{ $rb->nama_rombel }}</span>
+                            @endforeach
+                        @elseif($q->rombel)
                             <span class="badge-info">{{ $q->rombel->nama_rombel }}</span>
                         @else
                             <span class="badge-muted">Semua</span>
                         @endif
                     </td>
-                    <td>{{ optional($q->mapel)->nama_mapel ?? '—' }}</td>
+                    <td>{{ optional($q->mapel)->nama_mapel ?? '🌐 Ujian Umum' }}</td>
                     <td class="text-xs whitespace-nowrap">
                         {{ optional($q->valid_from)->format('H:i') }} ({{ optional($q->valid_from)->translatedFormat('d M Y') }})<br>
                         {{ optional($q->valid_upto)->format('H:i') }} ({{ optional($q->valid_upto)->translatedFormat('d M Y') }})

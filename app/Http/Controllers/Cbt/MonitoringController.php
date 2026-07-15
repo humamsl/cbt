@@ -8,6 +8,7 @@ use App\Models\Quiz;
 use App\Models\QuizAttempt;
 use App\Models\RombonganBelajar;
 use App\Models\Siswa;
+use App\Models\TahunAjaran;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -19,20 +20,52 @@ class MonitoringController extends Controller
      */
     public function index(Request $r)
     {
-        $rombelId = $r->integer('rombel');
-        $mapelId  = $r->integer('mapel');
-        $status   = $r->input('status');     // menunggu | berlangsung | selesai | draft
-        $tanggal  = $r->input('tanggal');    // YYYY-MM-DD
+        $kelas   = $r->input('rombel');   // "" | "t7" (tingkat 7) | "<rombel_id>"
+        $mapel   = $r->input('mapel');    // "" | "umum" (tanpa mapel) | "<mapel_id>"
+        $status  = $r->input('status');   // menunggu | berlangsung | selesai | draft
+        $tanggal = $r->input('tanggal');  // YYYY-MM-DD
 
         // Query Quiz dengan agregat attempt
-        $items = Quiz::with(['mapel', 'rombel'])
+        $items = Quiz::with(['mapel', 'rombel', 'rombelTargets'])
             ->withCount([
                 'attempts as total_mulai'     => fn ($q) => $q->whereNotNull('time_start'),
                 'attempts as total_selesai'   => fn ($q) => $q->where('is_done', true),
                 'attempts as total_blokir'    => fn ($q) => $q->where('is_blocked', true),
             ])
-            ->when($rombelId, fn ($q) => $q->where('rombongan_belajar_id', $rombelId))
-            ->when($mapelId,  fn ($q) => $q->where('mata_pelajaran_id', $mapelId))
+            // Filter Kelas: dukung PILIH TINGKAT ("t7") maupun rombel tunggal.
+            // Quiz cocok bila: legacy rombongan_belajar_id match, ATAU ada di
+            // pivot quiz_rombongan_belajar (dibaca dari koneksi Data Center —
+            // whereHas lintas DB membaca tabel lokal basi), ATAU mode
+            // per_tingkat yang menarget tingkat tsb.
+            ->when($kelas, function ($q) use ($kelas) {
+                if (str_starts_with($kelas, 't')) {
+                    $tingkat   = (int) substr($kelas, 1);
+                    $rombelIds = RombonganBelajar::where('tingkat', $tingkat)->pluck('id')->all();
+                } else {
+                    $rombelIds = [(int) $kelas];
+                    $tingkat   = (int) optional(RombonganBelajar::find((int) $kelas))->tingkat;
+                }
+
+                $pivotQuizIds = empty($rombelIds) ? [] : DB::connection('mysql_datacenter')
+                    ->table('quiz_rombongan_belajar')
+                    ->whereIn('rombongan_belajar_id', $rombelIds)
+                    ->pluck('quiz_id')->unique()->values()->all();
+
+                $q->where(function ($x) use ($rombelIds, $pivotQuizIds, $tingkat) {
+                    $x->whereIn('rombongan_belajar_id', $rombelIds ?: [0])
+                      ->orWhereIn('quizzes.id', $pivotQuizIds ?: [0]);
+                    if ($tingkat) {
+                        $x->orWhere(function ($y) use ($tingkat) {
+                            $y->where('target_mode', 'per_tingkat')
+                              ->where(fn ($z) => $z->whereJsonContains('target_tingkat', $tingkat)
+                                                   ->orWhereJsonContains('target_tingkat', (string) $tingkat));
+                        });
+                    }
+                });
+            })
+            // Filter Mapel: "umum" = Ujian Umum (tanpa mata pelajaran)
+            ->when($mapel === 'umum', fn ($q) => $q->whereNull('mata_pelajaran_id'))
+            ->when($mapel && $mapel !== 'umum', fn ($q) => $q->where('mata_pelajaran_id', (int) $mapel))
             ->when($tanggal, function ($q) use ($tanggal) {
                 $q->whereDate('valid_from', '<=', $tanggal)
                   ->where(function ($x) use ($tanggal) {
@@ -47,8 +80,13 @@ class MonitoringController extends Controller
             $items->setCollection($filtered);
         }
 
-        // Hitung "total peserta" per quiz (jumlah siswa di rombel target, atau semua siswa kalau quiz tanpa rombel target)
+        // Hitung "total peserta" per quiz sesuai TARGET-nya (bukan pukul rata
+        // semua siswa sekolah): per_tingkat → siswa rombel TA aktif pada
+        // tingkat tsb; pivot multi-rombel → jumlah siswa rombel-rombel itu;
+        // legacy single rombel; fallback terakhir barulah seluruh siswa aktif.
         $rombelMap = RombonganBelajar::withCount(['siswaRombel as total_siswa'])->get()->keyBy('id');
+        $taAktifId = optional(TahunAjaran::aktif())->id;
+        $rombelAktif = $rombelMap->filter(fn ($rb) => $rb->tahun_ajaran_id === $taAktifId);
         $totalSiswaAktif = Siswa::where('is_aktif', true)->count();
 
         // Jumlah pelanggar (siswa yang violation_count > 0) per quiz
@@ -57,16 +95,30 @@ class MonitoringController extends Controller
             ->groupBy('quiz_id')->pluck('total', 'quiz_id')->toArray();
 
         foreach ($items as $q) {
-            $q->total_peserta = $q->rombongan_belajar_id
-                ? ($rombelMap[$q->rombongan_belajar_id]->total_siswa ?? 0)
-                : $totalSiswaAktif;
+            if ($q->target_mode === 'per_tingkat' && ! empty($q->target_tingkat)) {
+                $target = array_map('intval', (array) $q->target_tingkat);
+                $q->total_peserta = $rombelAktif
+                    ->filter(fn ($rb) => in_array((int) $rb->tingkat, $target, true))
+                    ->sum('total_siswa');
+            } elseif ($q->rombelTargets->isNotEmpty()) {
+                $q->total_peserta = $q->rombelTargets
+                    ->sum(fn ($rb) => $rombelMap[$rb->id]->total_siswa ?? 0);
+            } elseif ($q->rombongan_belajar_id) {
+                $q->total_peserta = $rombelMap[$q->rombongan_belajar_id]->total_siswa ?? 0;
+            } else {
+                $q->total_peserta = $totalSiswaAktif;
+            }
             $q->total_pelanggar = $pelanggarMap[$q->id] ?? 0;
         }
 
+        $rombels = RombonganBelajar::with('tahunAjaran')->orderBy('nama_rombel')->get();
+
         return view('cbt.monitoring.index', [
-            'items'  => $items,
-            'rombels'=> RombonganBelajar::with('tahunAjaran')->orderBy('nama_rombel')->get(),
-            'mapels' => MataPelajaran::orderBy('nama_mapel')->get(),
+            'items'   => $items,
+            'rombels' => $rombels,
+            // Daftar tingkat untuk optgroup "Per Tingkat" pada filter Kelas
+            'tingkats'=> $rombels->pluck('tingkat')->filter()->map(fn ($t) => (int) $t)->unique()->sort()->values(),
+            'mapels'  => MataPelajaran::orderBy('nama_mapel')->get(),
         ]);
     }
 
