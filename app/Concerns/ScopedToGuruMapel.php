@@ -77,6 +77,26 @@ trait ScopedToGuruMapel
         return $q;
     }
 
+    /**
+     * Dropdown tingkat (nomor => nama) sesuai hak user:
+     * guru → HANYA tingkat kelas yang diajarnya; admin → semua tingkat.
+     * Guru yang penugasannya belum punya rombel → semua (jangan kosongkan UI).
+     */
+    protected function tingkatDropdownFor($user): array
+    {
+        $all = \App\Models\TingkatKelas::dropdown();
+        if (! $this->shouldScope($user)) return $all;
+
+        $taught = $this->guruTingkatList($user);
+        if (empty($taught)) return $all;
+
+        return array_filter(
+            $all,
+            fn ($nama, $nomor) => in_array((int) $nomor, $taught, true),
+            ARRAY_FILTER_USE_BOTH
+        );
+    }
+
     /** Guard tunggal: bolehkah guru mengakses/mengubah 1 soal tertentu? */
     protected function assertBolehKelolaSoal($user, \App\Models\Question $soal): void
     {

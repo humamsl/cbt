@@ -40,7 +40,8 @@ class BankSoalController extends Controller
             'items' => $items,
             'mapelList' => $mapelList,
             'types' => QuestionType::orderBy('id')->get(),
-            'tingkatList' => \App\Models\TingkatKelas::dropdown(),
+            // Guru → dropdown hanya berisi tingkat yang diajarnya
+            'tingkatList' => $this->tingkatDropdownFor($user),
         ]);
     }
 
@@ -77,7 +78,7 @@ class BankSoalController extends Controller
             'items'     => $items,
             'types'     => QuestionType::orderBy('id')->get(),
             'topiks'    => $mapel ? Topic::where('mata_pelajaran_id', $mapel->id)->orderBy('topic')->get() : collect(),
-            'tingkatList' => \App\Models\TingkatKelas::dropdown(),
+            'tingkatList' => $this->tingkatDropdownFor($user),
         ]);
     }
 
@@ -130,7 +131,7 @@ class BankSoalController extends Controller
             'types' => QuestionType::orderBy('id')->get(),
             'mapel' => $mapelList,
             'topics' => Topic::orderBy('topic')->get(),
-            'tingkatList' => \App\Models\TingkatKelas::dropdown(),
+            'tingkatList' => $this->tingkatDropdownFor($user),
             'options' => collect(),
         ]);
     }
@@ -167,7 +168,7 @@ class BankSoalController extends Controller
             'types' => QuestionType::orderBy('id')->get(),
             'mapel' => $mapelList,
             'topics' => Topic::orderBy('topic')->get(),
-            'tingkatList' => \App\Models\TingkatKelas::dropdown(),
+            'tingkatList' => $this->tingkatDropdownFor($user),
             'options' => $bankSoal->options,
         ]);
     }
@@ -293,7 +294,7 @@ class BankSoalController extends Controller
 
     protected function validateBase(Request $r): array
     {
-        return $r->validate([
+        $data = $r->validate([
             'title' => 'required|string|max:255',
             'question' => 'required|string',
             'question_type_id' => 'required|exists:question_types,id',
@@ -302,6 +303,21 @@ class BankSoalController extends Controller
             'tingkat' => 'nullable|integer|between:1,12',
             'is_active' => 'nullable|boolean',
         ]) + ['is_active' => $r->boolean('is_active', true)];
+
+        // Guru hanya boleh menyimpan soal untuk tingkat yang diajarnya —
+        // dropdown di form memang sudah dibatasi, tapi tetap divalidasi di
+        // server supaya tidak bisa diakali lewat inspect element / request manual.
+        $user = $r->user();
+        if ($this->shouldScope($user) && ! empty($data['tingkat'])) {
+            $taught = $this->guruTingkatList($user);
+            if (! empty($taught) && ! in_array((int) $data['tingkat'], $taught, true)) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'tingkat' => 'Anda tidak mengajar di tingkat kelas '.$data['tingkat'].'.',
+                ]);
+            }
+        }
+
+        return $data;
     }
 
     protected function syncOptionsByType(Request $r, Question $q): void

@@ -8,8 +8,8 @@
         <a href="{{ route('bank-soal.index') }}" class="btn-secondary">Kembali</a>
         @if($mapel && $items->isNotEmpty())
             <a href="{{ route('bank-soal.preview.mapel.word', request()->only('mapel', 'jenis', 'topik', 'tingkat')) }}"
-               class="btn-secondary">📝 Export Word</a>
-            <button type="button" onclick="window.print()" class="btn-secondary">🖨️ Cetak</button>
+               class="btn-secondary">Export Word</a>
+            <button type="button" onclick="window.print()" class="btn-secondary">Export PDF</button>
         @endif
     </x-slot:action>
 </x-page-header>
