@@ -27,10 +27,13 @@ class SoalHtml
 
         $base = rtrim(request()->getBaseUrl(), '/');
 
-        // "http://apapun/.../storage/foo.png" atau "//host/storage/foo.png"
-        // → "{base}/storage/foo.png"
+        // Semua src yang path-nya menunjuk /storage/... — absolut
+        // ("http://host/.../storage/x"), protocol-relative ("//host/storage/x"),
+        // maupun root-relative dengan sub-path lama ("/cbt/storage/x" padahal
+        // sekarang app di root, atau sebaliknya) → "{base}/storage/x".
+        // Idempoten: hasil rewrite yang diproses ulang tetap sama.
         $html = preg_replace(
-            '~(src=["\'])(?:https?:)?//[^"\']*?(/storage/[^"\']+)(["\'])~i',
+            '~(src=["\'])(?:(?:https?:)?//[^"\']*?|/[^"\']*?)?(/storage/[^"\']+)(["\'])~i',
             '$1'.$base.'$2$3',
             $html
         );
