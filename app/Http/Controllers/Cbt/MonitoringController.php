@@ -111,13 +111,26 @@ class MonitoringController extends Controller
             $q->total_pelanggar = $pelanggarMap[$q->id] ?? 0;
         }
 
-        $rombels = RombonganBelajar::with('tahunAjaran')->orderBy('nama_rombel')->get();
+        // Dropdown filter HANYA dari rombel TAHUN AJARAN AKTIF — rombel TA
+        // lama membuat daftar dobel (7-1 muncul 2x) dan bisa menyeret nilai
+        // tingkat sampah dari data lama.
+        $rombels = RombonganBelajar::with('tahunAjaran')
+            ->when($taAktifId, fn ($q) => $q->where('tahun_ajaran_id', $taAktifId))
+            ->orderBy('nama_rombel')->get();
+
+        // Daftar tingkat untuk optgroup "Per Tingkat": tingkat rombel TA aktif
+        // DIsilangkan dengan master tingkat_kelas yang aktif — tingkat yang
+        // tidak terdaftar di master Data Center tidak boleh muncul.
+        $masterTingkat = \App\Models\TingkatKelas::aktif()
+            ->pluck('nomor')->map(fn ($n) => (int) $n)->all();
+        $tingkats = $rombels->pluck('tingkat')->filter()->map(fn ($t) => (int) $t)->unique()
+            ->filter(fn ($t) => in_array($t, $masterTingkat, true))
+            ->sort()->values();
 
         return view('cbt.monitoring.index', [
             'items'   => $items,
             'rombels' => $rombels,
-            // Daftar tingkat untuk optgroup "Per Tingkat" pada filter Kelas
-            'tingkats'=> $rombels->pluck('tingkat')->filter()->map(fn ($t) => (int) $t)->unique()->sort()->values(),
+            'tingkats'=> $tingkats,
             'mapels'  => MataPelajaran::orderBy('nama_mapel')->get(),
         ]);
     }
