@@ -35,6 +35,12 @@ class Quiz extends Model
         return $this->belongsToMany(RombonganBelajar::class, 'quiz_rombongan_belajar');
     }
 
+    /** Target per siswa (mode 'per_siswa') via pivot quiz_siswa di Data Center */
+    public function siswaTargets()
+    {
+        return $this->belongsToMany(Siswa::class, 'quiz_siswa');
+    }
+
     public function tahunAjaran() { return $this->belongsTo(TahunAjaran::class); }
     public function creator() { return $this->belongsTo(Guru::class, 'created_by_guru_id'); }
     public function sessionToken() { return $this->belongsTo(SessionToken::class); }
@@ -70,7 +76,13 @@ class Quiz extends Model
             ->whereIn('rombongan_belajar_id', $rombelIds)
             ->pluck('quiz_id')->unique()->values()->all();
 
-        return $query->where(function ($q) use ($rombelIds, $tingkatList, $quizIdsPivot) {
+        // Mode per_siswa → quiz yang menunjuk siswa ini langsung di pivot
+        $quizIdsSiswa = DB::connection('mysql_datacenter')
+            ->table('quiz_siswa')
+            ->where('siswa_id', $siswa->id)
+            ->pluck('quiz_id')->unique()->values()->all();
+
+        return $query->where(function ($q) use ($rombelIds, $tingkatList, $quizIdsPivot, $quizIdsSiswa) {
             // Mode per_kelas → quiz ada di pivot Data Center ATAU legacy single rombel
             $q->where(function ($x) use ($rombelIds, $quizIdsPivot) {
                 $x->where('target_mode', 'per_kelas')
@@ -94,6 +106,11 @@ class Quiz extends Model
                           ->orWhereJsonContains('target_tingkat', (string) $tk);
                     }
                 });
+            })
+            // Mode per_siswa → siswa ini dipilih langsung sebagai peserta
+            ->orWhere(function ($x) use ($quizIdsSiswa) {
+                $x->where('target_mode', 'per_siswa')
+                  ->whereIn('quizzes.id', $quizIdsSiswa ?: [0]);
             });
         });
     }

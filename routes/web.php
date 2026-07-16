@@ -99,6 +99,8 @@ Route::middleware([
 
         Route::resource('tes', TesController::class)->except('show')
             ->parameters(['tes' => 'tes']);
+        // AJAX daftar siswa per rombel — untuk mode target "Per Siswa" di form registrasi
+        Route::get('/tes-siswa-by-rombel', [TesController::class, 'siswaByRombel'])->name('tes.siswa-by-rombel');
         Route::get('/tes/{tes}/questions', [TesController::class, 'questions'])->name('tes.questions');
         Route::post('/tes/{tes}/questions/attach', [TesController::class, 'attachQuestion'])->name('tes.attach-question');
         Route::delete('/tes/{tes}/questions/{quizQuestion}', [TesController::class, 'detachQuestion'])->name('tes.detach-question');

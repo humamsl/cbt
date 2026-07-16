@@ -22,6 +22,8 @@
           mode: '{{ $defaultMode }}',
           selectedRombels: @js(old('rombongan_belajar_ids', $selectedRombelIds ?? [])),
           rombels: @js($rombel->map(fn($r) => ['id' => $r->id, 'nama' => $r->nama_rombel, 'tingkat' => $r->tingkat])->toArray()),
+          selectedSiswa: @js($selectedSiswa ?? []),
+          siswaUrl: '{{ route('tes.siswa-by-rombel') }}',
       })">
     @csrf @if($item->exists) @method('PUT') @endif
 
@@ -67,6 +69,7 @@
             <select name="target_mode" class="select" x-model="mode" required>
                 <option value="per_kelas">Per Kelas</option>
                 <option value="per_tingkat">Per Tingkat</option>
+                <option value="per_siswa">Per Siswa (pilih siswa tertentu)</option>
             </select>
         </div>
         </div>
@@ -129,6 +132,75 @@
         </select>
             @error('target_tingkat')<p class="mt-1 text-xs text-rose-600">{{ $message }}</p>@enderror
         @error('target_tingkat.0')<p class="mt-1 text-xs text-rose-600">{{ $message }}</p>@enderror
+    </div>
+
+    {{-- Mode PER SISWA: saring per tingkat + rombel, lalu centang siswa satu-satu --}}
+    <div x-show="mode === 'per_siswa'" x-cloak class="space-y-3">
+        <label class="label">Pilih Siswa <span class="text-rose-500">*</span>
+            <span class="text-xs text-ink-500 font-normal">(saring per tingkat & rombel, centang siswa yang boleh mengikuti ujian)</span>
+        </label>
+
+        <div class="grid md:grid-cols-3 gap-2">
+            <select class="select" x-model="pickTingkat" @change="pickRombel = ''; siswaList = []">
+                <option value="">— Semua Tingkat —</option>
+                <template x-for="t in tingkatOptions" :key="t">
+                    <option :value="t" x-text="'Tingkat ' + t"></option>
+                </template>
+            </select>
+            <select class="select" x-model="pickRombel" @change="loadSiswa()">
+                <option value="">— Pilih Rombel —</option>
+                <template x-for="r in rombelsForTingkat" :key="r.id">
+                    <option :value="r.id" x-text="r.nama"></option>
+                </template>
+            </select>
+            <input type="text" class="input" x-model="siswaSearch" placeholder="Cari nama / NISN...">
+        </div>
+
+        <div class="border border-slate-200 rounded-xl overflow-hidden">
+            <div class="max-h-64 overflow-y-auto divide-y divide-slate-100">
+                <div x-show="siswaLoading" class="p-4 text-center text-sm text-ink-500">Memuat daftar siswa…</div>
+                <div x-show="!siswaLoading && !pickRombel" class="p-4 text-center text-sm text-ink-500">
+                    Pilih rombel di atas untuk menampilkan daftar siswanya.
+                </div>
+                <div x-show="!siswaLoading && pickRombel && filteredSiswa.length === 0" class="p-4 text-center text-sm text-ink-500">
+                    Tidak ada siswa yang cocok.
+                </div>
+
+                <label x-show="!siswaLoading && filteredSiswa.length > 0" x-cloak
+                       class="flex items-center gap-3 px-4 py-2 bg-slate-50 font-semibold text-sm cursor-pointer">
+                    <input type="checkbox" :checked="allFilteredSelected" @change="toggleAllSiswa()"
+                           class="rounded text-brand-600 focus:ring-brand-500">
+                    <span>Pilih semua <span class="text-xs text-ink-500 font-normal">(sesuai hasil filter)</span></span>
+                </label>
+
+                <template x-for="s in filteredSiswa" :key="s.id">
+                    <label class="flex items-center gap-3 px-4 py-2 hover:bg-slate-50 cursor-pointer text-sm">
+                        <input type="checkbox" :checked="isSiswaSelected(s.id)" @change="toggleSiswa(s)"
+                               class="rounded text-brand-600 focus:ring-brand-500">
+                        <span class="font-mono text-xs text-ink-500 w-28 shrink-0" x-text="s.nisn"></span>
+                        <span class="text-ink-900" x-text="s.nama"></span>
+                    </label>
+                </template>
+            </div>
+        </div>
+
+        {{-- Ringkasan terpilih (lintas rombel — pilihan tidak hilang saat ganti rombel) --}}
+        <div class="text-sm">
+            <span class="font-bold text-brand-700" x-text="selectedSiswa.length"></span> siswa terpilih
+            <div class="flex flex-wrap gap-1.5 mt-1.5" x-show="selectedSiswa.length > 0">
+                <template x-for="s in selectedSiswa" :key="'c' + s.id">
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-brand-50 text-brand-700 text-xs font-medium">
+                        <button type="button" @click="toggleSiswa(s)" class="text-rose-500 hover:text-rose-700">×</button>
+                        <span x-text="s.nama"></span>
+                    </span>
+                </template>
+            </div>
+        </div>
+
+        <template x-for="s in selectedSiswa" :key="'h' + s.id">
+            <input type="hidden" name="siswa_ids[]" :value="s.id">
+        </template>
+        @error('siswa_ids')<p class="mt-1 text-xs text-rose-600">{{ $message }}</p>@enderror
     </div>
 
     {{-- Tahun Ajaran + Durasi --}}
@@ -397,6 +469,70 @@ function tesForm(cfg) {
         getRombelName(id) {
             const r = this.rombels.find(x => x.id === Number(id));
             return r ? r.nama : '?';
+        },
+
+        /* ===== Mode PER SISWA ===== */
+        siswaUrl: cfg.siswaUrl,
+        selectedSiswa: cfg.selectedSiswa || [],   // [{id, nama, nisn}] — lintas rombel
+        pickTingkat: '',
+        pickRombel: '',
+        siswaList: [],
+        siswaLoading: false,
+        siswaSearch: '',
+
+        get tingkatOptions() {
+            return [...new Set(this.rombels.map(r => r.tingkat).filter(Boolean))]
+                .sort((a, b) => Number(a) - Number(b));
+        },
+        get rombelsForTingkat() {
+            return this.pickTingkat
+                ? this.rombels.filter(r => String(r.tingkat) === String(this.pickTingkat))
+                : this.rombels;
+        },
+        get filteredSiswa() {
+            const q = this.siswaSearch.trim().toLowerCase();
+            if (! q) return this.siswaList;
+            return this.siswaList.filter(s =>
+                (s.nama || '').toLowerCase().includes(q) || String(s.nisn || '').includes(q));
+        },
+        isSiswaSelected(id) {
+            return this.selectedSiswa.some(s => Number(s.id) === Number(id));
+        },
+        toggleSiswa(s) {
+            const i = this.selectedSiswa.findIndex(x => Number(x.id) === Number(s.id));
+            if (i >= 0) this.selectedSiswa.splice(i, 1);
+            else this.selectedSiswa.push({ id: s.id, nama: s.nama, nisn: s.nisn });
+        },
+        get allFilteredSelected() {
+            return this.filteredSiswa.length > 0
+                && this.filteredSiswa.every(s => this.isSiswaSelected(s.id));
+        },
+        toggleAllSiswa() {
+            if (this.allFilteredSelected) {
+                const ids = this.filteredSiswa.map(s => Number(s.id));
+                this.selectedSiswa = this.selectedSiswa.filter(x => ! ids.includes(Number(x.id)));
+            } else {
+                this.filteredSiswa.forEach(s => {
+                    if (! this.isSiswaSelected(s.id)) {
+                        this.selectedSiswa.push({ id: s.id, nama: s.nama, nisn: s.nisn });
+                    }
+                });
+            }
+        },
+        async loadSiswa() {
+            this.siswaList = [];
+            if (! this.pickRombel) return;
+            this.siswaLoading = true;
+            try {
+                const res = await fetch(`${this.siswaUrl}?rombel=${this.pickRombel}`, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
+                });
+                this.siswaList = res.ok ? await res.json() : [];
+            } catch (e) {
+                this.siswaList = [];
+            } finally {
+                this.siswaLoading = false;
+            }
         },
     };
 }

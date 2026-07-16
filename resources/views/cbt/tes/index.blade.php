@@ -20,7 +20,9 @@
                     <div class="flex items-center gap-2 flex-wrap mb-1">
                         <span class="{{ $t->status_badge }}">{{ ucfirst($t->status) }}</span>
                         <span class="badge-muted">{{ optional($t->mapel)->nama_mapel ?? '🌐 Ujian Umum' }}</span>
-                        @if($t->target_mode === 'per_tingkat')
+                        @if($t->target_mode === 'per_siswa')
+                            <span class="badge-info">👤 {{ $t->siswa_targets_count ?? $t->siswaTargets()->count() }} siswa terpilih</span>
+                        @elseif($t->target_mode === 'per_tingkat')
                             {{-- Target per tingkat: tampilkan tingkatnya supaya admin bisa
                                  langsung memverifikasi ujian ini menyasar tingkat mana saja --}}
                             @forelse((array) $t->target_tingkat as $tk)

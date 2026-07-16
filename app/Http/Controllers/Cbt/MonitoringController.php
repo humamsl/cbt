@@ -94,8 +94,16 @@ class MonitoringController extends Controller
             ->where('violation_count', '>', 0)
             ->groupBy('quiz_id')->pluck('total', 'quiz_id')->toArray();
 
+        // Jumlah siswa terpilih per quiz mode per_siswa (satu query utk halaman ini)
+        $siswaTargetMap = DB::connection('mysql_datacenter')->table('quiz_siswa')
+            ->selectRaw('quiz_id, COUNT(*) as total')
+            ->whereIn('quiz_id', $items->pluck('id'))
+            ->groupBy('quiz_id')->pluck('total', 'quiz_id')->toArray();
+
         foreach ($items as $q) {
-            if ($q->target_mode === 'per_tingkat' && ! empty($q->target_tingkat)) {
+            if ($q->target_mode === 'per_siswa') {
+                $q->total_peserta = $siswaTargetMap[$q->id] ?? 0;
+            } elseif ($q->target_mode === 'per_tingkat' && ! empty($q->target_tingkat)) {
                 $target = array_map('intval', (array) $q->target_tingkat);
                 $q->total_peserta = $rombelAktif
                     ->filter(fn ($rb) => in_array((int) $rb->tingkat, $target, true))
@@ -143,9 +151,22 @@ class MonitoringController extends Controller
         $quiz->load('mapel', 'rombel', 'rombelTargets');
 
         // ===== Rombel target quiz =====
+        // per_siswa   → rombel TA aktif dari para siswa terpilih;
         // per_tingkat → semua rombel TA aktif pada tingkat tsb;
         // per_kelas   → rombel pivot + legacy single field.
-        if ($quiz->target_mode === 'per_tingkat') {
+        $siswaTargetIds = [];
+        if ($quiz->target_mode === 'per_siswa') {
+            $siswaTargetIds = DB::connection('mysql_datacenter')
+                ->table('quiz_siswa')->where('quiz_id', $quiz->id)
+                ->pluck('siswa_id')->all();
+
+            $rombelIdsSiswa = \App\Models\SiswaRombel::whereIn('siswa_id', $siswaTargetIds ?: [-1])
+                ->whereHas('tahunAjaran', fn ($q) => $q->where('is_aktif', true))
+                ->pluck('rombongan_belajar_id')->filter()->unique()->values()->all();
+            $targetRombels = empty($rombelIdsSiswa)
+                ? collect()
+                : RombonganBelajar::whereIn('id', $rombelIdsSiswa)->orderBy('nama_rombel')->get();
+        } elseif ($quiz->target_mode === 'per_tingkat') {
             $targetRombels = RombonganBelajar::whereIn('tingkat', (array) ($quiz->target_tingkat ?? []))
                 ->whereHas('tahunAjaran', fn ($q) => $q->where('is_aktif', true))
                 ->orderBy('nama_rombel')->get();
@@ -173,7 +194,13 @@ class MonitoringController extends Controller
                 ->whereHas('tahunAjaran', fn ($x) => $x->where('is_aktif', true))
                 ->with('rombel:id,nama_rombel,tingkat')]);
 
-        if ($rombelFilter) {
+        if ($quiz->target_mode === 'per_siswa') {
+            // Peserta = HANYA siswa yang dipilih di registrasi ujian
+            $siswaQuery->whereIn('id', $siswaTargetIds ?: [-1]);
+            if ($rombelFilter) {
+                $siswaQuery->whereHas('siswaRombel', fn ($q) => $q->where('rombongan_belajar_id', $rombelFilter));
+            }
+        } elseif ($rombelFilter) {
             $siswaQuery->whereHas('siswaRombel', fn ($q) => $q->where('rombongan_belajar_id', $rombelFilter));
         } elseif (! empty($rombelIds)) {
             $siswaQuery->whereHas('siswaRombel', fn ($q) => $q->whereIn('rombongan_belajar_id', $rombelIds));

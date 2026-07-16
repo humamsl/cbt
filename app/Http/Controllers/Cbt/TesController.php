@@ -48,11 +48,13 @@ class TesController extends Controller
     {
         $data = $this->v($r);
         $rombelIds = $data['rombongan_belajar_ids'] ?? [];
-        unset($data['rombongan_belajar_ids']);
+        $siswaIds  = $data['siswa_ids'] ?? [];
+        unset($data['rombongan_belajar_ids'], $data['siswa_ids']);
 
-        $quiz = DB::transaction(function () use ($data, $rombelIds) {
+        $quiz = DB::transaction(function () use ($data, $rombelIds, $siswaIds) {
             $q = Quiz::create($data);
             $q->rombelTargets()->sync($rombelIds);
+            $q->siswaTargets()->sync($siswaIds);
             return $q;
         });
 
@@ -61,7 +63,7 @@ class TesController extends Controller
 
     public function edit(Quiz $tes)
     {
-        $tes->load('rombelTargets');
+        $tes->load('rombelTargets', 'siswaTargets');
         return view('cbt.tes.form', $this->formData($tes, request()->user()));
     }
 
@@ -69,14 +71,39 @@ class TesController extends Controller
     {
         $data = $this->v($r);
         $rombelIds = $data['rombongan_belajar_ids'] ?? [];
-        unset($data['rombongan_belajar_ids']);
+        $siswaIds  = $data['siswa_ids'] ?? [];
+        unset($data['rombongan_belajar_ids'], $data['siswa_ids']);
 
-        DB::transaction(function () use ($tes, $data, $rombelIds) {
+        DB::transaction(function () use ($tes, $data, $rombelIds, $siswaIds) {
             $tes->update($data);
             $tes->rombelTargets()->sync($rombelIds);
+            $tes->siswaTargets()->sync($siswaIds);
         });
 
         return redirect()->route('tes.index')->with('success', 'Tes diperbarui.');
+    }
+
+    /**
+     * AJAX: daftar siswa satu rombel (untuk mode target "Per Siswa" di form).
+     * Guru hanya boleh mengambil rombel yang ditugaskan kepadanya.
+     */
+    public function siswaByRombel(Request $r)
+    {
+        $r->validate(['rombel' => 'required|integer']);
+        $rombelId = (int) $r->rombel;
+
+        if ($this->shouldScope($r->user()) && ! in_array($rombelId, $this->guruRombelIds($r->user()), true)) {
+            abort(403, 'Rombel ini tidak ditugaskan kepada Anda.');
+        }
+
+        $siswa = \App\Models\SiswaRombel::where('rombongan_belajar_id', $rombelId)
+            ->with('siswa:id,nama_siswa,nisn')
+            ->get()
+            ->pluck('siswa')->filter()
+            ->map(fn ($s) => ['id' => $s->id, 'nama' => $s->nama_siswa, 'nisn' => $s->nisn])
+            ->sortBy('nama')->values();
+
+        return response()->json($siswa);
     }
 
     public function destroy(Quiz $tes)
@@ -164,7 +191,13 @@ class TesController extends Controller
             ? MataPelajaran::whereIn('id', $this->guruMapelIds($user))->orderBy('nama_mapel')->get()
             : MataPelajaran::orderBy('nama_mapel')->get();
 
-        $rombelQuery = RombonganBelajar::with('tahunAjaran', 'jurusan');
+        // Hanya rombel TAHUN AJARAN AKTIF (satu TA aktif terbaru, via
+        // TahunAjaran::aktif()) — rombel TA lama membuat pilihan dobel
+        // (mis. "7-1" muncul dua kali, apalagi bila TA lama lupa
+        // dinonaktifkan), dan target ujian baru memang selalu TA berjalan.
+        $taAktifId = optional(TahunAjaran::aktif())->id;
+        $rombelQuery = RombonganBelajar::with('tahunAjaran', 'jurusan')
+            ->when($taAktifId, fn ($q) => $q->where('tahun_ajaran_id', $taAktifId));
         if ($this->shouldScope($user)) {
             $rombelQuery->whereIn('id', $this->guruRombelIds($user));
         }
@@ -179,6 +212,10 @@ class TesController extends Controller
             'tahunAjaran' => TahunAjaran::orderByDesc('id')->get(),
             'tingkatList' => TingkatKelas::aktif()->orderBy('nomor')->get(),
             'selectedRombelIds' => $item->exists ? $item->rombelTargets->pluck('id')->toArray() : [],
+            // Mode per_siswa: siswa terpilih (utk edit) — id + label untuk chips
+            'selectedSiswa' => $item->exists
+                ? $item->siswaTargets->map(fn ($s) => ['id' => $s->id, 'nama' => $s->nama_siswa, 'nisn' => $s->nisn])->values()->toArray()
+                : [],
             'sessionTokens' => SessionToken::orderByDesc('id')->get(),
         ];
     }
@@ -200,9 +237,11 @@ class TesController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'mata_pelajaran_id' => $mapelRule,
-            'target_mode' => 'required|in:per_kelas,per_tingkat',
+            'target_mode' => 'required|in:per_kelas,per_tingkat,per_siswa',
             'rombongan_belajar_ids' => 'required_if:target_mode,per_kelas|array',
             'rombongan_belajar_ids.*' => 'exists:mysql_datacenter.rombongan_belajar,id',
+            'siswa_ids' => 'required_if:target_mode,per_siswa|array',
+            'siswa_ids.*' => 'exists:mysql_datacenter.siswa,id',
             'target_tingkat' => 'required_if:target_mode,per_tingkat|array',
             // nullable: select "Pilih Tingkat" tetap ada di DOM (cuma disembunyikan
             // via x-show, bukan dihapus) saat mode "Per Kelas" dipilih, jadi tetap
@@ -226,16 +265,25 @@ class TesController extends Controller
         // Sync legacy fields
         $data['protection_enabled'] = $data['proteksi_mode'] !== 'tanpa_proteksi';
 
-        // Mode per_tingkat → kosongkan rombel pivot, tingkat utama tidak relevan
+        // Normalisasi field target per mode — field mode lain dikosongkan
+        // supaya tidak ada target "nyangkut" saat admin berganti-ganti mode.
         if ($data['target_mode'] === 'per_tingkat') {
             $data['rombongan_belajar_ids'] = [];
+            $data['siswa_ids']             = [];
             $data['rombongan_belajar_id']  = null;
             $data['tingkat']               = null;
             $data['target_tingkat']        = array_values(array_filter(
                 array_unique(array_map('intval', $data['target_tingkat'] ?? [])),
                 fn ($v) => $v > 0
             ));
+        } elseif ($data['target_mode'] === 'per_siswa') {
+            $data['rombongan_belajar_ids'] = [];
+            $data['rombongan_belajar_id']  = null;
+            $data['tingkat']               = null;
+            $data['target_tingkat']        = null;
+            $data['siswa_ids']             = array_values(array_unique(array_map('intval', $data['siswa_ids'] ?? [])));
         } else {
+            $data['siswa_ids']            = [];
             $data['rombongan_belajar_id'] = $data['rombongan_belajar_ids'][0] ?? null;
             $data['target_tingkat']       = null;
             // Tingkat otomatis ikut tingkat rombel pertama (untuk kompatibilitas)

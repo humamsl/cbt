@@ -89,7 +89,9 @@
                     <td class="text-center font-semibold text-ink-500">{{ $items->firstItem() + $idx }}.</td>
                     <td class="font-semibold text-ink-900 max-w-[200px]">{{ $q->name }}</td>
                     <td>
-                        @if($q->target_mode === 'per_tingkat' && ! empty($q->target_tingkat))
+                        @if($q->target_mode === 'per_siswa')
+                            <span class="badge-info">👤 {{ $q->total_peserta }} siswa terpilih</span>
+                        @elseif($q->target_mode === 'per_tingkat' && ! empty($q->target_tingkat))
                             @foreach((array) $q->target_tingkat as $tk)
                                 <span class="badge-info">Tingkat {{ $tk }}</span>
                             @endforeach

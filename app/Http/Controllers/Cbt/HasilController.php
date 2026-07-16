@@ -345,6 +345,11 @@ class HasilController extends Controller
     /** Hitung jumlah siswa yang menjadi target ujian (untuk grafik status pengerjaan). */
     protected function countTargetPeserta(Quiz $quiz): int
     {
+        // per_siswa → jumlah siswa yang dipilih langsung di registrasi ujian
+        if (($quiz->target_mode ?? 'per_kelas') === 'per_siswa') {
+            return $quiz->siswaTargets()->count();
+        }
+
         if (($quiz->target_mode ?? 'per_kelas') === 'per_tingkat') {
             $tingkatList = (array) ($quiz->target_tingkat ?? []);
             if (empty($tingkatList)) return 0;
