@@ -75,9 +75,9 @@ D. 13
         <div>
             <div class="font-semibold mb-1">Menambahkan Gambar</div>
             <ul class="text-xs text-ink-600 space-y-1 pl-4 list-disc">
-                <li><strong>Excel:</strong> isi kolom <code>gambar</code> dengan URL/data-URI gambar, atau tempel gambar langsung ke sheet pada baris soal yang bersangkutan.</li>
+                <li><strong>Excel:</strong> isi kolom <code>gambar</code> dengan gambar yang diinginkan, atau tempel gambar langsung ke sheet pada baris soal yang bersangkutan.</li>
                 <li><strong>Word:</strong> tempel/insert gambar tepat setelah baris <code>#SOAL:</code> (ikut ke soal) atau setelah baris opsi <code>A./B./…</code> (ikut ke opsi).</li>
-                <li>Gambar (embedded, URL, maupun base64) otomatis diunduh & disimpan ke server saat import.</li>
+                <li>Gambar otomatis diunduh & disimpan ke server saat import.</li>
             </ul>
         </div>
 
