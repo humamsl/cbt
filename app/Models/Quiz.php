@@ -22,6 +22,7 @@ class Quiz extends Model
         'show_score' => 'boolean',
         'require_session_token' => 'boolean',
         'protection_enabled' => 'boolean',
+        'violation_sound_enabled' => 'boolean',
         'settings' => 'array',
         'target_tingkat' => 'array',
     ];

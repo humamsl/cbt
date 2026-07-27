@@ -41,12 +41,16 @@ class TesController extends Controller
             'valid_upto'  => now()->addDay(),
             'proteksi_mode' => 'blokir',
             'max_violations' => 5,
+            'violation_sound_enabled' => true,
         ]), $user));
     }
 
     public function store(Request $r)
     {
         $data = $this->v($r);
+        // Catat pembuat registrasi (guru) — dipakai Monitoring Ujian untuk
+        // membatasi guru agar hanya melihat ujian buatannya sendiri.
+        $data['created_by_guru_id'] = $this->shouldScope($r->user()) ? $r->user()->id : null;
         $rombelIds = $data['rombongan_belajar_ids'] ?? [];
         $siswaIds  = $data['siswa_ids'] ?? [];
         unset($data['rombongan_belajar_ids'], $data['siswa_ids']);
@@ -260,6 +264,7 @@ class TesController extends Controller
             'session_token_id' => 'nullable|required_if:require_session_token,1|exists:session_tokens,id',
             'proteksi_mode' => 'required|in:logout_otomatis,blokir,peringatan,tanpa_proteksi',
             'max_violations' => 'nullable|integer|min:1|max:99',
+            'violation_sound_enabled' => 'nullable|boolean',
         ]);
 
         // Sync legacy fields
@@ -302,6 +307,7 @@ class TesController extends Controller
         // token nyangkut yang tidak pernah dicek (require_session_token=false).
         $data['session_token_id'] = $data['require_session_token'] ? ($data['session_token_id'] ?? null) : null;
         $data['max_violations'] = (int) ($data['max_violations'] ?? 5);
+        $data['violation_sound_enabled'] = $r->boolean('violation_sound_enabled');
 
         if (! isset($data['slug'])) {
             $data['slug'] = Str::slug($data['name']).'-'.Str::random(5);

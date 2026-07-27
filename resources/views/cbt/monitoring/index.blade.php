@@ -1,6 +1,6 @@
 @extends('layouts.app')
 @section('title', 'Monitoring Ujian Siswa')
-@section('breadcrumb', 'Admin / Monitoring Ujian')
+@section('breadcrumb', 'CBT / Monitoring Ujian')
 
 @push('head')
 <meta http-equiv="refresh" content="30">  {{-- auto-refresh tiap 30 detik --}}
@@ -16,6 +16,12 @@
             </div>
             <h2 class="text-lg font-bold">Monitoring Ujian Siswa</h2>
         </div>
+        @if((auth()->user()->user_type ?? 'admin') === 'admin')
+            <a href="{{ route('monitoring.akses') }}"
+               class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-white/15 hover:bg-white/25 text-white text-xs font-semibold transition">
+                <x-icon name="settings" class="w-4 h-4"/> Setting Akses
+            </a>
+        @endif
     </div>
 
     {{-- Filter bar --}}

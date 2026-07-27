@@ -179,10 +179,14 @@ class UjianController extends Controller
 
         $protectionEnabled = (bool) ($quiz->protection_enabled ?? true);
         $maxViolations = (int) ($quiz->max_violations ?? ($quiz->settings['max_violations'] ?? 5));
+        // Alarm hanya relevan kalau proteksi aktif — kalau proteksi off,
+        // logViolation() memang tidak pernah jalan sama sekali.
+        $violationSoundEnabled = $protectionEnabled
+            && (bool) ($quiz->violation_sound_enabled ?? true);
 
         return view('cbt.ujian.show', compact(
             'quiz', 'attempt', 'existingAnswers', 'endsAt',
-            'protectionEnabled', 'maxViolations'
+            'protectionEnabled', 'maxViolations', 'violationSoundEnabled'
         ));
     }
 

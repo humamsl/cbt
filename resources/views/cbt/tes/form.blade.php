@@ -393,6 +393,10 @@
 
         <x-field name="max_violations" type="number" label="Max Pelanggaran" :value="$item->max_violations ?? 3"
                  help="Jumlah pelanggaran sebelum aksi proteksi dijalankan"/>
+
+        <x-field type="checkbox" name="violation_sound_enabled" label="Alarm Suara Pelanggaran"
+                 :value="(int) ($item->violation_sound_enabled ?? 1)"
+                 help="Bunyikan sirene + suara peringatan kecurangan di perangkat siswa"/>
     </div>
 
     {{-- Pengacakan --}}

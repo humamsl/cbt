@@ -62,7 +62,7 @@
     {{-- Banner WAKTU HABIS (sesaat sebelum auto-submit) --}}
     <div x-show="timeOverShown" x-cloak x-transition
          class="bg-amber-500 text-white px-4 py-3 text-center font-bold animate-pulse">
-        ⏰ Waktu Habis! Jawaban Anda otomatis dikirim ke server...
+         Waktu Habis! Jawaban Anda otomatis dikirim ke server...
     </div>
 </header>
 
@@ -152,6 +152,7 @@
     'maxViolations' => $maxViolations,
     'initialViolations' => (int) $attempt->violation_count,
     'protectionEnabled' => (bool) $protectionEnabled,
+    'soundEnabled' => (bool) $violationSoundEnabled,
     'violationUrl' => route('siswa.ujian.violation', [$quiz, $attempt]),
     'blockedUrl' => route('siswa.ujian.blocked', [$quiz, $attempt]),
 ]) !!}</script>

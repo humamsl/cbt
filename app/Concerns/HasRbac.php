@@ -85,6 +85,10 @@ trait HasRbac
             'dashboard/index', 'profil/index', 'profil/password',
             'topik/*', 'bank-soal/*', 'tes/*', 'token-sesi/*',
             'hasil/*',  // index, detail, statistik, analisis, semua export
+            // monitoring: guru dibatasi di MonitoringController — hanya ujian
+            // buatannya sendiri + kelas yang di-grant admin (monitoring_akses).
+            // Halaman Setting Akses tetap admin-only lewat middleware 'admin'.
+            'monitoring/*',
             'otp/*',
         ];
     }

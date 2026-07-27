@@ -123,6 +123,15 @@ Route::middleware([
         Route::get('/hasil/remidial-pengayaan/export', [HasilController::class, 'exportRemidialPengayaan'])->name('hasil.remidial.export');
         Route::get('/hasil/{attempt}',               [HasilController::class, 'detail'])->name('hasil.detail');
 
+        // ----- Monitoring Ujian (realtime) -----
+        // Guru juga boleh masuk: controller membatasi guru hanya pada ujian
+        // buatannya sendiri + kelas yang di-grant lewat Setting Akses (admin).
+        Route::get('/monitoring',                       [MonitoringController::class, 'index'])->name('monitoring.index');
+        Route::get('/monitoring/quiz/{quiz}',           [MonitoringController::class, 'detail'])->name('monitoring.detail');
+        Route::post('/monitoring/{attempt}/block',      [MonitoringController::class, 'block'])->name('monitoring.block');
+        Route::post('/monitoring/{attempt}/unblock',    [MonitoringController::class, 'unblock'])->name('monitoring.unblock');
+        Route::delete('/monitoring/{attempt}/reset',    [MonitoringController::class, 'resetAttempt'])->name('monitoring.reset');
+        Route::get('/monitoring/{attempt}/lihat',       [MonitoringController::class, 'lihat'])->name('monitoring.lihat');
     });
 
     // Modul ultra-sensitif: hanya admin (tanpa guru)
@@ -138,13 +147,11 @@ Route::middleware([
         // Log Login
         Route::get('/log-login', [LogLoginController::class, 'index'])->name('log-login.index');
 
-        // Monitoring Ujian (realtime)
-        Route::get('/monitoring',                       [MonitoringController::class, 'index'])->name('monitoring.index');
-        Route::get('/monitoring/quiz/{quiz}',           [MonitoringController::class, 'detail'])->name('monitoring.detail');
-        Route::post('/monitoring/{attempt}/block',      [MonitoringController::class, 'block'])->name('monitoring.block');
-        Route::post('/monitoring/{attempt}/unblock',    [MonitoringController::class, 'unblock'])->name('monitoring.unblock');
-        Route::delete('/monitoring/{attempt}/reset',    [MonitoringController::class, 'resetAttempt'])->name('monitoring.reset');
-        Route::get('/monitoring/{attempt}/lihat',       [MonitoringController::class, 'lihat'])->name('monitoring.lihat');
+        // Setting Akses Monitoring Ujian — menunjuk guru sebagai petugas/
+        // proktor & memilih kelas yang boleh ia monitoring (khusus admin)
+        Route::get('/monitoring/akses',              [MonitoringController::class, 'akses'])->name('monitoring.akses');
+        Route::post('/monitoring/akses',             [MonitoringController::class, 'aksesStore'])->name('monitoring.akses.store');
+        Route::delete('/monitoring/akses/{akses}',   [MonitoringController::class, 'aksesDestroy'])->name('monitoring.akses.destroy');
     });
 
     // UJIAN (siswa) — dilindungi proteksi IP bila admin mengaktifkannya

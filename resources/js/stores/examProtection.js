@@ -39,6 +39,7 @@ export const examProtectionStore = reactive({
     quizName: '',
     maxViolations: 0,
     protectionEnabled: false,
+    soundEnabled: false,
     violationUrl: '',
     blockedUrl: '',
 
@@ -48,6 +49,7 @@ export const examProtectionStore = reactive({
 
     _warningTimer: null,
     _initialized: false,
+    _audioCtx: null,
 
     /**
      * Dipanggil SEKALI secara eksplisit dari resources/js/app.js saat halaman
@@ -60,6 +62,7 @@ export const examProtectionStore = reactive({
         this.quizName = config.quizName;
         this.maxViolations = config.maxViolations;
         this.protectionEnabled = config.protectionEnabled;
+        this.soundEnabled = !!config.soundEnabled;
         this.violationUrl = config.violationUrl;
         this.blockedUrl = config.blockedUrl;
         this.violations = config.initialViolations || 0;
@@ -93,6 +96,11 @@ export const examProtectionStore = reactive({
 
     async startExam() {
         this.needStart = false;
+
+        // WAJIB di sini: browser memblokir audio sampai ada gesture user, dan
+        // klik tombol "Mulai" adalah satu-satunya gesture yang dijamin ada
+        // sebelum pelanggaran pertama bisa terjadi.
+        this._unlockAudio();
 
         if (!this.isMobile) {
             // === DESKTOP: WAJIB FULLSCREEN ===
@@ -231,6 +239,101 @@ export const examProtectionStore = reactive({
         });
     },
 
+    /* ================= ALARM SUARA PELANGGARAN =================
+     * Toggle per-ujian (kolom quizzes.violation_sound_enabled). Sengaja TANPA
+     * file audio: sirene dibangkitkan Web Audio API dan kalimat peringatan
+     * diucapkan Text-to-Speech bawaan browser, jadi tidak ada aset yang perlu
+     * di-deploy dan tidak ada request jaringan saat ujian berlangsung.
+     */
+
+    /**
+     * Bangunkan AudioContext & TTS lewat gesture user (klik "Mulai").
+     * Tanpa ini Chrome/Safari menolak memutar audio dengan autoplay policy.
+     */
+    _unlockAudio() {
+        if (!this.soundEnabled) return;
+        try {
+            const Ctx = window.AudioContext || window.webkitAudioContext;
+            if (Ctx) {
+                this._audioCtx = this._audioCtx || new Ctx();
+                if (this._audioCtx.state === 'suspended') this._audioCtx.resume();
+            }
+            // Chrome hanya mengizinkan speak() setelah synthesis pernah
+            // "disentuh" dalam konteks gesture user.
+            window.speechSynthesis?.resume?.();
+        } catch (e) { /* audio tidak tersedia → ujian tetap jalan */ }
+    },
+
+    /** Sirene keras + kalimat "Anda melakukan kecurangan". */
+    _playViolationAlarm() {
+        if (!this.soundEnabled) return;
+        this._playSiren();
+        this._speakWarning();
+    },
+
+    /**
+     * Sirene naik-turun 3x (~1,1 detik) memakai oscillator.
+     * Gelombang 'square' dipilih karena paling menusuk/terdengar keras pada
+     * speaker kecil HP dibanding sine.
+     */
+    _playSiren() {
+        try {
+            const Ctx = window.AudioContext || window.webkitAudioContext;
+            if (!Ctx) return;
+            this._audioCtx = this._audioCtx || new Ctx();
+            const ctx = this._audioCtx;
+            if (ctx.state === 'suspended') ctx.resume();
+
+            const now = ctx.currentTime;
+            const gain = ctx.createGain();
+            gain.connect(ctx.destination);
+            // Ramp singkat dari nilai sangat kecil: exponentialRamp tidak boleh
+            // dari 0, dan tanpa ramp akan terdengar "klik" di awal.
+            gain.gain.setValueAtTime(0.0001, now);
+            gain.gain.exponentialRampToValueAtTime(0.9, now + 0.04);
+
+            const osc = ctx.createOscillator();
+            osc.type = 'square';
+            osc.connect(gain);
+
+            let t = now;
+            for (let i = 0; i < 3; i++) {
+                osc.frequency.setValueAtTime(880, t);
+                osc.frequency.linearRampToValueAtTime(1760, t + 0.18);
+                osc.frequency.linearRampToValueAtTime(880, t + 0.36);
+                t += 0.36;
+            }
+            gain.gain.setValueAtTime(0.9, t - 0.06);
+            gain.gain.exponentialRampToValueAtTime(0.0001, t);
+
+            osc.start(now);
+            osc.stop(t + 0.02);
+        } catch (e) { /* diabaikan — alarm tidak boleh menggagalkan ujian */ }
+    },
+
+    /** Ucapkan peringatan dalam Bahasa Indonesia (setelah sirene selesai). */
+    _speakWarning() {
+        try {
+            const synth = window.speechSynthesis;
+            if (!synth || typeof SpeechSynthesisUtterance === 'undefined') return;
+
+            // Pelanggaran beruntun → jangan menumpuk antrean ucapan.
+            synth.cancel();
+
+            const u = new SpeechSynthesisUtterance('Anda melakukan kecurangan!');
+            u.lang = 'id-ID';
+            u.volume = 1;   // maksimum
+            u.rate = 0.95;  // sedikit lebih lambat supaya jelas terdengar
+            u.pitch = 1;
+
+            const idVoice = synth.getVoices().find((v) => /^id/i.test(v.lang));
+            if (idVoice) u.voice = idVoice;
+
+            // Beri jeda ~1,1 dtk supaya tidak bertabrakan dengan sirene.
+            setTimeout(() => { try { synth.speak(u); } catch (e) {} }, 1120);
+        } catch (e) { /* diabaikan */ }
+    },
+
     /** Pindah ke halaman blokir tanpa prompt browser */
     goToBlocked() {
         // pakai replace agar tidak bisa "back"
@@ -246,6 +349,9 @@ export const examProtectionStore = reactive({
         this.showWarning = true;
         clearTimeout(this._warningTimer);
         this._warningTimer = setTimeout(() => { this.showWarning = false; }, 4000);
+
+        // Bunyikan SEBELUM fetch supaya efeknya instan (tidak menunggu server).
+        this._playViolationAlarm();
 
         this.onViolationsChanged?.(this.violations);
 

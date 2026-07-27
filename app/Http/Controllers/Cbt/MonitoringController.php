@@ -3,17 +3,90 @@
 namespace App\Http\Controllers\Cbt;
 
 use App\Http\Controllers\Controller;
+use App\Models\Guru;
 use App\Models\MataPelajaran;
+use App\Models\MonitoringAkses;
 use App\Models\Quiz;
 use App\Models\QuizAttempt;
 use App\Models\RombonganBelajar;
 use App\Models\Siswa;
+use App\Models\SiswaRombel;
 use App\Models\TahunAjaran;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class MonitoringController extends Controller
 {
+    /* ===================== SCOPE UNTUK GURU =====================
+       Admin melihat semua ujian. Guru hanya melihat:
+       1. registrasi ujian yang DIA buat sendiri (created_by_guru_id), dan
+       2. ujian yang menarget kelas-kelas yang di-grant admin lewat
+          halaman Setting Akses Monitoring (tabel monitoring_akses). */
+
+    protected function isGuru($user): bool
+    {
+        return ($user?->user_type ?? 'admin') === 'guru';
+    }
+
+    /**
+     * Batasi query Quiz sesuai hak monitoring guru. Ujian dianggap cocok
+     * dengan kelas yang di-grant bila: legacy rombongan_belajar_id match,
+     * ada di pivot quiz_rombongan_belajar / quiz_siswa (dibaca dari koneksi
+     * Data Center — whereHas lintas DB membaca tabel lokal basi, lihat
+     * catatan di Quiz::scopeUntukSiswa), atau mode per_tingkat yang
+     * menarget tingkat dari rombel yang di-grant.
+     */
+    protected function scopeMonitoringForUser($query, $user)
+    {
+        if (! $this->isGuru($user)) return $query;
+
+        $rombelIds = MonitoringAkses::rombelIdsUntukGuru($user->id);
+
+        $tingkatList = empty($rombelIds) ? [] : RombonganBelajar::whereIn('id', $rombelIds)
+            ->pluck('tingkat')->filter()->map(fn ($t) => (int) $t)->unique()->values()->all();
+
+        $pivotQuizIds = empty($rombelIds) ? [] : DB::connection('mysql_datacenter')
+            ->table('quiz_rombongan_belajar')
+            ->whereIn('rombongan_belajar_id', $rombelIds)
+            ->pluck('quiz_id')->unique()->values()->all();
+
+        $siswaIds = empty($rombelIds) ? [] : SiswaRombel::whereIn('rombongan_belajar_id', $rombelIds)
+            ->pluck('siswa_id')->unique()->values()->all();
+        $siswaQuizIds = empty($siswaIds) ? [] : DB::connection('mysql_datacenter')
+            ->table('quiz_siswa')->whereIn('siswa_id', $siswaIds)
+            ->pluck('quiz_id')->unique()->values()->all();
+
+        $quizIds = array_values(array_unique(array_merge($pivotQuizIds, $siswaQuizIds)));
+
+        return $query->where(function ($x) use ($user, $rombelIds, $quizIds, $tingkatList) {
+            $x->where('created_by_guru_id', $user->id)
+              ->orWhereIn('quizzes.id', $quizIds ?: [0])
+              ->orWhereIn('rombongan_belajar_id', $rombelIds ?: [0]);
+            if (! empty($tingkatList)) {
+                $x->orWhere(function ($y) use ($tingkatList) {
+                    $y->where('target_mode', 'per_tingkat')
+                      ->where(function ($z) use ($tingkatList) {
+                          foreach ($tingkatList as $t) {
+                              $z->orWhereJsonContains('target_tingkat', $t)
+                                ->orWhereJsonContains('target_tingkat', (string) $t);
+                          }
+                      });
+                });
+            }
+        });
+    }
+
+    /** Guard tunggal: 403 bila guru membuka/mengubah ujian di luar haknya. */
+    protected function assertBolehMonitoring($user, Quiz $quiz): void
+    {
+        if (! $this->isGuru($user)) return;
+
+        $boleh = $this->scopeMonitoringForUser(Quiz::where('quizzes.id', $quiz->id), $user)->exists();
+        if (! $boleh) {
+            abort(403, 'Anda tidak memiliki akses monitoring untuk ujian ini.');
+        }
+    }
+
     /**
      * Halaman utama: tabel agregat per UJIAN.
      * Kolom: judul | kelas | mapel | waktu | status | total peserta | berhasil mengerjakan | selesai mengerjakan | aksi
@@ -27,6 +100,7 @@ class MonitoringController extends Controller
 
         // Query Quiz dengan agregat attempt
         $items = Quiz::with(['mapel', 'rombel', 'rombelTargets'])
+            ->tap(fn ($q) => $this->scopeMonitoringForUser($q, $r->user()))
             ->withCount([
                 'attempts as total_mulai'     => fn ($q) => $q->whereNotNull('time_start'),
                 'attempts as total_selesai'   => fn ($q) => $q->where('is_done', true),
@@ -148,6 +222,8 @@ class MonitoringController extends Controller
      */
     public function detail(Quiz $quiz, Request $r)
     {
+        $this->assertBolehMonitoring($r->user(), $quiz);
+
         $quiz->load('mapel', 'rombel', 'rombelTargets');
 
         // ===== Rombel target quiz =====
@@ -240,7 +316,8 @@ class MonitoringController extends Controller
 
     public function block(QuizAttempt $attempt, Request $r)
     {
-        $reason = $r->input('reason', 'Diblokir manual oleh admin');
+        $this->assertBolehMonitoring($r->user(), $attempt->quiz);
+        $reason = $r->input('reason', 'Diblokir manual oleh '.($this->isGuru($r->user()) ? 'petugas' : 'admin'));
         $attempt->update([
             'is_blocked' => true,
             'blocked_at' => now(),
@@ -251,6 +328,7 @@ class MonitoringController extends Controller
 
     public function unblock(QuizAttempt $attempt)
     {
+        $this->assertBolehMonitoring(request()->user(), $attempt->quiz);
         $attempt->update([
             'is_blocked'         => false,
             'blocked_at'         => null,
@@ -268,6 +346,7 @@ class MonitoringController extends Controller
 
     public function resetAttempt(QuizAttempt $attempt)
     {
+        $this->assertBolehMonitoring(request()->user(), $attempt->quiz);
         $name = $attempt->siswa->nama_siswa ?? '-';
         DB::transaction(function () use ($attempt) {
             $attempt->violations()->delete();
@@ -279,6 +358,65 @@ class MonitoringController extends Controller
 
     public function lihat(QuizAttempt $attempt)
     {
+        $this->assertBolehMonitoring(request()->user(), $attempt->quiz);
         return redirect()->route('hasil.detail', $attempt);
+    }
+
+    /* ===================== SETTING AKSES (ADMIN) =====================
+       Admin menunjuk guru sebagai petugas/proktor: pilih guru + banyak
+       kelas → guru tsb bisa memonitoring ujian dari kelas-kelas itu. */
+
+    public function akses()
+    {
+        // Kelas untuk form: hanya rombel tahun ajaran aktif (konsisten
+        // dengan dropdown filter monitoring & form registrasi ujian).
+        $taAktifId = optional(TahunAjaran::aktif())->id;
+        $rombels = RombonganBelajar::when($taAktifId, fn ($q) => $q->where('tahun_ajaran_id', $taAktifId))
+            ->orderBy('tingkat')->orderBy('nama_rombel')->get();
+
+        $gurus = Guru::where('is_aktif', true)->orderBy('nama_ptk')->get();
+
+        // Daftar akses yang sudah ada, dikelompokkan per guru
+        $aksesPerGuru = MonitoringAkses::with(['guru:id,nama_ptk,nip', 'rombel:id,nama_rombel,tingkat'])
+            ->get()
+            ->sortBy(fn ($a) => [$a->guru?->nama_ptk, $a->rombel?->nama_rombel])
+            ->groupBy('guru_id');
+
+        return view('cbt.monitoring.akses', compact('gurus', 'rombels', 'aksesPerGuru'));
+    }
+
+    public function aksesStore(Request $r)
+    {
+        $data = $r->validate([
+            'guru_id' => 'required|integer|exists:mysql_datacenter.guru,id',
+            'rombel_ids' => 'required|array|min:1',
+            'rombel_ids.*' => 'integer|exists:mysql_datacenter.rombongan_belajar,id',
+        ], [
+            'guru_id.required' => 'Pilih petugas monitoring terlebih dahulu.',
+            'rombel_ids.required' => 'Pilih minimal satu kelas.',
+        ]);
+
+        $baru = 0;
+        foreach ($data['rombel_ids'] as $rombelId) {
+            $row = MonitoringAkses::firstOrCreate([
+                'guru_id' => $data['guru_id'],
+                'rombongan_belajar_id' => $rombelId,
+            ]);
+            if ($row->wasRecentlyCreated) $baru++;
+        }
+
+        $nama = optional(Guru::find($data['guru_id']))->nama_ptk ?? 'Petugas';
+        return redirect()->route('monitoring.akses')
+            ->with('success', $baru > 0
+                ? "Akses monitoring {$nama} ditambahkan ({$baru} kelas baru)."
+                : "Tidak ada perubahan — {$nama} sudah memiliki akses ke kelas yang dipilih.");
+    }
+
+    public function aksesDestroy(MonitoringAkses $akses)
+    {
+        $nama  = optional($akses->guru)->nama_ptk ?? 'Petugas';
+        $kelas = optional($akses->rombel)->nama_rombel ?? '';
+        $akses->delete();
+        return back()->with('success', "Akses monitoring {$nama} untuk kelas {$kelas} dihapus.");
     }
 }
