@@ -140,6 +140,70 @@ jadi isi soal tidak perlu diubah. Untuk gambar yang sumbernya URL eksternal
 php artisan soal:localize-images
 ```
 
+---
+
+# Soal masuk "tanpa mapel"? — `php artisan soal:perbaiki-mapel`
+
+[app/Console/Commands/PerbaikiMapelSoal.php](../../app/Console/Commands/PerbaikiMapelSoal.php)
+
+Restore/import mencocokkan mata pelajaran lewat **kode mapel pada saat proses
+berjalan**. Kalau kodenya belum ada di Data Center waktu itu, soalnya tetap
+masuk tapi mapelnya kosong — dan membuat mapelnya belakangan **tidak**
+menyambung sendiri ke soal yang sudah terlanjur masuk.
+
+> **Jangan diperbaiki dengan mengupload ulang berkas backup.** Kunci pengenal
+> soal saat restore ikut menyertakan mapel, jadi soal bermapel kosong tidak
+> dikenali sebagai soal yang sama. Hasilnya soal **tergandakan**, bukan
+> diperbaiki.
+
+### 1. Lihat dulu keadaannya
+
+```bash
+php artisan soal:perbaiki-mapel
+```
+
+Tanpa opsi, command hanya melapor: berapa soal tanpa mapel, dikelompokkan per
+topik, dan apakah topiknya sendiri sudah punya mapel.
+
+### 2. Buat mapel yang kurang di Data Center
+
+Kodenya harus **persis** seperti di berkas backup. Untuk SMPN 218: `PRA`
+(Prakarya) dan `PAKBP` (Pendidikan Agama Kristen dan Budi Pekerti).
+
+### 3. Perbaiki
+
+```bash
+php artisan soal:perbaiki-mapel --file=database/imports/bank-soal-smpn218.zip --dry-run
+```
+
+Kalau angkanya sudah benar, hapus `--dry-run`. Command mencocokkan soal di
+database dengan soal di berkas lewat isi soalnya (judul + pertanyaan +
+tingkat, **tanpa** mapel — karena mapel itulah yang sedang diperbaiki), lalu
+mengisi `mata_pelajaran_id` sesuai kode di berkas. Topik yang mapelnya ikut
+kosong dibetulkan sekalian.
+
+Kode mapel yang ada di berkas tapi belum dibuat di Data Center akan
+dilaporkan berikut jumlah soalnya, jadi ketahuan apa lagi yang kurang.
+
+### Kalau topiknya sudah benar tapi soalnya belum
+
+```bash
+php artisan soal:perbaiki-mapel --dari-topik
+```
+
+Menyalin mapel dari topik ke soalnya, tanpa perlu berkas backup.
+
+### Opsi lain
+
+| Opsi | Guna |
+|---|---|
+| `--dry-run` | Tampilkan rencananya tanpa menyimpan |
+| `--timpa` | Perbaiki juga soal yang mapelnya sudah terisi (default: hanya yang kosong) |
+
+Aman diulang — soal yang mapelnya sudah benar tidak disentuh lagi.
+
+---
+
 ## Perbaikan pada fitur Backup/Restore (Agustus 2026)
 
 Jalur A di atas sebelumnya tidak bisa dipakai. Tiga bug di
