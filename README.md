@@ -27,6 +27,11 @@ Direplikasi dari proyek `web/cbt` & `web/datacenter`, dengan UI Tailwind profess
 
 ## Instalasi
 
+## Install Virtualmin Web Server NGINX
+```bash
+wget https://software.virtualmin.com/gpl/scripts/install.sh && sudo sh install.sh --bundle LEMP
+```
+
 ```bash
 cd cbt-v2
 
