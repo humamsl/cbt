@@ -3,8 +3,31 @@
 Memindahkan bank soal dari aplikasi CBT lama (skema warisan `cbt`, dump
 mysqldump/MariaDB) ke skema aplikasi ini.
 
-Dikerjakan oleh command **`php artisan soal:import-legacy`**
-([app/Console/Commands/ImportSoalLegacy.php](../../app/Console/Commands/ImportSoalLegacy.php)).
+## Dua jalur
+
+**A. Upload ZIP lewat halaman Setting → Restore Backup.** Paling mudah, tanpa
+SSH. Cocok kalau file ZIP-nya sudah disiapkan. Untuk SMPN 218 filenya sudah
+ada: [bank-soal-smpn218.zip](bank-soal-smpn218.zip) (1,22 MB, 9.479 soal).
+
+Syarat: mata pelajaran di ZIP dicocokkan lewat **kode mapel**, jadi kode-kode
+ini harus sudah ada di Data Center — `PAIBP PPKN BIN MTK IPA IPS BING PJOK INF
+SBD` plus **`PRA`** (Prakarya) dan **`PAKBP`** (Pendidikan Agama Kristen & Budi
+Pekerti) yang biasanya belum ada. Kalau kodenya tidak ketemu, soalnya tetap
+masuk tapi tanpa mata pelajaran.
+
+Restore aman diulang: soal yang isinya sudah sama persis dilewati, bukan
+digandakan atau ditimpa.
+
+**B. Artisan command `soal:import-legacy`** — langsung dari dump `.sql`.
+Dipakai kalau belum ada ZIP-nya, atau untuk sekolah lain yang migrasi dari
+aplikasi lama yang sama. Butuh SSH + memuat dump ke database staging.
+Selengkapnya di bawah.
+
+---
+
+# Jalur B — `php artisan soal:import-legacy`
+
+[app/Console/Commands/ImportSoalLegacy.php](../../app/Console/Commands/ImportSoalLegacy.php)
 
 ## Kenapa tidak lewat fitur import yang sudah ada
 
@@ -116,6 +139,33 @@ jadi isi soal tidak perlu diubah. Untuk gambar yang sumbernya URL eksternal
 ```bash
 php artisan soal:localize-images
 ```
+
+## Perbaikan pada fitur Backup/Restore (Agustus 2026)
+
+Jalur A di atas sebelumnya tidak bisa dipakai. Tiga bug di
+[BackupService](../../app/Services/Backup/BackupService.php) diperbaiki
+bersamaan dengan migrasi ini — ketiganya juga berdampak pada backup rutin
+sekolah, bukan hanya migrasi:
+
+1. **Soal disamakan berdasarkan judul.** `firstOrCreate(['title',
+   'mata_pelajaran_id'])` menganggap semua soal berjudul sama sebagai satu soal
+   lalu menimpa opsinya berulang. Judul kembar itu lumrah ("Chapter 4" 105
+   soal, "ASTS Ganjil" 100 soal). Pada uji restore bank soal ini, **4.981 dari
+   9.499 soal (52%) lenyap**. Sekarang soal dikenali dari isinya (judul +
+   pertanyaan + mapel + tingkat).
+2. **Topik tidak pernah dibuat.** Restore hanya mencocokkan nama topik yang
+   kebetulan sudah ada, jadi di instalasi baru semua soal masuk tanpa topik.
+   Sekarang topik dibuat otomatis kalau belum ada.
+3. **`correct_answer_text` tidak ikut diekspor**, sehingga setiap backup
+   kehilangan kunci jawaban soal Fill the Blank. Sekarang ikut, bersama
+   `case_sensitive` dan kolom media.
+
+Selain itu export ditulis bertahap ke file (memori puncak turun dari 202 MB ke
+46 MB) dan restore memakai bulk insert dalam satu transaksi — 9.499 soal dari
+171 detik menjadi 21 detik, cukup aman dari `max_execution_time`.
+
+Format JSON naik ke **v2** (`topic` jadi objek berisi nama + mapel + tingkat).
+Berkas backup v1 lama tetap bisa direstore.
 
 ## Riwayat: import SMPN 218 (Agustus 2026)
 

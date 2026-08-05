@@ -173,7 +173,9 @@
                     @foreach(session('restoreSummary') as $mod => $r)
                         <li>
                             <strong class="capitalize">{{ $mod }}:</strong>
-                            {{ $r['success'] ?? 0 }} sukses, {{ $r['failed'] ?? 0 }} gagal
+                            {{ $r['dibuat'] ?? $r['success'] ?? 0 }} ditambahkan,
+                            {{ $r['dilewati'] ?? 0 }} dilewati (isinya sudah ada),
+                            {{ $r['failed'] ?? 0 }} gagal
                             @if(!empty($r['errors']))
                                 <details class="mt-1">
                                     <summary class="text-rose-600 cursor-pointer">Lihat error</summary>
