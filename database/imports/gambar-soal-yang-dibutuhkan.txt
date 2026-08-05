@@ -1,0 +1,796 @@
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/2026/CHAPTER 1 REPORT TEXT.jpg
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/2026/ChatGPT Image May 26, 2026, 02_20_13 PM.png
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/2026/ability 2.png
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/2026/ability 4.png
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/2026/ads cans.png
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/2026/ads paper.png
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/2026/ads spoon.jpg
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/2026/ads storage (1).png
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/2026/banner.png
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/2026/cans.png
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/2026/gambar 1.png
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/2026/gambar 2.png
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/2026/gambar 3.png
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/2026/paper.png
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/2026/prep 1.png
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/2026/prep 2.png
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/2026/prep 3.png
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/2026/prep 4.png
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/ASAT 8 2025/asat 8 2025 20.png
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/ASAT 8 2025/asat 8 2025 27-28.png
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/ASAT 8 2025/asat 8 2025 29-31.png
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/ASAT 8 2025/asat 8 2025 33.png
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/ASAT 8 2025/asat 8 2025 34.png
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/ASAT 8 2025/asat 8 2025 39.jpg
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/ASAT 8 2025/asat 8 2025 41.png
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/ASAT 8 2025/asat 8 2025 42.png
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/ASAT 8 2025/asat 8 2025 43-44.png
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/ASAT 8 2025/asat 8 2025 45-46.png
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/ASAT 8 2025/asat 8 2025 47-50.jpg
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/ASTS 2025/1.png
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/ASTS 2025/kantong semar.png
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/ASTS 2025/raflesia.jpg
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/PROCEDURE.png
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/PTS 8/soal text 1.png
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/PTS 8/soal text 2.png
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/PTS 8/soal text 4.png
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/PTS 9/1.png
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/PTS 9/2.jpeg
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/PTS 9/4.jpeg
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/PTS 9/5.jpeg
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/PTS 9/6.jpeg
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/PTS 9/7.png
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/PTS 9/8.png
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/PTS 9/WISUDA.jpg
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/PTS 9/biru 2.png
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/PTS 9/biru.png
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/PTS 9/breakfast leaker.png
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/PTS 9/cashew.png
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/PTS 9/chips.png
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/PTS 9/cold breaker.png
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/PTS 9/dd.jpeg
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/PTS 9/dialog 12 13.png
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/PTS 9/dialog 16.png
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/PTS 9/green.png
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/PTS 9/hasley.jpeg
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/PTS 9/healthy drink.png
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/PTS 9/minis.png
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/PTS 9/old.jpeg
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/PTS 9/run.jpeg
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/PTS 9/s.jpeg
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/PTS 9/truitt.jpeg
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/andre.png
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/cuscus.png
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/dialog 5.png
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/mei.png
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/recycling text.png
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/soal 3 dan 4.png
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/soal chapter 1.png
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/soal text 1.png
+storage/photos/0f2f10fb2129f2ba0b1d86e5e7c731c2/soekarno.JPG
+storage/photos/1/,,,.1,,,,,,..png
+storage/photos/1/,,,1,,,,,,..png
+storage/photos/1/,,.1,,,,,,..png
+storage/photos/1/,,1,,,,,,..png
+storage/photos/1/..1,,,,,,..png
+storage/photos/1/.1,,,,,,..png
+storage/photos/1/.1,,,,,,.png
+storage/photos/1/.1,,,,,..png
+storage/photos/1/.1,,,,,.png
+storage/photos/1/.1,,,,..png
+storage/photos/1/.1,,,,.png
+storage/photos/1/.1,,,..png
+storage/photos/1/.1,,,.png
+storage/photos/1/.1,,..png
+storage/photos/1/.1,,.png
+storage/photos/1/.1,..png
+storage/photos/1/.1,.png
+storage/photos/1/.1..png
+storage/photos/1/.1.png
+storage/photos/1/1 sc 2026.png
+storage/photos/1/1-0.png
+storage/photos/1/1-1.png
+storage/photos/1/1.1,,,,,,.png
+storage/photos/1/1.1,,,,,.png
+storage/photos/1/1.1,,,,..png
+storage/photos/1/1.1,,,,.png
+storage/photos/1/1.1,,,..png
+storage/photos/1/1.1,,,.png
+storage/photos/1/1.1,,..png
+storage/photos/1/1.1,,.png
+storage/photos/1/1.1,.,.png
+storage/photos/1/1.1,..png
+storage/photos/1/1.1,.png
+storage/photos/1/1.1...png
+storage/photos/1/1.1..1.png
+storage/photos/1/1.1..png
+storage/photos/1/1.1.png
+storage/photos/1/1.jpg
+storage/photos/1/1.png
+storage/photos/1/10.jpeg
+storage/photos/1/11.jpg
+storage/photos/1/12.jpg
+storage/photos/1/13.jpg
+storage/photos/1/14 asts ipa 9 genap.png
+storage/photos/1/14.jpg
+storage/photos/1/2.jpg
+storage/photos/1/2.png
+storage/photos/1/25.png
+storage/photos/1/3.jpg
+storage/photos/1/3.png
+storage/photos/1/4.jpg
+storage/photos/1/5.jpg
+storage/photos/1/6.jpg
+storage/photos/1/7.jpg
+storage/photos/1/BEKANTAN 1-10.png
+storage/photos/1/Cinderella.png
+storage/photos/1/PROCEDURE TEXT - CHAPTER 2 (1).png
+storage/photos/1/Poster Anak Indonesia Hebat dengan Gaya Ilustratif Biru Kuning.png
+storage/photos/1/Z1.png
+storage/photos/1/ab..png
+storage/photos/1/ab.png
+storage/photos/1/bed.png
+storage/photos/1/english/bj habibi.jpg
+storage/photos/1/english/gambar 2.png
+storage/photos/1/english/ganci.png
+storage/photos/1/english/tas jinjing.png
+storage/photos/1/lutung kasarung.jpg
+storage/photos/1/pakbp 10.png
+storage/photos/1/refrige.png
+storage/photos/1/soal ips mpr.PNG
+storage/photos/12bebaebb1ed97124843db6e99fbecf1/2.png
+storage/photos/12bebaebb1ed97124843db6e99fbecf1/3111.png
+storage/photos/12bebaebb1ed97124843db6e99fbecf1/33.png
+storage/photos/12bebaebb1ed97124843db6e99fbecf1/40.png
+storage/photos/12bebaebb1ed97124843db6e99fbecf1/43, 44.png
+storage/photos/12bebaebb1ed97124843db6e99fbecf1/45, 46, 47.png
+storage/photos/12bebaebb1ed97124843db6e99fbecf1/48.png
+storage/photos/12bebaebb1ed97124843db6e99fbecf1/5.png
+storage/photos/12bebaebb1ed97124843db6e99fbecf1/61Sk+1F10bL._AC_UL600_SR600,600_.jpg
+storage/photos/12bebaebb1ed97124843db6e99fbecf1/7.png
+storage/photos/12bebaebb1ed97124843db6e99fbecf1/764689bea572c82b43e9c27bd372f34b.jpg
+storage/photos/12bebaebb1ed97124843db6e99fbecf1/ASAT 2026/ASAT 2.png
+storage/photos/12bebaebb1ed97124843db6e99fbecf1/ASAT 2026/ASAT 26.png
+storage/photos/12bebaebb1ed97124843db6e99fbecf1/ASAT 2026/ASAT 29.png
+storage/photos/12bebaebb1ed97124843db6e99fbecf1/ASAT 2026/ASAT 32.png
+storage/photos/12bebaebb1ed97124843db6e99fbecf1/ASAT 2026/ASAT 33.png
+storage/photos/12bebaebb1ed97124843db6e99fbecf1/ASAT 2026/ASAT 36.png
+storage/photos/12bebaebb1ed97124843db6e99fbecf1/ASAT 2026/ASAT 37.png
+storage/photos/12bebaebb1ed97124843db6e99fbecf1/ASAT 2026/ASAT 39.png
+storage/photos/12bebaebb1ed97124843db6e99fbecf1/ASAT 2026/ASAT 4.png
+storage/photos/12bebaebb1ed97124843db6e99fbecf1/ASAT 2026/ASAT 44.png
+storage/photos/12bebaebb1ed97124843db6e99fbecf1/ASAT 2026/ASAT 48.png
+storage/photos/12bebaebb1ed97124843db6e99fbecf1/ASAT 2026/ASAT 6, 7, 8, 9.png
+storage/photos/12bebaebb1ed97124843db6e99fbecf1/ASAT IPS/64deba4c-39e7-4003-b6ca-310db70ea282.jpeg
+storage/photos/12bebaebb1ed97124843db6e99fbecf1/ASAT IPS/ChatGPT Image May 27, 2026, 02_09_45 PM.png
+storage/photos/12bebaebb1ed97124843db6e99fbecf1/ASAT IPS/ChatGPT Image May 27, 2026, 02_14_33 PM.png
+storage/photos/12bebaebb1ed97124843db6e99fbecf1/ASAT IPS/ChatGPT Image May 27, 2026, 02_17_17 PM.png
+storage/photos/12bebaebb1ed97124843db6e99fbecf1/ASAT IPS/ChatGPT Image May 27, 2026, 02_20_45 PM.png
+storage/photos/12bebaebb1ed97124843db6e99fbecf1/ASAT IPS/Screenshot (2840).png
+storage/photos/12bebaebb1ed97124843db6e99fbecf1/ASAT IPS/Screenshot (2842).png
+storage/photos/12bebaebb1ed97124843db6e99fbecf1/ASTS 18.png
+storage/photos/12bebaebb1ed97124843db6e99fbecf1/ASTS 49.png
+storage/photos/12bebaebb1ed97124843db6e99fbecf1/ASTS 6.png
+storage/photos/12bebaebb1ed97124843db6e99fbecf1/ASTS 8 - 14.png
+storage/photos/12bebaebb1ed97124843db6e99fbecf1/AYO-BUANG-SAMPAH-PADA-TEMPATNYA.png
+storage/photos/12bebaebb1ed97124843db6e99fbecf1/Chapter 4 (6) - My School Activities - Descriptive Text.png
+storage/photos/12bebaebb1ed97124843db6e99fbecf1/ChatGPT Image Nov 14, 2025, 01_22_12 PM.png
+storage/photos/12bebaebb1ed97124843db6e99fbecf1/PROCEDURE TEXT - CHAPTER 2 (2).png
+storage/photos/12bebaebb1ed97124843db6e99fbecf1/Screenshot (2598).png
+storage/photos/12bebaebb1ed97124843db6e99fbecf1/Screenshot (2608).png
+storage/photos/12bebaebb1ed97124843db6e99fbecf1/Screenshot (2609).png
+storage/photos/12bebaebb1ed97124843db6e99fbecf1/Screenshot (2610).png
+storage/photos/12bebaebb1ed97124843db6e99fbecf1/Screenshot (2730).png
+storage/photos/12bebaebb1ed97124843db6e99fbecf1/Screenshot (2731).png
+storage/photos/12bebaebb1ed97124843db6e99fbecf1/Screenshot (2825).png
+storage/photos/12bebaebb1ed97124843db6e99fbecf1/aaaaaaa.jpg
+storage/photos/12bebaebb1ed97124843db6e99fbecf1/dsds.png
+storage/photos/12bebaebb1ed97124843db6e99fbecf1/images (3).png
+storage/photos/12bebaebb1ed97124843db6e99fbecf1/images (4).png
+storage/photos/12bebaebb1ed97124843db6e99fbecf1/jamaaa.jpg
+storage/photos/12bebaebb1ed97124843db6e99fbecf1/physical.png
+storage/photos/181b90a45d69b217f14c4a12205c7e0c/ASAS GANJIL/PSEUDOCODE 2.jpg
+storage/photos/181b90a45d69b217f14c4a12205c7e0c/ASAS GANJIL/SEARCH ENGINE 1.png
+storage/photos/181b90a45d69b217f14c4a12205c7e0c/ASAS GANJIL/SEARCH ENGINE 2.png
+storage/photos/181b90a45d69b217f14c4a12205c7e0c/ASAS GANJIL/SEARCH ENGINE 3.png
+storage/photos/181b90a45d69b217f14c4a12205c7e0c/PSEUDOCODE 1.png
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/GMC.jpg
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/PAS 11C.PNG
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/PAS27.PNG
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/asas 10.png
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/asas 11.png
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/asas 12.png
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/asas 13.png
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/asas 15.png
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/asas 16.jpg
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/asas 16.png
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/asas 17.jpg
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/asas 17.png
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/asas 19.jpeg
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/asas 2.png
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/asas 7.jpg
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/asas 8.png
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/asas 9.png
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/asts gnp 42.png
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/asts gnp 46.png
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/asts gnp 50.png
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/atst   gnp 5.jpg
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/atst  gnp 8.jpg
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/atst gnp 12.jpg
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/atst gnp 18.png
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/atst gnp 22.jpg
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/atst gnp 26.jpg
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/atst gnp 29.jpg
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/atst gnp 32.jpg
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/atst gnp 35.png
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/atst gnp 37.gif
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/atst gnp 39.png
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/atst gnp 40.jpg
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/atst gnp 44.png
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/botol kimia.jpg
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/g. termometer.jpeg
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/gb 1.21.10.png
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/gb 1.21.13 (2).jpg
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/gb pas 1.21.6.png
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/gb pas 1.21.7.png
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/gb sains 2.jfif
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/gb ukk 6.png
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/gb. alat ukur dan mata.png
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/gb. bikin garam.jpg
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/gb. gerhana bulan.jpg
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/gb. hewan 1.png
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/gb. ikan badut.png
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/gb. ikan red devil.jpg
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/gb. kompetisi.jpg
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/gb. meteor.png
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/gb. molekul zat.png
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/gb. panjang pensil.png
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/gb. proses terjadinya hujan.jpg
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/gb. rantai makanan.jpg
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/gb. recycle.jpg
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/gb. sampah plastik.png
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/gb. wib.png
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/gbu 1.png
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/gbu 10.png
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/gbu 23.png
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/gm. tumb. paku.jpg
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/honda 1.png
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/honda 2.png
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/images.jpeg
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/simbol 1.png
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/soal mid 3.png
+storage/photos/2ef4e0849b3cd1c78daf0469eb04fa7a/ss. 17.jpg
+storage/photos/365f78064e60066036f8a08728da36ef/1.png
+storage/photos/365f78064e60066036f8a08728da36ef/10 Lingkaran.png
+storage/photos/365f78064e60066036f8a08728da36ef/13 Lingkaran.png
+storage/photos/365f78064e60066036f8a08728da36ef/14 Lingkaran.png
+storage/photos/365f78064e60066036f8a08728da36ef/15 Lingkaran.png
+storage/photos/365f78064e60066036f8a08728da36ef/16 Lingkaran.png
+storage/photos/365f78064e60066036f8a08728da36ef/17 Lingkaran.png
+storage/photos/365f78064e60066036f8a08728da36ef/18 Lingkaran.png
+storage/photos/365f78064e60066036f8a08728da36ef/19 Lingkaran.png
+storage/photos/365f78064e60066036f8a08728da36ef/484866b6-1b5e-4af6-9356-904b9371ec7b-v2.png
+storage/photos/365f78064e60066036f8a08728da36ef/5.png
+storage/photos/365f78064e60066036f8a08728da36ef/9.png
+storage/photos/365f78064e60066036f8a08728da36ef/ASAT 2025 NO 24.PNG
+storage/photos/365f78064e60066036f8a08728da36ef/Aljabar 1.png
+storage/photos/365f78064e60066036f8a08728da36ef/Analisa Sifat Komutatif dan Asosiatif.png
+storage/photos/365f78064e60066036f8a08728da36ef/Arsiran Lingkaran.png
+storage/photos/365f78064e60066036f8a08728da36ef/Belah Ketupat.jpg
+storage/photos/365f78064e60066036f8a08728da36ef/Diagaram Lingkaran dalam Derajat.png
+storage/photos/365f78064e60066036f8a08728da36ef/Diagram Batang Ukuran Sepatu Siswa.PNG
+storage/photos/365f78064e60066036f8a08728da36ef/Diagram Garis Kunjungan Perpus.PNG
+storage/photos/365f78064e60066036f8a08728da36ef/Diagram Imunisasi.png
+storage/photos/365f78064e60066036f8a08728da36ef/Disajikan beberapa pernyataan yang benar dari beberapa pilihan. Siswa dapat menentukan pernyataan yang benar dengan melibatkan penerapan identitas aljabar..png
+storage/photos/365f78064e60066036f8a08728da36ef/Frekuensi Relatif.png
+storage/photos/365f78064e60066036f8a08728da36ef/Garis Sejajar dan tegak lurus.png
+storage/photos/365f78064e60066036f8a08728da36ef/Garis tegak lurus.png
+storage/photos/365f78064e60066036f8a08728da36ef/Jumlah Kunjungan Perpus Selama 1 minggu.PNG
+storage/photos/365f78064e60066036f8a08728da36ef/Jumlah Sudut Segitiga 80 50.PNG
+storage/photos/365f78064e60066036f8a08728da36ef/Jumlah Sudut Segitiga Sama Kaki.PNG
+storage/photos/365f78064e60066036f8a08728da36ef/Keliling Persegi Panjang Aljabar.png
+storage/photos/365f78064e60066036f8a08728da36ef/Kolam Renang Persegi Aljabar.png
+storage/photos/365f78064e60066036f8a08728da36ef/Kombinasi Sudut Komplemen dan Suplemen 26 derajat.PNG
+storage/photos/365f78064e60066036f8a08728da36ef/Kombinasi Sudut Komplemen dan Suplemen 2x+3x+90.PNG
+storage/photos/365f78064e60066036f8a08728da36ef/Komplemen x+70.PNG
+storage/photos/365f78064e60066036f8a08728da36ef/Kontekstual Deret Aritmatika Burung.png
+storage/photos/365f78064e60066036f8a08728da36ef/Lingkaran R 14 sudut 90.png
+storage/photos/365f78064e60066036f8a08728da36ef/Menganalisa Kesalahan Perhitungan Nilai Aljabar.png
+storage/photos/365f78064e60066036f8a08728da36ef/Operasi Kombinasi Penjumalah dan Pengurangan Pecahan.png
+storage/photos/365f78064e60066036f8a08728da36ef/Operasi Pecahan-Pembagian Aljabar.png
+storage/photos/365f78064e60066036f8a08728da36ef/Pakan Ternak.png
+storage/photos/365f78064e60066036f8a08728da36ef/Panjang Busur Jika K dan Sudut Pusat diketahui.png
+storage/photos/365f78064e60066036f8a08728da36ef/Persegi Ajaib.png
+storage/photos/365f78064e60066036f8a08728da36ef/Pola Bilangan CBT 1.png
+storage/photos/365f78064e60066036f8a08728da36ef/Pola Bilangan CBT 10.png
+storage/photos/365f78064e60066036f8a08728da36ef/Pola Bilangan CBT 3.png
+storage/photos/365f78064e60066036f8a08728da36ef/Pola Bilangan CBT 4.png
+storage/photos/365f78064e60066036f8a08728da36ef/Pola Bilangan CBT 5.png
+storage/photos/365f78064e60066036f8a08728da36ef/Pola Bilangan CBT 6.png
+storage/photos/365f78064e60066036f8a08728da36ef/Pola Bilangan CBT 7.png
+storage/photos/365f78064e60066036f8a08728da36ef/Pola Bilangan CBT 8.png
+storage/photos/365f78064e60066036f8a08728da36ef/Pola Bilangan CBT 9.png
+storage/photos/365f78064e60066036f8a08728da36ef/Pola Bilangan Pecahan.png
+storage/photos/365f78064e60066036f8a08728da36ef/Pola Bilangan Sisipan.png
+storage/photos/365f78064e60066036f8a08728da36ef/Revisi Pola Bilangan CBT 2.png
+storage/photos/365f78064e60066036f8a08728da36ef/Screenshot 2025-11-15 211539.png
+storage/photos/365f78064e60066036f8a08728da36ef/Screenshot 2025-11-15 212159.png
+storage/photos/365f78064e60066036f8a08728da36ef/Screenshot 2025-11-15 212858.png
+storage/photos/365f78064e60066036f8a08728da36ef/Screenshot 2025-11-15 220107.png
+storage/photos/365f78064e60066036f8a08728da36ef/Screenshot 2025-11-15 220401.png
+storage/photos/365f78064e60066036f8a08728da36ef/Screenshot 2025-11-15 220858.png
+storage/photos/365f78064e60066036f8a08728da36ef/Screenshot 2025-11-15 221236.png
+storage/photos/365f78064e60066036f8a08728da36ef/Screenshot 2025-11-15 222120.png
+storage/photos/365f78064e60066036f8a08728da36ef/Screenshot 2025-11-15 224540.png
+storage/photos/365f78064e60066036f8a08728da36ef/Screenshot 2025-11-16 093940.png
+storage/photos/365f78064e60066036f8a08728da36ef/Screenshot 2025-11-16 095348.png
+storage/photos/365f78064e60066036f8a08728da36ef/Screenshot 2025-11-16 100150.png
+storage/photos/365f78064e60066036f8a08728da36ef/Screenshot 2025-11-16 130126.png
+storage/photos/365f78064e60066036f8a08728da36ef/Screenshot 2025-11-16 130841.png
+storage/photos/365f78064e60066036f8a08728da36ef/Screenshot 2025-11-16 132819.png
+storage/photos/365f78064e60066036f8a08728da36ef/Screenshot 2025-11-16 133206.png
+storage/photos/365f78064e60066036f8a08728da36ef/Screenshot 2025-11-16 134445.png
+storage/photos/365f78064e60066036f8a08728da36ef/Screenshot 2025-11-16 135310.png
+storage/photos/365f78064e60066036f8a08728da36ef/Screenshot 2025-11-16 135805.png
+storage/photos/365f78064e60066036f8a08728da36ef/Screenshot 2025-11-16 140126.png
+storage/photos/365f78064e60066036f8a08728da36ef/Screenshot 2025-11-16 161448.png
+storage/photos/365f78064e60066036f8a08728da36ef/Screenshot 2025-11-16 163617.png
+storage/photos/365f78064e60066036f8a08728da36ef/Screenshot 2025-11-16 164018.png
+storage/photos/365f78064e60066036f8a08728da36ef/Screenshot 2025-11-16 165559.png
+storage/photos/365f78064e60066036f8a08728da36ef/Screenshot 2025-11-16 170712.png
+storage/photos/365f78064e60066036f8a08728da36ef/Soal ASAT 40.PNG
+storage/photos/365f78064e60066036f8a08728da36ef/Soal Asat 26.PNG
+storage/photos/365f78064e60066036f8a08728da36ef/Soal Asat 29.PNG
+storage/photos/365f78064e60066036f8a08728da36ef/Soal Asat No 27.PNG
+storage/photos/365f78064e60066036f8a08728da36ef/Soal Asat No 30.PNG
+storage/photos/365f78064e60066036f8a08728da36ef/Soal Asat No 31.PNG
+storage/photos/365f78064e60066036f8a08728da36ef/Soal Cerita Subtitusi Aljabar.png
+storage/photos/365f78064e60066036f8a08728da36ef/Sudut BAC 55.png
+storage/photos/365f78064e60066036f8a08728da36ef/Sudut Bertolak Belakang 135 Derajat.PNG
+storage/photos/365f78064e60066036f8a08728da36ef/Sudut Segitiga wbeqheh.PNG
+storage/photos/365f78064e60066036f8a08728da36ef/Sudut Suplemen Berdasarkan Sudut Segititga.PNG
+storage/photos/365f78064e60066036f8a08728da36ef/Tabel Perubahan Suhu.png
+storage/photos/365f78064e60066036f8a08728da36ef/Taman Bunga.png
+storage/photos/365f78064e60066036f8a08728da36ef/WhatsApp Image 2025-05-31 at 15.57.27.jpeg
+storage/photos/365f78064e60066036f8a08728da36ef/avsvav.png
+storage/photos/365f78064e60066036f8a08728da36ef/d25d28f1-5f1b-4fce-ab6a-728b37ff3c64-v2.png
+storage/photos/365f78064e60066036f8a08728da36ef/luas daerah yang diarsir.png
+storage/photos/365f78064e60066036f8a08728da36ef/sbenfdn.png
+storage/photos/365f78064e60066036f8a08728da36ef/sbsbababa.png
+storage/photos/365f78064e60066036f8a08728da36ef/skdnbsknblsknb;.png
+storage/photos/5583b8dc59e43be37ae20428a07d5762/align left.png
+storage/photos/5583b8dc59e43be37ae20428a07d5762/center 1.png
+storage/photos/5583b8dc59e43be37ae20428a07d5762/copy.jpg
+storage/photos/5583b8dc59e43be37ae20428a07d5762/paste.png
+storage/photos/57aa4a6c9b5c800a870431594da7e4a2/1.png
+storage/photos/6233b94e82595744426333a6f683ac2b/1.png
+storage/photos/6233b94e82595744426333a6f683ac2b/16.JPG
+storage/photos/6233b94e82595744426333a6f683ac2b/20.JPG
+storage/photos/6233b94e82595744426333a6f683ac2b/3.png
+storage/photos/6233b94e82595744426333a6f683ac2b/7.png
+storage/photos/6233b94e82595744426333a6f683ac2b/pen.JPG
+storage/photos/6e29fef4c70f6a78e7381603b8a24ff2/ips 20.png
+storage/photos/6ee0a15c592059ba3fc7399591befd57/.,..png
+storage/photos/6ee0a15c592059ba3fc7399591befd57/.,.png
+storage/photos/6ee0a15c592059ba3fc7399591befd57/1-3.png
+storage/photos/6ee0a15c592059ba3fc7399591befd57/1-4.png
+storage/photos/6ee0a15c592059ba3fc7399591befd57/1.png
+storage/photos/6ee0a15c592059ba3fc7399591befd57/A.png
+storage/photos/6ee0a15c592059ba3fc7399591befd57/BA.png
+storage/photos/6ee0a15c592059ba3fc7399591befd57/SOAL 1.png
+storage/photos/6ee0a15c592059ba3fc7399591befd57/Screenshot 2025-06-04 025048.png
+storage/photos/6ee0a15c592059ba3fc7399591befd57/Screenshot 2025-06-04 025649.png
+storage/photos/6ee0a15c592059ba3fc7399591befd57/Screenshot 2025-06-04 030606.png
+storage/photos/6ee0a15c592059ba3fc7399591befd57/Screenshot 2025-06-04 032827.png
+storage/photos/6ee0a15c592059ba3fc7399591befd57/Screenshot 2025-06-05 035030.png
+storage/photos/6ee0a15c592059ba3fc7399591befd57/Screenshot 2025-06-05 0350301.png
+storage/photos/6ee0a15c592059ba3fc7399591befd57/Screenshot 2025-06-05 100831.png
+storage/photos/6ee0a15c592059ba3fc7399591befd57/Screenshot 2025-06-05 101521.png
+storage/photos/6ee0a15c592059ba3fc7399591befd57/Screenshot 2025-06-05 102609.png
+storage/photos/6ee0a15c592059ba3fc7399591befd57/Screenshot 2025-06-05 121023.png
+storage/photos/6ee0a15c592059ba3fc7399591befd57/Screenshot 2025-06-05 141127.png
+storage/photos/6ee0a15c592059ba3fc7399591befd57/Screenshot 2025-06-05 142029.png
+storage/photos/6ee0a15c592059ba3fc7399591befd57/Screenshot 2025-06-05 143504.png
+storage/photos/6ee0a15c592059ba3fc7399591befd57/Screenshot 2025-06-05 144042.png
+storage/photos/6ee0a15c592059ba3fc7399591befd57/Screenshot 2025-06-05 144506.png
+storage/photos/6ee0a15c592059ba3fc7399591befd57/Screenshot 2025-06-06 1.png
+storage/photos/6ee0a15c592059ba3fc7399591befd57/Screenshot 2025-06-06 113155.png
+storage/photos/6ee0a15c592059ba3fc7399591befd57/Screenshot 2025-06-06 122902.png
+storage/photos/6ee0a15c592059ba3fc7399591befd57/Screenshot 2025-06-06 151518.png
+storage/photos/6ee0a15c592059ba3fc7399591befd57/Y.png
+storage/photos/6ee0a15c592059ba3fc7399591befd57/Z.png
+storage/photos/6ee0a15c592059ba3fc7399591befd57/a.Q.png
+storage/photos/6ee0a15c592059ba3fc7399591befd57/a.U.png
+storage/photos/6ee0a15c592059ba3fc7399591befd57/a.m.png
+storage/photos/6ee0a15c592059ba3fc7399591befd57/a.n.png
+storage/photos/6ee0a15c592059ba3fc7399591befd57/a.o.png
+storage/photos/6ee0a15c592059ba3fc7399591befd57/a.p.png
+storage/photos/6ee0a15c592059ba3fc7399591befd57/a.r.png
+storage/photos/6ee0a15c592059ba3fc7399591befd57/a.s.png
+storage/photos/6ee0a15c592059ba3fc7399591befd57/a.t.png
+storage/photos/6ee0a15c592059ba3fc7399591befd57/a12.png
+storage/photos/6ee0a15c592059ba3fc7399591befd57/a1234.png
+storage/photos/6ee0a15c592059ba3fc7399591befd57/a21.png
+storage/photos/6ee0a15c592059ba3fc7399591befd57/a22.png
+storage/photos/6ee0a15c592059ba3fc7399591befd57/a4321.png
+storage/photos/6ee0a15c592059ba3fc7399591befd57/aksa.png
+storage/photos/6ee0a15c592059ba3fc7399591befd57/am2.png
+storage/photos/6ee0a15c592059ba3fc7399591befd57/am3.png
+storage/photos/6ee0a15c592059ba3fc7399591befd57/am5.png
+storage/photos/6ee0a15c592059ba3fc7399591befd57/am6.png
+storage/photos/6ee0a15c592059ba3fc7399591befd57/am7.png
+storage/photos/6ee0a15c592059ba3fc7399591befd57/x.png
+storage/photos/78b23c64efc034af5b52b997ea8134b0/1.asts genap 9 2026.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/1.cinta.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/1.jual beli.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/1.rasul.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/11.asts genap 9 2026.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/15 asts genap 9.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/2.asts 9  2026.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/2.rasul.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/24 asts 9.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/25 asts 9.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/3 asts genap 9.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/4 asts genap 9.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/41 asts genap 9.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/43 asts genap 9.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/44 asts genap 9.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/45 asts genap 9.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/5 asts genap 9.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/Alquran toleransi9.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/Capture uas 1.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/Capture uas 2.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/Capture uas 4.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/Capture27.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/Capture3.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/QURBAN1.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/alquran toleransi10.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/asas 2025 alquran tentang toleransi1.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/asat1 2025.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/asts 13.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/asts 18.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/asts 19.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/asts 24.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/asts 25.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/asts 26.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/asts 27.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/asts 28.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/asts 29.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/asts 30.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/asts genap  2026.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/asts genap 13 2026.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/asts genap 14 2026.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/asts genap 17 2026.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/asts genap 2 2026.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/asts genap 3 2026.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/asts genap 4 2026.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/cinta tanah air 1 2026.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/cinta tanah air 2 2026.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/cinta tanah air 2026.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/husnuzhan13.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/husnuzhan7.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/iman kepada kitab Allah2.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/iman kepada kitab1.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/iman kpd Rasul2.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/iman kpd Rasul3.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/jenazah5.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/jualbeli3.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/kasih sayang1.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/kasih sayang3.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/moderat 5.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/moderat3.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/nama surga 1.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/toleransi1.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/waqaf 1.PNG
+storage/photos/78b23c64efc034af5b52b997ea8134b0/waqaf 2.PNG
+storage/photos/88d4d23297d6f655ea2629e37afeefd8/AA1.png
+storage/photos/97afcefae6d7b6eb4af3f9662d0433f4/19 c.png
+storage/photos/ab754c19bff8b86f0b4b93e00487bc2d/Screenshot 2026-02-24 085845.png
+storage/photos/ab754c19bff8b86f0b4b93e00487bc2d/Screenshot 2026-02-24 090000.png
+storage/photos/ab754c19bff8b86f0b4b93e00487bc2d/Screenshot 2026-02-24 090045.png
+storage/photos/ab754c19bff8b86f0b4b93e00487bc2d/Screenshot 2026-02-24 090112.png
+storage/photos/ab754c19bff8b86f0b4b93e00487bc2d/Screenshot 2026-02-24 090132.png
+storage/photos/ab754c19bff8b86f0b4b93e00487bc2d/Screenshot 2026-02-24 090157.png
+storage/photos/ab754c19bff8b86f0b4b93e00487bc2d/Screenshot 2026-02-24 090219.png
+storage/photos/ab754c19bff8b86f0b4b93e00487bc2d/Screenshot 2026-02-24 090243.png
+storage/photos/ab754c19bff8b86f0b4b93e00487bc2d/Screenshot 2026-02-24 090306.png
+storage/photos/ab754c19bff8b86f0b4b93e00487bc2d/Screenshot 2026-02-24 090324.png
+storage/photos/ab754c19bff8b86f0b4b93e00487bc2d/Screenshot 2026-02-24 090345.png
+storage/photos/ab754c19bff8b86f0b4b93e00487bc2d/Screenshot 2026-02-24 090404.png
+storage/photos/ab754c19bff8b86f0b4b93e00487bc2d/Screenshot 2026-02-24 090423.png
+storage/photos/ab754c19bff8b86f0b4b93e00487bc2d/Screenshot 2026-02-24 090439.png
+storage/photos/ab754c19bff8b86f0b4b93e00487bc2d/Screenshot 2026-02-24 090456.png
+storage/photos/ab754c19bff8b86f0b4b93e00487bc2d/Screenshot 2026-02-24 090514.png
+storage/photos/ab754c19bff8b86f0b4b93e00487bc2d/Screenshot_10.jpg
+storage/photos/ab754c19bff8b86f0b4b93e00487bc2d/Screenshot_4.jpg
+storage/photos/b92c424d3e5d84047cd0be1e92894c12/1.jpg
+storage/photos/b92c424d3e5d84047cd0be1e92894c12/2.jpg
+storage/photos/b92c424d3e5d84047cd0be1e92894c12/3.jpg
+storage/photos/b92c424d3e5d84047cd0be1e92894c12/4.jpg
+storage/photos/b92c424d3e5d84047cd0be1e92894c12/48.png
+storage/photos/b92c424d3e5d84047cd0be1e92894c12/asat ips 4.jpg
+storage/photos/b92c424d3e5d84047cd0be1e92894c12/asat ips 7 29.jpg
+storage/photos/b92c424d3e5d84047cd0be1e92894c12/asat ips 7 43.jpg
+storage/photos/b92c424d3e5d84047cd0be1e92894c12/asat ips 7 47.jpg
+storage/photos/c2b6f65b86806e5dd2b2e3d26e4965e6/10.png
+storage/photos/c2b6f65b86806e5dd2b2e3d26e4965e6/13.png
+storage/photos/c2b6f65b86806e5dd2b2e3d26e4965e6/17.png
+storage/photos/c2b6f65b86806e5dd2b2e3d26e4965e6/19.png
+storage/photos/c2b6f65b86806e5dd2b2e3d26e4965e6/21.png
+storage/photos/c2b6f65b86806e5dd2b2e3d26e4965e6/29.png
+storage/photos/c2b6f65b86806e5dd2b2e3d26e4965e6/3.png
+storage/photos/c2b6f65b86806e5dd2b2e3d26e4965e6/30.jpg
+storage/photos/c2b6f65b86806e5dd2b2e3d26e4965e6/31.png
+storage/photos/c2b6f65b86806e5dd2b2e3d26e4965e6/32 ASAS.png
+storage/photos/c2b6f65b86806e5dd2b2e3d26e4965e6/33 oke.png
+storage/photos/c2b6f65b86806e5dd2b2e3d26e4965e6/33.jpg
+storage/photos/c2b6f65b86806e5dd2b2e3d26e4965e6/34 hambatan.png
+storage/photos/c2b6f65b86806e5dd2b2e3d26e4965e6/34.png
+storage/photos/c2b6f65b86806e5dd2b2e3d26e4965e6/35 hambatan.png
+storage/photos/c2b6f65b86806e5dd2b2e3d26e4965e6/36 hambatan.png
+storage/photos/c2b6f65b86806e5dd2b2e3d26e4965e6/37 hambatan.png
+storage/photos/c2b6f65b86806e5dd2b2e3d26e4965e6/37.png
+storage/photos/c2b6f65b86806e5dd2b2e3d26e4965e6/38 hambatan.png
+storage/photos/c2b6f65b86806e5dd2b2e3d26e4965e6/39 hambatan.png
+storage/photos/c2b6f65b86806e5dd2b2e3d26e4965e6/4.png
+storage/photos/c2b6f65b86806e5dd2b2e3d26e4965e6/5.jpg
+storage/photos/c2b6f65b86806e5dd2b2e3d26e4965e6/5.png
+storage/photos/c2b6f65b86806e5dd2b2e3d26e4965e6/50.jpg
+storage/photos/c2b6f65b86806e5dd2b2e3d26e4965e6/5gh.jpg
+storage/photos/c2b6f65b86806e5dd2b2e3d26e4965e6/6.png
+storage/photos/c2b6f65b86806e5dd2b2e3d26e4965e6/6ox.png
+storage/photos/c2b6f65b86806e5dd2b2e3d26e4965e6/7.png
+storage/photos/c2b6f65b86806e5dd2b2e3d26e4965e6/8.jpg
+storage/photos/c2b6f65b86806e5dd2b2e3d26e4965e6/9.jpg
+storage/photos/c2b6f65b86806e5dd2b2e3d26e4965e6/kuping.png
+storage/photos/c2b6f65b86806e5dd2b2e3d26e4965e6/lidah.png
+storage/photos/c2b6f65b86806e5dd2b2e3d26e4965e6/pska 10.jpg
+storage/photos/c2b6f65b86806e5dd2b2e3d26e4965e6/pska 13.jpg
+storage/photos/c2b6f65b86806e5dd2b2e3d26e4965e6/pska 36.jpg
+storage/photos/c2b6f65b86806e5dd2b2e3d26e4965e6/pska 40.jpg
+storage/photos/c2b6f65b86806e5dd2b2e3d26e4965e6/pska 7.jpg
+storage/photos/c2b6f65b86806e5dd2b2e3d26e4965e6/pska 8.jpg
+storage/photos/c2b6f65b86806e5dd2b2e3d26e4965e6/pska 9.jpg
+storage/photos/c2b6f65b86806e5dd2b2e3d26e4965e6/testis.png
+storage/photos/c6eb49b33e71660fc92bc0d6e7977abc/001.jpg
+storage/photos/c6eb49b33e71660fc92bc0d6e7977abc/002.jpg
+storage/photos/c6eb49b33e71660fc92bc0d6e7977abc/003.jpg
+storage/photos/c6eb49b33e71660fc92bc0d6e7977abc/004.jpg
+storage/photos/c6eb49b33e71660fc92bc0d6e7977abc/005.jpg
+storage/photos/c6eb49b33e71660fc92bc0d6e7977abc/006.jpg
+storage/photos/c6eb49b33e71660fc92bc0d6e7977abc/007.jpg
+storage/photos/c6eb49b33e71660fc92bc0d6e7977abc/Screenshot_1.jpg
+storage/photos/c6eb49b33e71660fc92bc0d6e7977abc/Screenshot_2.jpg
+storage/photos/c6eb49b33e71660fc92bc0d6e7977abc/Screenshot_3.jpg
+storage/photos/c6eb49b33e71660fc92bc0d6e7977abc/Screenshot_4.jpg
+storage/photos/c6eb49b33e71660fc92bc0d6e7977abc/Screenshot_5.jpg
+storage/photos/c6eb49b33e71660fc92bc0d6e7977abc/Screenshot_6.jpg
+storage/photos/c6eb49b33e71660fc92bc0d6e7977abc/Screenshot_7.jpg
+storage/photos/c6eb49b33e71660fc92bc0d6e7977abc/Screenshot_8.jpg
+storage/photos/c6eb49b33e71660fc92bc0d6e7977abc/Screenshot_9.jpg
+storage/photos/c6eb49b33e71660fc92bc0d6e7977abc/shallow frying.jpg
+storage/photos/c9a807310d5b982ee92c853fe7f8c192/28 IPA GES.png
+storage/photos/c9a807310d5b982ee92c853fe7f8c192/30 IPA GES.png
+storage/photos/c9a807310d5b982ee92c853fe7f8c192/32 ipa ges.png
+storage/photos/c9a807310d5b982ee92c853fe7f8c192/33 ipa ges.png
+storage/photos/c9a807310d5b982ee92c853fe7f8c192/34 ipa ges.png
+storage/photos/c9a807310d5b982ee92c853fe7f8c192/35 ipa ges.jpg
+storage/photos/c9a807310d5b982ee92c853fe7f8c192/37 ipa ges.png
+storage/photos/c9a807310d5b982ee92c853fe7f8c192/39 ipa ges.png
+storage/photos/c9a807310d5b982ee92c853fe7f8c192/40 ipa ges.png
+storage/photos/c9a807310d5b982ee92c853fe7f8c192/42 ipa gess.jpg
+storage/photos/c9a807310d5b982ee92c853fe7f8c192/45 ipa ges.png
+storage/photos/c9a807310d5b982ee92c853fe7f8c192/47 IPA GES.png
+storage/photos/c9a807310d5b982ee92c853fe7f8c192/48 IPA GESS.png
+storage/photos/c9a807310d5b982ee92c853fe7f8c192/49 IPA GESS.jpg
+storage/photos/cb08b40c01d3d40337546675276c4fee/48398-konferensi-meja-bundar.jpg
+storage/photos/cb08b40c01d3d40337546675276c4fee/HHHH.png
+storage/photos/cb08b40c01d3d40337546675276c4fee/peta buta.jpg
+storage/photos/cb92df2f6b31834bc19e98d7297d63b4/PETA.png
+storage/photos/d685e25194d0edc140c0907e6363b526/STAS zip 6.PNG
+storage/photos/d685e25194d0edc140c0907e6363b526/grafik.PNG
+storage/photos/d685e25194d0edc140c0907e6363b526/so 13.png
+storage/photos/d685e25194d0edc140c0907e6363b526/so 17.png
+storage/photos/d685e25194d0edc140c0907e6363b526/so 2.png
+storage/photos/d685e25194d0edc140c0907e6363b526/so 3.png
+storage/photos/d685e25194d0edc140c0907e6363b526/so 5.png
+storage/photos/d685e25194d0edc140c0907e6363b526/so 6.png
+storage/photos/d685e25194d0edc140c0907e6363b526/so 9.png
+storage/photos/d685e25194d0edc140c0907e6363b526/tabel 1.PNG
+storage/photos/d685e25194d0edc140c0907e6363b526/tabel 2.PNG
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/APLIKASI BIL PANGKAT 2.PNG
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/APLIKASI PANGKAT 3.PNG
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/J6.PNG
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/J7.JPG
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/J8.JPG
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/J8.PNG
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/K1.png
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/L1.jpg
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/M2.jpg
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/MM5.png
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/NOTASI 1.PNG
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/NOTASI 2.PNG
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/OPERASI PANGKAT 1.PNG
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/OPERASI PANGKAT 2.PNG
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/R7.jpg
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/Refleksi y = 2.jpg
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/SM 15.png
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/SM 4.png
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/SM 5.png
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/SM 9.png
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/SM1.png
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/SM3.png
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/SM8.png
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/SOAL 1.PNG
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/SPLDV - GRAFIK.png
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/Screenshot 2025-04-07 225429.png
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/Screenshot 2025-04-09 185316.png
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/Screenshot 2025-04-09 192845.png
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/Screenshot 2025-04-26 193550.png
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/Screenshot 2025-04-26 201210.png
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/Screenshot 2025-04-26 202136.png
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/Screenshot 2025-04-26 204643.png
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/Screenshot 2025-04-26 211046.png
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/VIEW 2.jpeg
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/WhatsApp Image 2023-09-05 at 08.42.20.jpeg
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/WhatsApp Image 2023-09-05 at 09.11.36.jpeg
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/WhatsApp Image 2023-09-05 at 09.12.34.jpeg
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/WhatsApp Image 2023-09-05 at 09.28.32.jpeg
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/WhatsApp Image 2023-09-05 at 09.32.39.jpeg
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/WhatsApp Image 2023-09-13 at 11.16.26.jpeg
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/WhatsApp Image 2023-09-13 at 11.26.50.jpeg
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/WhatsApp Image 2023-09-14 at 14.36.21.jpeg
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/balok.PNG
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/bola.png
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/eliminasi murni.png
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/j17.PNG
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/j2.JPG
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/j3.JPG
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/k2.png
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/k3.png
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/kaleng konguan.png
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/kerucut.png
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/kubus.PNG
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/limas dg ukuran nya.png
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/limas segi4.png
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/m1.jpg
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/m3.jpg
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/m4.jpg
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/m5.jpg
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/m6.jpg
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/mm 11.png
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/mm4.png
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/mm6.png
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/mm7.png
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/mm8.png
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/mm9.png
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/persegi.PNG
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/pk-1.PNG
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/r1.PNG
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/r8.jpg
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/ra1.JPG
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/s3.PNG
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/se4.JPG
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/sm 10.png
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/sm 12.png
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/sm 16.png
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/sm3.png
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/sm4.png
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/sm5.png
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/sp1.PNG
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/sp2.PNG
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/sp3.PNG
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/sp4.PNG
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/sp5.PNG
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/sp6.PNG
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/ss11.png
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/ss7.png
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/ss8.png
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/t1.jpg
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/t2.jpg
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/t3.jpg
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/t4.jpg
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/t5.jpg
+storage/photos/d7519fb2ee45bbfb0058209ff4ed9ed0/tabung.png
+storage/photos/dfaf5d2ca3f1907d7e37016c729707cb/Bandul A B C.png
+storage/photos/dfaf5d2ca3f1907d7e37016c729707cb/GAMBAR ALAT PERNAPASAN.png
+storage/photos/dfaf5d2ca3f1907d7e37016c729707cb/GAMBAR GELOMBANG PD  GABUS JARAK 90 CM.png
+storage/photos/dfaf5d2ca3f1907d7e37016c729707cb/GELOBANG TRASVERSAL 2,4,6.png
+storage/photos/dfaf5d2ca3f1907d7e37016c729707cb/GELOMBANG 2.jpg
+storage/photos/dfaf5d2ca3f1907d7e37016c729707cb/GETARAN 3.JPG
+storage/photos/dfaf5d2ca3f1907d7e37016c729707cb/Gambar pencernaan makanan.jpeg
+storage/photos/dfaf5d2ca3f1907d7e37016c729707cb/JANTUNG.jpeg
+storage/photos/dfaf5d2ca3f1907d7e37016c729707cb/Jaringan xilem dan fluem.png
+storage/photos/dfaf5d2ca3f1907d7e37016c729707cb/MIKROSKOP.jpeg
+storage/photos/dfaf5d2ca3f1907d7e37016c729707cb/PENCERNAAN MAKANAN.jpeg
+storage/photos/dfaf5d2ca3f1907d7e37016c729707cb/SISTEM ORGAN PD MANUSIA.jpg
+storage/photos/dfaf5d2ca3f1907d7e37016c729707cb/filtrasi1-l.jpg
+storage/photos/dfaf5d2ca3f1907d7e37016c729707cb/gambar danu dan adiknya main ayunan.jpg
+storage/photos/dfaf5d2ca3f1907d7e37016c729707cb/gambar katrol 4 tali.png
+storage/photos/dfaf5d2ca3f1907d7e37016c729707cb/gambar perpindahan benda.png
+storage/photos/dfaf5d2ca3f1907d7e37016c729707cb/gambar pohon kelapa.jpg
+storage/photos/dfaf5d2ca3f1907d7e37016c729707cb/gambar sel hewan nomer.png
+storage/photos/dfaf5d2ca3f1907d7e37016c729707cb/gambar tumbuhan nomer 5 - 2.png
+storage/photos/dfaf5d2ca3f1907d7e37016c729707cb/gambar-bagian-bagian-sel-tumbuhan-29.png
+storage/photos/dfaf5d2ca3f1907d7e37016c729707cb/kapal sonar Mengukur_kedalaman_laut.png
+storage/photos/dfaf5d2ca3f1907d7e37016c729707cb/kapal-di-lautan.jpg
+storage/photos/dfaf5d2ca3f1907d7e37016c729707cb/katrol-bergerak 2 katrol.png
+storage/photos/dfaf5d2ca3f1907d7e37016c729707cb/ketapel.jpg
+storage/photos/dfaf5d2ca3f1907d7e37016c729707cb/mikroskop bagian2 y.JPG
+storage/photos/dfaf5d2ca3f1907d7e37016c729707cb/mikroskop binokuler.jpeg
+storage/photos/dfaf5d2ca3f1907d7e37016c729707cb/mitokondria.jpeg
+storage/photos/dfaf5d2ca3f1907d7e37016c729707cb/pernapasan 1.png
+storage/photos/dfaf5d2ca3f1907d7e37016c729707cb/pesawat sederhana.jpg
+storage/photos/dfaf5d2ca3f1907d7e37016c729707cb/pesawat-sederhana-soal-9.png
+storage/photos/dfaf5d2ca3f1907d7e37016c729707cb/sistem-pencernaan-manusia.jpg
+storage/photos/e1156b68fa5282bcccd26d50e1e3383f/63803cb4-1373-4f16-aa35-6743c611b0fb.jpeg
+storage/photos/e1156b68fa5282bcccd26d50e1e3383f/Gulai Kepala Ikan - Resep(1).jpg
+storage/photos/e1156b68fa5282bcccd26d50e1e3383f/asinan bengkoang.jpg
+storage/photos/e1156b68fa5282bcccd26d50e1e3383f/ayam negri.jpg
+storage/photos/e1156b68fa5282bcccd26d50e1e3383f/bit.jpeg
+storage/photos/e1156b68fa5282bcccd26d50e1e3383f/boiling.jpg
+storage/photos/e1156b68fa5282bcccd26d50e1e3383f/bubur jali.jpg
+storage/photos/e1156b68fa5282bcccd26d50e1e3383f/ceker mercon.jpeg
+storage/photos/e1156b68fa5282bcccd26d50e1e3383f/choipan-bengkoang.jpg
+storage/photos/e1156b68fa5282bcccd26d50e1e3383f/domba.jfif
+storage/photos/e1156b68fa5282bcccd26d50e1e3383f/grilling.jpg
+storage/photos/e1156b68fa5282bcccd26d50e1e3383f/hintalu.jpg
+storage/photos/e1156b68fa5282bcccd26d50e1e3383f/ikan bandeng.jpg
+storage/photos/e1156b68fa5282bcccd26d50e1e3383f/ikan lele.jpg
+storage/photos/e1156b68fa5282bcccd26d50e1e3383f/images (1).jpeg
+storage/photos/e1156b68fa5282bcccd26d50e1e3383f/images (2).jpeg
+storage/photos/e1156b68fa5282bcccd26d50e1e3383f/images (3).jpeg
+storage/photos/e1156b68fa5282bcccd26d50e1e3383f/images.jpeg
+storage/photos/e1156b68fa5282bcccd26d50e1e3383f/kentang goreng.jpg
+storage/photos/e1156b68fa5282bcccd26d50e1e3383f/kerap-dibuang-ini-5-manfaat-kulit-telur.jpg
+storage/photos/e1156b68fa5282bcccd26d50e1e3383f/keripik kulit ikan.jfif
+storage/photos/e1156b68fa5282bcccd26d50e1e3383f/nasi porang.jpg
+storage/photos/e1156b68fa5282bcccd26d50e1e3383f/perkedel.jpg
+storage/photos/e1156b68fa5282bcccd26d50e1e3383f/peti kemas.jpg
+storage/photos/e1156b68fa5282bcccd26d50e1e3383f/piring penyajian.jpg
+storage/photos/e1156b68fa5282bcccd26d50e1e3383f/roti uwi.jpg
+storage/photos/e1156b68fa5282bcccd26d50e1e3383f/rumput-laut-kering-2.jpg
+storage/photos/e1156b68fa5282bcccd26d50e1e3383f/sampah.png
+storage/photos/e1156b68fa5282bcccd26d50e1e3383f/sate padang.jpg
+storage/photos/e1156b68fa5282bcccd26d50e1e3383f/sereal gandum.jpg
+storage/photos/e1156b68fa5282bcccd26d50e1e3383f/telur bebek.jpg
+storage/photos/e213d70c52e9f3b0d0e2987d0d633687/gambar siswa nanam.jpeg
+storage/photos/e213d70c52e9f3b0d0e2987d0d633687/grashopper.jpg
+storage/photos/e213d70c52e9f3b0d0e2987d0d633687/lutung.jpg
+storage/photos/e213d70c52e9f3b0d0e2987d0d633687/main bola.jpg
+storage/photos/e213d70c52e9f3b0d0e2987d0d633687/masak soup.jpg
+storage/photos/e213d70c52e9f3b0d0e2987d0d633687/recount text 1.png
+storage/photos/e213d70c52e9f3b0d0e2987d0d633687/soal cbt 2.png
+storage/photos/e213d70c52e9f3b0d0e2987d0d633687/soal cbt1.png
+storage/photos/e213d70c52e9f3b0d0e2987d0d633687/stop littering.jpg
+storage/photos/ed9a7546529e7203f963e0a418a5c14c/GAMBAR SOAL 1 -5.PNG
+storage/photos/ed9a7546529e7203f963e0a418a5c14c/GAMBAR SOAL NMR 20.PNG
+storage/photos/ed9a7546529e7203f963e0a418a5c14c/GAMBAR SOAL NMR 35.PNG
+storage/photos/ed9a7546529e7203f963e0a418a5c14c/SOAL NMR 10.PNG
+storage/photos/ed9a7546529e7203f963e0a418a5c14c/SOAL NMR 11 & 12.PNG
+storage/photos/ed9a7546529e7203f963e0a418a5c14c/SOAL NMR 20.PNG
+storage/photos/ed9a7546529e7203f963e0a418a5c14c/SOAL NMR 22.PNG
+storage/photos/ed9a7546529e7203f963e0a418a5c14c/SOAL NMR 30 & 35.PNG
+storage/photos/ed9a7546529e7203f963e0a418a5c14c/SOAL NMR 37 & 40.PNG
+storage/photos/ed9a7546529e7203f963e0a418a5c14c/SOAL NMR 41 & 42.PNG
+storage/photos/ed9a7546529e7203f963e0a418a5c14c/SOAL NMR 43.PNG
+storage/photos/ed9a7546529e7203f963e0a418a5c14c/SOAL NMR 44.PNG
+storage/photos/ed9a7546529e7203f963e0a418a5c14c/SOAL NMR 9.PNG
+storage/photos/f130a2eb5e8c6fb0663e46fc6d028f18/WhatsApp Image 2025-06-04 at 17.10.57.jpeg
+storage/photos/f130a2eb5e8c6fb0663e46fc6d028f18/WhatsApp Image 2025-06-04 at 17.30.44.jpeg
+storage/photos/f130a2eb5e8c6fb0663e46fc6d028f18/WhatsApp Image 2025-06-04 at 21.57.07.jpeg
+storage/photos/fc60ca0b38634409194b1c7171626ab3/ALAM SEMESTA1.jpg
+storage/photos/fc60ca0b38634409194b1c7171626ab3/MUFRADAT.jpg
+storage/photos/fc60ca0b38634409194b1c7171626ab3/PASANGAN  MALAIKAT.jpg
+storage/photos/fc60ca0b38634409194b1c7171626ab3/al baqarah 285 mufradat.jpg
+storage/photos/fc60ca0b38634409194b1c7171626ab3/cendikiawan muslim.jpg
+storage/photos/fc60ca0b38634409194b1c7171626ab3/kalijaga.png
+storage/photos/fc60ca0b38634409194b1c7171626ab3/sampah.jpg
+storage/photos/fe2d86612ca77a9fcd969b53b34afb25/DHB_u09iwCG8Hq8tJK-CCFnkAEMR7h54GAAbE_9HX3FMtsZFbuRsa07Xipe_NzyXAUpSIz4ehiWpeoX7EI_TBd9jSlbWEvNAPItDzsM8b88.jfif
+storage/photos/fe2d86612ca77a9fcd969b53b34afb25/Screenshot_2.png
+storage/photos/fe2d86612ca77a9fcd969b53b34afb25/jati.png
+storage/photos/shares/22 IPA GESS.png
+storage/photos/shares/IPA 21 GES.png
+storage/photos/shares/asat ips 7 24.jpg
+storage/photos/shares/asat ips 7 28.jpg
+storage/photos/shares/gb. planet.png
