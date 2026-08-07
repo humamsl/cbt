@@ -99,7 +99,7 @@
         </div>
         <div class="p-5 overflow-y-auto flex-1">
             <div x-show="loading" class="text-center py-8 text-ink-500">Memuat preview...</div>
-            <div x-show="!loading" x-html="content"></div>
+            <div x-show="!loading" x-html="content" x-ref="previewBody"></div>
         </div>
     </div>
 </div>
@@ -128,6 +128,8 @@ function bankSoalPage() {
                 this.content = `<div class="text-rose-600 text-sm">Error: ${e.message}</div>`;
             } finally {
                 this.loading = false;
+                // Konten datang via AJAX → render ulang rumus LaTeX-nya.
+                this.$nextTick(() => window.renderSoalMath?.(this.$refs.previewBody));
             }
         },
     };

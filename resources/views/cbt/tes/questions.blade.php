@@ -97,7 +97,7 @@
                         </form>
                     </div>
                     {{-- Isi pertanyaan langsung ditampilkan (menggantikan modal preview) --}}
-                    <div class="prose prose-sm max-w-none mt-2 text-sm text-ink-800 border border-slate-200 rounded-lg p-3 bg-slate-50/50 [&_img]:max-w-full [&_img]:h-auto">
+                    <div class="soal-math prose prose-sm max-w-none mt-2 text-sm text-ink-800 border border-slate-200 rounded-lg p-3 bg-slate-50/50 [&_img]:max-w-full [&_img]:h-auto">
                         @if(filled($q->question))
                             {!! \App\Support\SoalHtml::render($q->question) !!}
                         @else
@@ -130,7 +130,7 @@
         </div>
         <div class="p-5 overflow-y-auto flex-1">
             <div x-show="loading" class="text-center py-8 text-ink-500">Memuat preview...</div>
-            <div x-show="!loading" x-html="content"></div>
+            <div x-show="!loading" x-html="content" x-ref="previewBody"></div>
         </div>
     </div>
 </div>
@@ -159,6 +159,8 @@ function tesSoalPreview() {
                 this.content = `<div class="text-rose-600 text-sm">Error: ${e.message}</div>`;
             } finally {
                 this.loading = false;
+                // Konten datang via AJAX → render ulang rumus LaTeX-nya.
+                this.$nextTick(() => window.renderSoalMath?.(this.$refs.previewBody));
             }
         },
     };

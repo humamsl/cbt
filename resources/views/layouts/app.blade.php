@@ -14,6 +14,7 @@
             --brand: {{ $AppCfg['theme_color'] ?? '#0d9488' }};
         }
     </style>
+    @include('partials.katex')
     @stack('head')
 </head>
 <body class="h-full">

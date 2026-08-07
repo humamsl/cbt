@@ -3,9 +3,9 @@
   "configurations": [
     {
       "name": "cbt",
-      "runtimeExecutable": "php",
-      "runtimeArgs": ["artisan", "serve", "--port=8000", "--host=127.0.0.1"],
-      "port": 8000
+      "runtimeExecutable": "C:\\laragon\\bin\\php\\php-8.3.26-Win32-vs16-x64\\php.exe",
+      "runtimeArgs": ["artisan", "serve", "--port=8123"],
+      "port": 8123
     }
   ]
 }

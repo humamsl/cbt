@@ -3,7 +3,7 @@
     $typeSlug = strtolower((string) optional($q->type)->slug);
 @endphp
 
-<div class="space-y-4">
+<div class="space-y-4 soal-math">
     {{-- Badges --}}
     <div class="flex flex-wrap gap-2 text-xs">
         <span class="badge-info">{{ optional($q->type)->question_type ?? '-' }}</span>

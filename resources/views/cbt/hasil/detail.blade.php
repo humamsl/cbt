@@ -17,7 +17,7 @@
     <ul class="divide-y divide-slate-100">
     @foreach($attempt->answers as $idx => $a)
         @php $q = $a->quizQuestion->question; $correct = $q->options->firstWhere('is_correct', true); @endphp
-        <li class="px-6 py-4">
+        <li class="px-6 py-4 soal-math">
             <div class="flex items-start justify-between gap-3 mb-2">
                 <div class="font-semibold text-ink-900">{{ $idx + 1 }}. {{ $q->title }}</div>
                 @if($a->is_correct)<span class="badge-success">Benar</span>

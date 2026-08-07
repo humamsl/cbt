@@ -7,6 +7,7 @@
     <meta name="robots" content="noindex, nofollow, noarchive">
     <title>{{ $quiz->name }} &middot; Ujian</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @include('partials.katex')
     <style>
         .no-select { -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
         body { overscroll-behavior: contain; }
@@ -71,7 +72,7 @@
     <div class="space-y-4">
         @foreach($quiz->questions as $idx => $qq)
             @php $q = $qq->question; @endphp
-            <div class="card card-pad" id="soal-{{ $qq->id }}">
+            <div class="card card-pad soal-math" id="soal-{{ $qq->id }}">
                 <div class="flex items-center justify-between mb-2">
                     <div class="text-xs text-ink-500">Soal {{ $idx + 1 }} dari {{ $quiz->questions->count() }}</div>
                     <span class="badge-muted">{{ $qq->marks }} poin</span>

@@ -4,7 +4,7 @@
     "scripts": {
         "dev": "vite",
         "build": "vite build",
-        "postinstall": "node scripts/copy-tinymce.js"
+        "postinstall": "node scripts/copy-tinymce.js && node scripts/copy-katex.js"
     },
     "devDependencies": {
         "@tailwindcss/forms": "^0.5.7",
@@ -23,6 +23,7 @@
         "@fontsource/inter": "^5.2.8",
         "@fontsource/plus-jakarta-sans": "^5.2.8",
         "chart.js": "^4.5.1",
+        "katex": "^0.18.1",
         "tinymce": "^7.9.3"
     }
 }

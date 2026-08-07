@@ -79,7 +79,7 @@
     <div class="space-y-4">
         @foreach($items as $i => $q)
             @php $typeSlug = strtolower((string) optional($q->type)->slug); @endphp
-            <div class="card card-pad break-inside-avoid">
+            <div class="card card-pad break-inside-avoid soal-math">
                 <div class="flex items-start justify-between gap-2 mb-2 flex-wrap">
                     <div class="flex items-center gap-2 flex-wrap">
                         <span class="w-7 h-7 rounded-full bg-brand-100 text-brand-700 grid place-items-center text-sm font-bold">

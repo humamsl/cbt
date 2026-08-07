@@ -125,6 +125,19 @@
         </div>
         <textarea name="question" id="editor-question" data-editor="full">{{ old('question', $item->question) }}</textarea>
         @error('question')<p class="mt-1 text-xs text-rose-600">{{ $message }}</p>@enderror
+
+        {{-- Pratinjau rumus: teks LaTeX (\( ... \), \[ ... \], $$ ... $$) disimpan
+             apa adanya di editor supaya mudah diperbaiki, lalu di sini ditampilkan
+             persis seperti yang nanti dilihat siswa. --}}
+        <div x-show="hasMath" x-cloak class="mt-2">
+            <div class="text-xs text-ink-500 mb-1">Pratinjau rumus (tampilan untuk siswa)</div>
+            <div id="math-preview"
+                 class="soal-math prose prose-sm max-w-none border border-brand-200 rounded-lg p-3 bg-brand-50/40 [&_img]:max-w-full"></div>
+        </div>
+        <p class="mt-1 text-[11px] text-ink-500">
+            Soal matematika hasil salin dari ChatGPT/Gemini/Wikipedia otomatis jadi LaTeX
+            (<code>\(\sqrt&#123;144&#125;\)</code>) dan dirender sebagai rumus di preview soal maupun halaman ujian siswa.
+        </p>
     </div>
 
     {{-- ====================== PALETTE SIMBOL MATEMATIKA ====================== --}}
@@ -281,6 +294,56 @@ function imagesUploadHandler(blobInfo) {
     });
 }
 
+/**
+ * Bersihkan HTML hasil paste dari sumber yang me-render matematika (ChatGPT,
+ * Gemini, Wikipedia, dsb) menjadi teks LaTeX yang bisa disimpan & diedit.
+ *
+ * Masalahnya: KaTeX/MathJax menaruh DUA salinan tiap rumus di clipboard —
+ * versi MathML (tersembunyi) dan versi HTML visual — sehingga paste mentah
+ * menghasilkan rumus dobel atau potongan simbol berantakan. Sumber LaTeX
+ * aslinya ada di <annotation encoding="application/x-tex">, jadi rumus
+ * dikembalikan ke bentuk \( ... \) / \[ ... \] yang nanti dirender KaTeX.
+ */
+function normalizeMathHtml(html) {
+    if (!html || !/katex|mjx-|<math/i.test(html)) return html;
+
+    const box = document.createElement('div');
+    box.innerHTML = html;
+
+    const texOf = (el) => (el.querySelector('annotation[encoding="application/x-tex"]')?.textContent || '').trim();
+    const plainOf = (el) => (el.querySelector('.katex-html')?.textContent || el.textContent || '').trim();
+    const asText = (el, text) => el.replaceWith(document.createTextNode(text));
+
+    // Rumus blok KaTeX → \[ ... \]  (diproses lebih dulu; .katex di dalamnya ikut terhapus)
+    box.querySelectorAll('.katex-display').forEach((el) => {
+        const tex = texOf(el);
+        asText(el, tex ? `\\[${tex}\\]` : plainOf(el));
+    });
+
+    // Rumus inline KaTeX → \( ... \)
+    box.querySelectorAll('.katex').forEach((el) => {
+        const tex = texOf(el);
+        asText(el, tex ? `\\(${tex}\\)` : plainOf(el));
+    });
+
+    // MathML biasa yang masih menyimpan sumber TeX-nya
+    box.querySelectorAll('math').forEach((el) => {
+        const tex = texOf(el);
+        if (tex) asText(el, `\\(${tex}\\)`);
+    });
+
+    // MathJax v3 tidak menyertakan sumber TeX; cukup buang salinan MathML
+    // "assistive" agar rumus tidak muncul dua kali.
+    box.querySelectorAll('mjx-assistive-mml').forEach((el) => el.remove());
+
+    // Tautan sitasi "[1]", "[2]" khas salinan dari chatbot/ensiklopedia.
+    box.querySelectorAll('a').forEach((a) => {
+        if (/^\[\d+\]$/.test((a.textContent || '').trim())) a.remove();
+    });
+
+    return box.innerHTML;
+}
+
 function bankSoalForm({ typesMap, currentType, pgCorrect, pgkCorrect, bsAnswer, tingkat, topicId, topics, mapelId, tingkatByMapel }) {
     return {
         typesMap, currentType, slug: typesMap[currentType] || 'pg',
@@ -289,6 +352,7 @@ function bankSoalForm({ typesMap, currentType, pgCorrect, pgkCorrect, bsAnswer, 
         mapelId: mapelId || '',
         tingkatByMapel: tingkatByMapel || null, // null = admin (tanpa batasan)
         showSymbols: false, symbolTarget: 'pertanyaan',
+        hasMath: false,
 
         /** Bolehkah tingkat `nomor` dipilih untuk mapel yang sedang dipilih? */
         tingkatBoleh(nomor) {
@@ -349,8 +413,22 @@ function bankSoalForm({ typesMap, currentType, pgCorrect, pgkCorrect, bsAnswer, 
                 remove_script_host: false,
                 convert_urls: false,
                 content_style: 'body { font-family: Inter, sans-serif; font-size: 14px; line-height: 1.5; }',
+                // Ubah rumus hasil paste (KaTeX/MathJax/MathML) jadi LaTeX \( ... \)
+                paste_preprocess: (editor, args) => {
+                    args.content = normalizeMathHtml(args.content);
+                },
                 setup: (editor) => {
                     editor.on('focus click keyup', () => { lastFocusedEditor = editor; });
+
+                    if (kind === 'full') {
+                        let timer = null;
+                        const sync = () => {
+                            clearTimeout(timer);
+                            timer = setTimeout(() => this.updateMathPreview(editor.getContent()), 250);
+                        };
+                        editor.on('init', () => this.updateMathPreview(editor.getContent()));
+                        editor.on('input change keyup SetContent Undo Redo', sync);
+                    }
                 },
             };
 
@@ -376,6 +454,16 @@ function bankSoalForm({ typesMap, currentType, pgCorrect, pgkCorrect, bsAnswer, 
                 console.error('TinyMCE init error:', e);
                 alert('Gagal memuat editor: ' + (e.message || e));
             }
+        },
+
+        /** Tampilkan isi editor dengan rumus LaTeX yang sudah dirender KaTeX. */
+        updateMathPreview(html) {
+            this.hasMath = /\\\(|\\\[|\$\$/.test(html || '');
+            const el = document.getElementById('math-preview');
+            if (! el) return;
+            if (! this.hasMath) { el.innerHTML = ''; return; }
+            el.innerHTML = html;
+            window.renderSoalMath?.(el);
         },
 
         insertSymbol(sym) {
