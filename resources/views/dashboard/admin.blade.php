@@ -28,15 +28,22 @@
         </div>
     </div>
 
-    @php $dcUrl = '/datacenter'; @endphp
+    @php
+        $dcUrl = '/datacenter';
+        $isGuru = (auth()->user()->user_type ?? 'admin') === 'guru';
+    @endphp
 
-    {{-- Stat cards row 1 (data induk — dikelola & di-link ke aplikasi Data Center) --}}
+    {{-- Stat cards row 1 (data induk — dikelola & di-link ke aplikasi Data Center).
+         Disembunyikan untuk guru: kartunya me-link ke aplikasi Data Center yang
+         hanya boleh diakses admin, jadi guru cukup melihat statistik CBT saja. --}}
+    @unless($isGuru)
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         <x-stat-card label="Total Siswa" :value="number_format($stats['siswa'])" icon="users" tone="brand" href="{{ $dcUrl }}/siswa"/>
         <x-stat-card label="Total Guru" :value="number_format($stats['guru'])" icon="user-tie" tone="emerald" href="{{ $dcUrl }}/guru"/>
         <x-stat-card label="Mata Pelajaran" :value="$stats['mapel']" icon="book" tone="sky" href="{{ $dcUrl }}/mapel"/>
         <x-stat-card label="Rombongan Belajar" :value="$stats['rombel']" icon="grid" tone="amber" href="{{ $dcUrl }}/rombel"/>
     </div>
+    @endunless
 
     {{-- Stat cards row 2 --}}
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">

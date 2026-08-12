@@ -14,8 +14,10 @@ return Application::configure(basePath: dirname(__DIR__))
         // Middleware global yang berjalan pada setiap request
         $middleware->append(\App\Http\Middleware\UpdateUserLastSeen::class);
 
-        // Tambahkan license check ke web group (semua halaman web)
+        // Tambahkan proteksi hak cipta + anti-kloning + license check ke web group
         $middleware->web(append: [
+            \App\Http\Middleware\VerifyCopyright::class,
+            \App\Http\Middleware\CheckLicense::class,
             \App\Http\Middleware\CheckAppExpiry::class,
         ]);
 

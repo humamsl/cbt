@@ -45,11 +45,17 @@ class DashboardController extends Controller
             ]);
         }
 
-        $stats = [
+        // Statistik data induk (siswa/guru/mapel/rombel) hanya dipakai admin —
+        // kartunya disembunyikan di dashboard guru, jadi count-nya tidak perlu
+        // dijalankan sama sekali untuk guru.
+        $statsInduk = $role === 'guru' ? [] : [
             'siswa'   => Siswa::count(),
             'guru'    => Guru::count(),
             'mapel'   => MataPelajaran::count(),
             'rombel'  => RombonganBelajar::count(),
+        ];
+
+        $stats = $statsInduk + [
             'soal'    => Question::count(),
             'tes'     => Quiz::count(),
             'sedang_ujian' => QuizAttempt::whereNotNull('time_start')

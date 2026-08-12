@@ -98,7 +98,7 @@
             </div>
 
         <div class="text-xs text-white/70 relative z-10">
-            © {{ date('Y') }} {{ $AppCfg['app_name'] }} — Powered by CyberGarage
+            © {{ date('Y') }} {{ $AppCfg['app_name'] }} — Powered by AnonymouSL
         </div>
     </div>
 
