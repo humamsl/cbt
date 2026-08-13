@@ -5,10 +5,6 @@ namespace App\Console\Commands;
 use App\Support\LicenseManager;
 use Illuminate\Console\Command;
 
-/**
- * Tampilkan identitas server (domain + sidik jari) dan status lisensi.
- * Berguna saat meminta lisensi ke owner, atau mengecek instalasi.
- */
 class LicenseShow extends Command
 {
     protected $signature = 'license:show';

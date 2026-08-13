@@ -6,16 +6,6 @@ use App\Support\LicenseManager;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 
-/**
- * SISI OWNER: terbitkan lisensi bertanda tangan untuk satu deployment.
- *
- * Contoh:
- *   php artisan license:issue --domain=smpn40.cyberedugarage.id
- *   php artisan license:issue --domain="*.cyberedugarage.id" --expires=2027-12-31
- *   php artisan license:issue --domain=sekolahX.id --machine=<fingerprint> --expires=unlimited
- *
- * Butuh kunci privat owner (config license.private_key_path atau --key).
- */
 class LicenseIssue extends Command
 {
     protected $signature = 'license:issue

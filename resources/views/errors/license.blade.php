@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lisensi Diperlukan &middot; {{ config('app.name') }}</title>
-    {{-- Halaman kunci sengaja tanpa aset eksternal (semua gaya inline). --}}
     <style>
         *{box-sizing:border-box}
         body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;

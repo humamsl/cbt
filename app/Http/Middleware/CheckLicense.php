@@ -6,11 +6,6 @@ use App\Support\LicenseManager;
 use Closure;
 use Illuminate\Http\Request;
 
-/**
- * Kunci aplikasi bila lisensi anti-kloning tidak sah untuk domain/mesin ini.
- * Berpasangan dengan App\Support\LicenseManager. Hanya owner (pemegang kunci
- * privat) yang bisa menerbitkan lisensi yang lolos pemeriksaan ini.
- */
 class CheckLicense
 {
     public function handle(Request $request, Closure $next)

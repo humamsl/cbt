@@ -5,10 +5,6 @@ namespace App\Console\Commands;
 use App\Support\LicenseManager;
 use Illuminate\Console\Command;
 
-/**
- * SISI SERVER: pasang lisensi yang diterbitkan owner.
- *   php artisan license:install "<string-lisensi>"
- */
 class LicenseInstall extends Command
 {
     protected $signature = 'license:install {license : String lisensi dari license:issue}';
@@ -32,7 +28,6 @@ class LicenseInstall extends Command
 
         $this->info('✔ Lisensi tersimpan di '.LicenseManager::file());
 
-        // Verifikasi langsung untuk server ini (host dari APP_URL).
         $result = LicenseManager::verify(LicenseManager::currentHost());
         if ($result['ok']) {
             $this->info('✔ Verifikasi: '.$result['reason']);

@@ -4,16 +4,6 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 
-/**
- * SISI OWNER: buat pasangan kunci RSA sekali saja.
- *
- * - private.pem  -> SIMPAN OFFLINE, jangan pernah di-deploy/di-commit.
- * - public.pem   -> tempel isinya ke config/license.php ('public_key').
- *
- * Siapa pun yang memegang private.pem bisa menerbitkan lisensi, jadi jaga
- * kerahasiaannya. Jalankan ulang perintah ini hanya bila ingin mengganti
- * seluruh kunci (semua lisensi lama otomatis tidak berlaku).
- */
 class LicenseKeygen extends Command
 {
     protected $signature = 'license:keygen
@@ -68,7 +58,6 @@ class LicenseKeygen extends Command
         return self::SUCCESS;
     }
 
-    /** Cari openssl.cnf yang bisa dipakai (khusus Windows/dev). */
     protected function opensslConfig(): ?string
     {
         if (($env = getenv('OPENSSL_CONF')) && is_file($env)) {
