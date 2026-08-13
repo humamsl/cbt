@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aplikasi Terkunci &middot; {{ config('app.name') }}</title>
-    {{-- Sengaja tanpa @vite / aset eksternal: halaman kunci harus tetap tampil
-         utuh walau build aset diutak-atik. Semua gaya inline. --}}
     <style>
         *{box-sizing:border-box}
         body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;

@@ -6,7 +6,6 @@ use App\Support\CopyrightGuard;
 use Closure;
 use Illuminate\Http\Request;
 
-
 class VerifyCopyright
 {
     public function handle(Request $request, Closure $next)

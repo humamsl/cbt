@@ -26,10 +26,6 @@ class AppServiceProvider extends ServiceProvider
 
         // Bagikan pengaturan aplikasi ke semua view
         View::composer('*', function ($view) {
-            // Lapis kedua proteksi hak cipta (independen dari middleware): karena
-            // composer ini WAJIB jalan agar branding/AppCfg tampil di setiap
-            // halaman, menghapusnya merusak aplikasi juga. Halaman kunci itu
-            // sendiri dilewati agar tidak rekursif.
             if ($view->name() === 'errors.copyright') {
                 return;
             }
