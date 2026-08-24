@@ -28,7 +28,12 @@ class BankSoalController extends Controller
         $tingkatFilterAktif = $r->tingkat && (! $this->shouldScope($user) || $r->mapel);
 
         $query = Question::with('type', 'mapel', 'topic')
-            ->when($r->q, fn ($x) => $x->where('title', 'like', "%{$r->q}%")->orWhere('question', 'like', "%{$r->q}%"))
+            // Pencarian WAJIB dibungkus grup sendiri: tanpa itu OR-nya "bocor"
+            // keluar (AND lebih kuat dari OR di SQL) sehingga soal yang judulnya
+            // cocok ikut lolos walau di luar mapel yang diajar guru.
+            ->when($r->q, fn ($x) => $x->where(fn ($w) => $w
+                ->where('title', 'like', "%{$r->q}%")
+                ->orWhere('question', 'like', "%{$r->q}%")))
             ->when($r->mapel, fn ($x) => $x->where('mata_pelajaran_id', $r->mapel))
             ->when($tingkatFilterAktif, fn ($x) => $x->where('tingkat', (int) $r->tingkat))
             ->when($r->jenis, fn ($x) => $x->whereHas('type', fn ($t) => $t->where('slug', $r->jenis)));
