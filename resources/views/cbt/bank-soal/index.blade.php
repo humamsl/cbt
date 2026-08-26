@@ -16,16 +16,26 @@
     </x-slot:action>
 </x-page-header>
 
-<form class="card card-pad mb-4 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
-    <input name="q" value="{{ request('q') }}" class="input col-span-2 sm:flex-1 sm:min-w-[200px]" placeholder="Cari judul / isi soal...">
+{{-- Grid kolom pecahan, BUKAN flex.
+     Versi flex membuat kotak "Cari judul" satu-satunya yang menyerap
+     penyempitan (flex-1 = flex-basis 0) sementara ketiga select memegang lebar
+     tetap, dan kotak itu hanya tertolong oleh min-w-[200px] -- sekali kelas itu
+     tidak ikut ter-build, kotaknya kolaps jadi selebar padding saja. Dengan
+     col-span, tiap kontrol punya jatah pasti dan tidak bergantung pada urutan
+     shrink maupun min-width.
+
+     Susunan: HP 2 kolom -> lg 4 kolom (cari sebaris penuh, 4 kontrol di bawahnya)
+     -> xl 12 kolom (semua muat satu baris; span 4/3/2/2/1). --}}
+<form class="card card-pad mb-4 grid grid-cols-2 gap-2 lg:grid-cols-4 xl:grid-cols-12">
+    <input name="q" value="{{ request('q') }}" class="input col-span-2 lg:col-span-4" placeholder="Cari judul / isi soal...">
     {{-- Mapel auto-submit: daftar tingkat di sebelahnya mengikuti mapel terpilih --}}
-    <select name="mapel" class="select sm:w-48" onchange="this.form.submit()">
+    <select name="mapel" class="select col-span-2 sm:col-span-1 xl:col-span-3" onchange="this.form.submit()">
         <option value="">Semua mapel</option>
         @foreach($mapelList as $m)
             <option value="{{ $m->id }}" @selected(request('mapel')==$m->id)>{{ $m->nama_mapel }}</option>
         @endforeach
     </select>
-    <select name="jenis" class="select sm:w-52">
+    <select name="jenis" class="select xl:col-span-2">
         <option value="">Semua jenis</option>
         @foreach($types as $t)
             <option value="{{ $t->slug }}" @selected(request('jenis')==$t->slug)>{{ $t->question_type }}</option>
@@ -34,18 +44,18 @@
     {{-- RULE guru: filter kelas baru aktif setelah pilih mapel — daftar
          tingkatnya pun hanya tingkat di mana dia mengajar mapel tsb --}}
     @if($tingkatButuhMapel ?? false)
-        <select class="select sm:w-44" disabled title="Pilih mapel dulu untuk memfilter kelas">
+        <select class="select xl:col-span-2" disabled title="Pilih mapel dulu untuk memfilter kelas">
             <option>Pilih mapel dulu…</option>
         </select>
     @else
-        <select name="tingkat" class="select sm:w-40">
+        <select name="tingkat" class="select xl:col-span-2">
             <option value="">Semua kelas</option>
             @foreach($tingkatList as $nomor => $nama)
                 <option value="{{ $nomor }}" @selected(request('tingkat') == $nomor)>{{ $nama }}</option>
             @endforeach
         </select>
     @endif
-    <button class="btn-secondary col-span-2 sm:col-span-1"><x-icon name="search" class="w-4 h-4"/> <span class="sm:hidden">Cari</span></button>
+    <button class="btn-secondary col-span-2 sm:col-span-1 xl:col-span-1"><x-icon name="search" class="w-4 h-4"/> <span class="xl:hidden">Cari</span></button>
 </form>
 
 <div class="grid gap-3">
