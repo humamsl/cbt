@@ -20,6 +20,10 @@ import { examProtectionStore as store } from '../stores/examProtection';
                 <div class="font-semibold text-rose-700 pt-1.5 border-t border-amber-200">
                     Maks. <strong>{{ store.maxViolations }} pelanggaran</strong> — lebih dari itu, ujian <strong>OTOMATIS DIBLOKIR</strong>.
                 </div>
+                <!-- Catatan, bukan larangan — sengaja di luar daftar merah di atas. -->
+                <div class="text-ink-600 font-normal pt-1.5 border-t border-amber-200">
+                    🔍 Zoom dimatikan selama ujian. Mencoba zoom <strong>tidak</strong> dihitung sebagai pelanggaran.
+                </div>
             </div>
 
             <button type="button" @click="store.startExam()" class="btn-primary w-full mt-5 text-base py-3">

@@ -35,6 +35,9 @@ export const examProtectionStore = reactive({
     lastViolation: '',
     savingViolation: false,
 
+    /** Info (BUKAN pelanggaran): siswa mencoba pinch-zoom yang sedang dikunci. */
+    zoomHint: false,
+
     // ---- config, di-set sekali lewat init() ----
     quizName: '',
     maxViolations: 0,
@@ -48,6 +51,7 @@ export const examProtectionStore = reactive({
     onViolationsChanged: null,
 
     _warningTimer: null,
+    _zoomHintTimer: null,
     _initialized: false,
     _audioCtx: null,
 
@@ -102,6 +106,11 @@ export const examProtectionStore = reactive({
         // sebelum pelanggaran pertama bisa terjadi.
         this._unlockAudio();
 
+        // Kunci zoom LEBIH DULU, sebelum detektor apa pun dipasang. Zoom bukan
+        // kecurangan, tapi efek sampingnya (angka viewport mengecil) memicu
+        // detektor split-screen di mobile dan detektor DevTools di desktop.
+        this._attachZoomLock();
+
         if (!this.isMobile) {
             // === DESKTOP: WAJIB FULLSCREEN ===
             // (Sempat dicoba juga di mobile atas permintaan, tapi di-revert lagi
@@ -136,9 +145,12 @@ export const examProtectionStore = reactive({
                 this.logViolation('orientation_change', screen.orientation?.type);
             });
 
-            // Mobile: deteksi touch dengan multi-finger (indikasi split-screen/gesture aneh)
+            // Mobile: deteksi touch dengan multi-finger.
+            // Ambang 3 (bukan 2): pinch-zoom pakai 2 jari, dan jempol yang
+            // ikut menempel saat mencubit membuatnya terbaca 3 sentuhan --
+            // itu siswa yang mau memperbesar soal, bukan menyontek.
             document.addEventListener('touchstart', (e) => {
-                if (e.touches.length > 2) this.logViolation('multi_touch');
+                if (e.touches.length > 3) this.logViolation('multi_touch');
             }, { passive: true });
 
             // Mobile: deteksi layar terbelah (split-screen / multi-window Android)
@@ -149,23 +161,132 @@ export const examProtectionStore = reactive({
         this.onExamStarted?.();
     },
 
+    /** Apakah halaman sedang dalam kondisi pinch-zoom (skala > 1). */
+    _isZoomed() {
+        return (window.visualViewport?.scale ?? 1) > 1.01;
+    },
+
+    /**
+     * Kunci zoom (mobile & desktop).
+     *
+     * LATAR: meta viewport sudah memuat `user-scalable=no, maximum-scale=1`,
+     * tapi iOS Safari (sejak iOS 10) dan Chrome Android dengan setelan
+     * aksesibilitas "paksa aktifkan zoom" SENGAJA mengabaikan atribut itu --
+     * jadi meta tag saja tidak cukup, zoom tetap bisa terjadi.
+     *
+     * Zoom sendiri bukan kecurangan, tapi mengubah angka viewport yang dipakai
+     * detektor lain: di Chrome Android pinch-zoom mengecilkan
+     * innerWidth/innerHeight (terbaca 'split_screen'), dan di desktop browser
+     * zoom mengecilkan innerWidth sehingga selisih outerWidth-innerWidth
+     * melar (terbaca 'devtools'). Siswa yang cuma memperbesar soal jadi kena
+     * pelanggaran. Gesture-nya dicegat di sini, DAN kedua detektor tersebut
+     * dibuat kebal zoom -- dua lapis, supaya browser yang tetap ngotot
+     * mengizinkan zoom pun tidak menghasilkan pelanggaran palsu.
+     *
+     * Yang TIDAK dicegat: scroll satu jari, tap biasa, dan scroll roda mouse
+     * tanpa Ctrl -- semuanya masih dibutuhkan untuk mengerjakan soal.
+     */
+    _attachZoomLock() {
+        if (this.isMobile) {
+            // iOS Safari: pinch memunculkan gesture* (bukan touchmove multi-jari).
+            ['gesturestart', 'gesturechange', 'gestureend'].forEach((ev) => {
+                document.addEventListener(ev, (e) => {
+                    e.preventDefault();
+                    this._hintZoomLocked();
+                }, { passive: false });
+            });
+
+            // Android & umum: pinch = >1 jari bergerak bersamaan.
+            // passive:false wajib, kalau tidak preventDefault() diabaikan browser.
+            document.addEventListener('touchmove', (e) => {
+                if (e.touches.length > 1) {
+                    e.preventDefault();
+                    this._hintZoomLocked();
+                }
+            }, { passive: false });
+
+            // Double-tap zoom. Hanya dicegat kalau dua ketukan jatuh di titik
+            // yang hampir sama -- kalau tidak, siswa yang cepat memilih opsi A
+            // lalu B akan kehilangan ketukan keduanya.
+            let lastTap = 0;
+            let lastX = 0;
+            let lastY = 0;
+            document.addEventListener('touchend', (e) => {
+                const t = e.changedTouches[0];
+                if (!t) return;
+                const now = Date.now();
+                const samePlace = Math.abs(t.clientX - lastX) < 30 && Math.abs(t.clientY - lastY) < 30;
+                if (now - lastTap < 300 && samePlace) {
+                    e.preventDefault();
+                    this._hintZoomLocked();
+                }
+                lastTap = now;
+                lastX = t.clientX;
+                lastY = t.clientY;
+            }, { passive: false });
+
+            return;
+        }
+
+        // === DESKTOP: Ctrl + roda mouse, dan Ctrl +/-/0 ===
+        // Sengaja hanya dicegah + diberi info, TIDAK dicatat sebagai
+        // pelanggaran (beda dengan daftar tombol terlarang di
+        // attachCommonHandlers) -- memperbesar tulisan bukan menyontek.
+        document.addEventListener('wheel', (e) => {
+            if (e.ctrlKey) {
+                e.preventDefault();
+                this._hintZoomLocked();
+            }
+        }, { passive: false });
+
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && ['+', '-', '=', '_', '0'].includes(e.key)) {
+                e.preventDefault();
+                this._hintZoomLocked();
+            }
+        });
+    },
+
+    /**
+     * Beri tahu siswa bahwa zoom dimatikan -- sekadar info, TIDAK menambah
+     * hitungan pelanggaran. Tanpa ini layar terasa "macet" dan siswa mengira
+     * aplikasinya rusak.
+     */
+    _hintZoomLocked() {
+        if (this.zoomHint) return;
+        this.zoomHint = true;
+        clearTimeout(this._zoomHintTimer);
+        this._zoomHintTimer = setTimeout(() => { this.zoomHint = false; }, 2500);
+    },
+
     /**
      * Heuristik deteksi split-screen/multi-window di mobile (BUKAN API resmi --
      * tidak ada event browser khusus untuk ini). Caranya: rekam luas viewport
-     * (window.innerWidth x innerHeight) sebagai baseline saat ujian dimulai, lalu
-     * bandingkan setiap resize berikutnya terhadap baseline itu (BUKAN terhadap
-     * screen.width x height fisik -- sengaja begitu supaya heuristik ini tetap
-     * akurat walau mobile TIDAK dalam mode fullscreen, karena address bar/nav bar
-     * browser sudah otomatis "mengurangi" viewport dari ukuran layar fisik meski
-     * tidak sedang di-split sama sekali). Kalau viewport tiba-tiba menyusut jauh
-     * dari baseline TANPA disertai rotasi layar (orientationchange), itu indikasi
+     * sebagai baseline saat ujian dimulai, lalu bandingkan setiap resize
+     * berikutnya terhadap baseline itu (BUKAN terhadap screen.width x height
+     * fisik -- sengaja begitu supaya heuristik ini tetap akurat walau mobile
+     * TIDAK dalam mode fullscreen, karena address bar/nav bar browser sudah
+     * otomatis "mengurangi" viewport dari ukuran layar fisik meski tidak sedang
+     * di-split sama sekali). Kalau viewport tiba-tiba menyusut jauh dari
+     * baseline TANPA disertai rotasi layar (orientationchange), itu indikasi
      * kuat aplikasi sedang di-split. Baseline dikalibrasi ulang setelah rotasi
      * selesai (karena lebar/tinggi memang tertukar saat rotasi). Di-debounce
      * supaya tidak spam tiap kali resize kecil terjadi, dan tidak dobel-lapor
      * selama masih dalam kondisi split yang sama.
+     *
+     * YANG DIUKUR ADALAH LAYOUT VIEWPORT (documentElement.clientWidth/Height),
+     * bukan window.innerWidth/innerHeight. Ini penting: di Chrome Android
+     * innerWidth/innerHeight mengikuti VISUAL viewport, sehingga pinch-zoom
+     * membuat angkanya menyusut dan ujian siswa yang cuma memperbesar soal
+     * dicatat sebagai 'split_screen'. Layout viewport tidak berubah saat zoom,
+     * tapi tetap berubah saat jendela benar-benar dibelah -- persis yang kita
+     * mau. Guard _isZoomed() dipasang sebagai lapis kedua.
      */
     _attachSplitScreenDetection() {
-        let baselineArea = window.innerWidth * window.innerHeight;
+        const viewportArea = () =>
+            document.documentElement.clientWidth * document.documentElement.clientHeight;
+
+        let baselineArea = viewportArea();
         let recentOrientationChange = false;
         let inSplitScreen = false;
         let resizeTimer = null;
@@ -175,7 +296,7 @@ export const examProtectionStore = reactive({
             setTimeout(() => {
                 recentOrientationChange = false;
                 // Kalibrasi ulang baseline setelah rotasi selesai & UI settle.
-                baselineArea = window.innerWidth * window.innerHeight;
+                baselineArea = viewportArea();
             }, 800);
         });
 
@@ -183,8 +304,11 @@ export const examProtectionStore = reactive({
             clearTimeout(resizeTimer);
             resizeTimer = setTimeout(() => {
                 if (recentOrientationChange) return;
+                // Sedang di-zoom (browser mengabaikan kunci zoom kita) -> angka
+                // viewport tidak bisa dipercaya, lewati saja daripada menuduh.
+                if (this._isZoomed()) return;
 
-                const ratio = (window.innerWidth * window.innerHeight) / baselineArea;
+                const ratio = viewportArea() / baselineArea;
 
                 if (ratio < 0.85) {
                     if (!inSplitScreen) {
@@ -222,10 +346,21 @@ export const examProtectionStore = reactive({
         });
 
         // 3. DevTools detection (heuristic)
+        //
+        // Selisih outer-inner dinormalkan dulu terhadap tingkat zoom browser.
+        // Tanpa normalisasi, siswa yang memperbesar halaman (Ctrl +) membuat
+        // innerWidth mengecil sehingga selisihnya ikut melar dan terbaca
+        // seolah-olah DevTools terbuka. Patokannya devicePixelRatio saat ujian
+        // dimulai: browser zoom mengubah dpr sebanding dengan mengecilnya
+        // innerWidth, sedangkan DevTools yang di-dock TIDAK mengubah dpr --
+        // jadi hanya DevTools yang tetap lolos ambang.
+        const baseDpr = window.devicePixelRatio || 1;
         setInterval(() => {
-            const w = window.outerWidth - window.innerWidth;
-            const h = window.outerHeight - window.innerHeight;
-            if (!this.isMobile && (w > 200 || h > 200)) {
+            if (this.isMobile) return;
+            const zoom = (window.devicePixelRatio || 1) / baseDpr;
+            const w = window.outerWidth - window.innerWidth * zoom;
+            const h = window.outerHeight - window.innerHeight * zoom;
+            if (w > 200 || h > 200) {
                 this.logViolation('devtools');
             }
         }, 3000);

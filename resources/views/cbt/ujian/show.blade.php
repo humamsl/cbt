@@ -13,6 +13,15 @@
         body { overscroll-behavior: contain; }
         /* Sembunyikan tombol "open in new tab" pada mobile */
         a[href], img { -webkit-touch-callout: none; }
+
+        /* Kunci zoom lapis pertama, di level browser.
+           `pan-x pan-y` = scroll tetap boleh, pinch-zoom & double-tap zoom tidak.
+           Ini menutup celah meta viewport `user-scalable=no` yang sengaja
+           DIABAIKAN iOS Safari. Kenapa zoom dikunci: pinch-zoom mengecilkan
+           angka viewport di Chrome Android sehingga terbaca sebagai layar
+           terbelah oleh detektor anti-curang -- lihat _attachZoomLock() di
+           resources/js/stores/examProtection.js. */
+        html, body { touch-action: pan-x pan-y; }
     </style>
 </head>
 <body class="h-full bg-slate-100 no-select"

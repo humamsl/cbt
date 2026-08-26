@@ -14,5 +14,9 @@ import { examProtectionStore as store } from '../stores/examProtection';
         <div class="pt-2 mt-2 border-t border-slate-100 text-rose-600 font-semibold">
             > {{ store.maxViolations }} pelanggaran = ujian diblokir
         </div>
+        <!-- Dipisah dari daftar larangan di atas: ini catatan, bukan pelanggaran. -->
+        <div class="pt-2 mt-2 border-t border-slate-100 text-ink-500">
+            🔍 Zoom dimatikan selama ujian — mencoba zoom <strong>tidak</strong> dihitung pelanggaran.
+        </div>
     </div>
 </template>
