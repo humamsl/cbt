@@ -44,7 +44,7 @@
         </div>
         <ul class="divide-y divide-slate-100">
             @forelse($tes->questions as $idx => $qq)
-                <li class="px-6 py-3 flex items-start justify-between gap-3">
+                <li class="px-4 sm:px-6 py-3 flex items-start justify-between gap-3">
                     <div>
                         <div class="text-xs text-ink-500">#{{ $idx + 1 }} &middot; {{ $qq->marks }} poin</div>
                         <div class="font-semibold text-ink-900">{{ $qq->question->title }}</div>
@@ -64,7 +64,7 @@
                     </div>
                 </li>
             @empty
-                <li class="px-6 py-6 text-center text-ink-500">Belum ada soal. Tambahkan dari panel kanan.</li>
+                <li class="px-4 sm:px-6 py-6 text-center text-ink-500">Belum ada soal. Tambahkan dari panel kanan.</li>
             @endforelse
         </ul>
     </div>
@@ -77,13 +77,13 @@
                 <p class="text-xs text-brand-600 mt-0.5">🌐 Ujian Umum — menampilkan soal dari SEMUA mata pelajaran.</p>
             @endunless
         </div>
-        <form method="GET" class="px-6 pt-4 flex gap-2">
+        <form method="GET" class="px-4 sm:px-6 pt-4 flex gap-2">
             <input name="q" value="{{ request('q') }}" class="input" placeholder="Cari soal di bank...">
             <button class="btn-secondary"><x-icon name="search" class="w-4 h-4"/></button>
         </form>
         <ul class="divide-y divide-slate-100 mt-2">
             @forelse($available as $q)
-                <li class="px-6 py-3">
+                <li class="px-4 sm:px-6 py-3">
                     <div class="flex items-start justify-between gap-3">
                         <div class="min-w-0">
                             <div class="text-xs text-ink-500">{{ optional($q->mapel)->nama_mapel ?? 'Tanpa mapel' }}</div>
@@ -106,10 +106,10 @@
                     </div>
                 </li>
             @empty
-                <li class="px-6 py-6 text-center text-ink-500">Tidak ada soal tersedia.</li>
+                <li class="px-4 sm:px-6 py-6 text-center text-ink-500">Tidak ada soal tersedia.</li>
             @endforelse
         </ul>
-        <div class="px-6 pb-4">{{ $available->links() }}</div>
+        <div class="px-4 sm:px-6 pb-4">{{ $available->links() }}</div>
     </div>
 </div>
 

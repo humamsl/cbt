@@ -14,9 +14,9 @@
         'sky'   => 'from-sky-600 to-sky-700',
     ][$tone ?? 'rose'];
 @endphp
-<div class="min-h-screen grid place-items-center p-6">
+<div class="min-h-screen grid place-items-center p-4 sm:p-6">
     <div class="card max-w-md w-full overflow-hidden text-center">
-        <div class="p-8 bg-gradient-to-br {{ $grad }} text-white">
+        <div class="p-6 sm:p-8 bg-gradient-to-br {{ $grad }} text-white">
             <div class="mx-auto w-16 h-16 rounded-full bg-white/20 grid place-items-center mb-3">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-9 h-9">
@@ -25,7 +25,7 @@
             </div>
             <h1 class="text-xl font-bold">{{ $judul }}</h1>
         </div>
-        <div class="p-8">
+        <div class="p-6 sm:p-8">
             <p class="text-ink-600">{{ $pesan }}</p>
             <a href="{{ route('login') }}" class="btn-secondary mt-6 inline-flex">Kembali ke Login</a>
         </div>

@@ -18,8 +18,8 @@
 </div>
 
 {{-- Filter --}}
-<form class="card card-pad mb-4 grid md:grid-cols-6 gap-2">
-    <input name="q" value="{{ request('q') }}" class="input md:col-span-2" placeholder="Cari username...">
+<form class="card card-pad mb-4 grid grid-cols-2 md:grid-cols-6 gap-2">
+    <input name="q" value="{{ request('q') }}" class="input col-span-2" placeholder="Cari username...">
     <select name="guard" class="select">
         <option value="">Semua role</option>
         <option value="admin" @selected(request('guard')==='admin')>Admin</option>
@@ -40,7 +40,7 @@
     <input type="date" name="tanggal" value="{{ request('tanggal') }}" class="input">
 </form>
 
-<div class="card overflow-x-auto">
+<div class="card table-wrap">
     <table class="table-modern">
         <thead><tr>
             <th>Waktu</th>

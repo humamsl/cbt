@@ -16,16 +16,16 @@
     </x-slot:action>
 </x-page-header>
 
-<form class="card card-pad mb-4 flex flex-wrap gap-2">
-    <input name="q" value="{{ request('q') }}" class="input flex-1 min-w-[200px]" placeholder="Cari judul / isi soal...">
+<form class="card card-pad mb-4 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+    <input name="q" value="{{ request('q') }}" class="input col-span-2 sm:flex-1 sm:min-w-[200px]" placeholder="Cari judul / isi soal...">
     {{-- Mapel auto-submit: daftar tingkat di sebelahnya mengikuti mapel terpilih --}}
-    <select name="mapel" class="select w-48" onchange="this.form.submit()">
+    <select name="mapel" class="select sm:w-48" onchange="this.form.submit()">
         <option value="">Semua mapel</option>
         @foreach($mapelList as $m)
             <option value="{{ $m->id }}" @selected(request('mapel')==$m->id)>{{ $m->nama_mapel }}</option>
         @endforeach
     </select>
-    <select name="jenis" class="select w-52">
+    <select name="jenis" class="select sm:w-52">
         <option value="">Semua jenis</option>
         @foreach($types as $t)
             <option value="{{ $t->slug }}" @selected(request('jenis')==$t->slug)>{{ $t->question_type }}</option>
@@ -34,18 +34,18 @@
     {{-- RULE guru: filter kelas baru aktif setelah pilih mapel — daftar
          tingkatnya pun hanya tingkat di mana dia mengajar mapel tsb --}}
     @if($tingkatButuhMapel ?? false)
-        <select class="select w-44" disabled title="Pilih mapel dulu untuk memfilter kelas">
+        <select class="select sm:w-44" disabled title="Pilih mapel dulu untuk memfilter kelas">
             <option>Pilih mapel dulu…</option>
         </select>
     @else
-        <select name="tingkat" class="select w-40">
+        <select name="tingkat" class="select sm:w-40">
             <option value="">Semua kelas</option>
             @foreach($tingkatList as $nomor => $nama)
                 <option value="{{ $nomor }}" @selected(request('tingkat') == $nomor)>{{ $nama }}</option>
             @endforeach
         </select>
     @endif
-    <button class="btn-secondary"><x-icon name="search" class="w-4 h-4"/></button>
+    <button class="btn-secondary col-span-2 sm:col-span-1"><x-icon name="search" class="w-4 h-4"/> <span class="sm:hidden">Cari</span></button>
 </form>
 
 <div class="grid gap-3">

@@ -29,6 +29,36 @@
     }
     [x-cloak] { display: none !important; }
     ::selection { background: rgba(20,184,166,0.22); }
+
+    /* =========================================================
+       Pengaman layout mobile — mencegah "layar geser" (horizontal
+       scroll) di HP. Semua aturan di @layer base, jadi masih bisa
+       ditimpa utility Tailwind (mis. min-w-max) kalau memang perlu.
+       ========================================================= */
+
+    /* Kata/URL/deret simbol yang sangat panjang dipatahkan, bukan
+       melebarkan halaman. Kasus nyata: teks soal berisi ratusan
+       simbol matematika tanpa spasi. */
+    body { overflow-wrap: break-word; }
+
+    /* Media tidak boleh lebih lebar dari induknya (soal & opsi
+       jawaban memuat HTML bebas dari editor). */
+    img, svg, video, canvas, iframe, embed, object {
+        max-width: 100%;
+        height: auto;
+    }
+
+    /* Anak grid/flex punya min-width:auto — artinya menolak menyusut
+       di bawah lebar konten dan mendorong layar ke samping. Di layar
+       kecil kita balik jadi 0 supaya kolom mau mengecil. */
+    .grid > *, .flex > *, .inline-flex > * { min-width: 0; }
+
+    /* Tabel bebas (dari konten editor) digulir sendiri. */
+    .prose table, .soal-math table {
+        display: block;
+        max-width: 100%;
+        overflow-x: auto;
+    }
 }
 
 @layer components {
@@ -82,8 +112,12 @@
         @apply shadow-glow border-brand-200;
         transform: translateY(-3px);
     }
-    .card-pad { @apply p-6; }
-    .card-header { @apply px-6 py-4 border-b border-slate-100 flex items-center justify-between; }
+    /* Padding lebih rapat di HP supaya isi kartu tidak terdesak keluar layar. */
+    .card-pad { @apply p-4 sm:p-6; }
+    .card-header {
+        @apply px-4 sm:px-6 py-4 border-b border-slate-100
+               flex flex-wrap items-center justify-between gap-x-3 gap-y-2;
+    }
 
     /* == Badges == */
     .badge { @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium; }
@@ -94,13 +128,20 @@
     .badge-muted   { @apply badge bg-slate-100 text-slate-600 ring-1 ring-slate-200; }
     .badge-brand   { @apply badge bg-brand-50 text-brand-700 ring-1 ring-brand-200; }
 
-    /* ===== Tables ===== */
+    /* ===== Tables =====
+       Tabel selalu dibungkus .table-wrap: kalau kolomnya tidak muat di
+       HP, yang menggulir adalah tabelnya sendiri — bukan seluruh
+       halaman. Tanpa ini header/sidebar ikut bergeser saat di-swipe. */
+    .table-wrap {
+        @apply w-full overflow-x-auto;
+        -webkit-overflow-scrolling: touch;
+    }
     .table-modern { @apply min-w-full text-sm; }
     .table-modern thead th {
-        @apply text-left text-[11px] font-bold text-ink-500 uppercase tracking-wider px-4 py-3
+        @apply text-left text-[11px] font-bold text-ink-500 uppercase tracking-wider px-3 sm:px-4 py-3
                bg-gradient-to-b from-brand-50/70 to-slate-50 border-b border-slate-200;
     }
-    .table-modern tbody td { @apply px-4 py-3.5 border-b border-slate-100 align-middle; }
+    .table-modern tbody td { @apply px-3 sm:px-4 py-3.5 border-b border-slate-100 align-middle; }
     .table-modern tbody tr { transition: background-color .15s; }
     .table-modern tbody tr:hover { @apply bg-brand-50/50; }
 
@@ -120,11 +161,32 @@
         @apply text-[10px] font-bold uppercase tracking-[0.12em] text-white px-3 mt-6 mb-2;
     }
 
-    /* ===== Toast (Alpine) ===== */
+    /* ===== Toast (Alpine) =====
+       Di HP toast melebar mengikuti layar (bukan max-w-sm 384px yang
+       lebih lebar dari layar 360px), mulai sm baru menempel di kanan. */
     .toast {
-        @apply fixed bottom-6 right-6 z-50 max-w-sm rounded-2xl shadow-lg border bg-white px-4 py-3
-               flex items-center gap-3 text-sm;
+        @apply fixed bottom-4 left-4 right-4 z-50 rounded-2xl shadow-lg border bg-white px-4 py-3
+               flex items-center gap-3 text-sm
+               sm:left-auto sm:bottom-6 sm:right-6 sm:max-w-sm;
     }
+
+    /* ===== Paginator bawaan Laravel =====
+       Deret nomor halaman (mis. 59 halaman) tidak menyusut dan bisa lebih
+       lebar dari kolomnya — mulai lebar sm (HP landscape) deret ini muncul
+       dan menyeret halaman. Batasi ke lebar induk & beri gulir sendiri. */
+    nav[aria-label="Pagination Navigation"] { @apply max-w-full; }
+    nav[aria-label="Pagination Navigation"] .inline-flex.shadow-sm {
+        @apply max-w-full overflow-x-auto;
+    }
+
+    /* ===== Rumus KaTeX =====
+       Rumus panjang (matriks, integral bertingkat) tidak boleh
+       menyeret halaman — beri area gulir sendiri. */
+    .katex-display {
+        @apply overflow-x-auto overflow-y-hidden;
+        padding-block: 2px;
+    }
+    .katex { max-width: 100%; }
 }
 
 /* ===== Hero gradients ===== */

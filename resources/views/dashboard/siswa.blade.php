@@ -6,9 +6,9 @@
 @section('content')
 <div class="space-y-6">
     <div class="card overflow-hidden">
-        <div class="p-6 bg-gradient-to-br from-brand-600 to-brand-800 text-white">
+        <div class="p-4 sm:p-6 bg-gradient-to-br from-brand-600 to-brand-800 text-white">
             <p class="text-brand-100 text-sm">Selamat datang,</p>
-            <h2 class="text-2xl md:text-3xl font-bold mt-1">{{ $siswa->nama_siswa }}</h2>
+            <h2 class="text-xl sm:text-2xl md:text-3xl font-bold mt-1">{{ $siswa->nama_siswa }}</h2>
             <p class="text-brand-100 text-sm mt-1">NISN {{ $siswa->nisn }}</p>
         </div>
     </div>
@@ -74,7 +74,7 @@
         <div class="card-header">
             <h3 class="text-base font-semibold text-ink-900">Riwayat Ujian Terakhir</h3>
         </div>
-        <div class="overflow-x-auto">
+        <div class="table-wrap">
             <table class="table-modern">
                 <thead><tr><th>Ujian</th><th>Mapel</th><th>Tanggal</th><th class="text-right">Nilai</th></tr></thead>
                 <tbody>

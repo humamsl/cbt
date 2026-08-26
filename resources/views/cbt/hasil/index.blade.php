@@ -13,8 +13,8 @@
 
 @include('cbt.hasil._nav', ['active' => 'index'])
 
-<form class="card card-pad mb-4 grid md:grid-cols-5 gap-2">
-    <input name="q" value="{{ request('q') }}" class="input md:col-span-2" placeholder="Cari NISN / nama siswa...">
+<form class="card card-pad mb-4 grid grid-cols-2 md:grid-cols-5 gap-2">
+    <input name="q" value="{{ request('q') }}" class="input col-span-2" placeholder="Cari NISN / nama siswa...">
     <select name="mapel" class="select">
         <option value="">Semua Mapel</option>
         @foreach($mapelList as $m)
@@ -33,7 +33,7 @@
             <option value="{{ $t->nomor }}" @selected(request('tingkat')==$t->nomor)>{{ $t->nama }}</option>
         @endforeach
     </select>
-    <div class="md:col-span-5 flex gap-2">
+    <div class="col-span-2 md:col-span-5 flex flex-wrap gap-2">
         <select name="quiz" class="select flex-1">
             <option value="">Semua Ujian</option>
             @foreach($quizzes as $q)
@@ -49,7 +49,7 @@
     </div>
 </form>
 
-<div class="card overflow-x-auto">
+<div class="card table-wrap">
     <table class="table-modern">
         <thead><tr>
             <th>Siswa</th><th>Rombel</th><th>Ujian</th><th>Mapel</th>

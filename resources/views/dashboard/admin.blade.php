@@ -63,7 +63,7 @@
                 </div>
                 <a href="{{ route('tes.index') }}" class="btn-secondary text-xs py-1.5 px-3">Lihat semua</a>
             </div>
-            <div class="overflow-x-auto">
+            <div class="table-wrap">
                 <table class="table-modern">
                     <thead><tr>
                         <th>Nama Ujian</th><th>Mapel</th><th>Kelas</th><th>Periode</th><th>Status</th>
@@ -99,7 +99,7 @@
             </div>
             <ul class="divide-y divide-slate-100">
                 @forelse($hasilTerbaru as $h)
-                    <li class="px-6 py-3 flex items-center justify-between hover:bg-slate-50/60 transition">
+                    <li class="px-4 sm:px-6 py-3 flex items-center justify-between hover:bg-slate-50/60 transition">
                         <div class="min-w-0">
                             <div class="text-sm font-semibold text-ink-900 truncate">{{ optional($h->siswa)->nama_siswa ?? '-' }}</div>
                             <div class="text-xs text-ink-500 truncate">{{ optional($h->quiz)->name ?? '-' }}</div>
@@ -112,7 +112,7 @@
                         </div>
                     </li>
                 @empty
-                    <li class="px-6 py-8 text-center text-ink-500 text-sm">
+                    <li class="px-4 sm:px-6 py-8 text-center text-ink-500 text-sm">
                         <div class="text-3xl mb-2"></div>
                         Belum ada hasil ujian
                     </li>

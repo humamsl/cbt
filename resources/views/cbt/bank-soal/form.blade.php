@@ -30,7 +30,7 @@
 <script src="{{ asset('vendor/tinymce/tinymce.min.js') }}"></script>
 <style>
     .tox-tinymce { border-radius: 0.75rem !important; border-color: rgb(226 232 240) !important; }
-    .symbol-btn { @apply px-2 py-1 rounded border border-slate-200 hover:bg-brand-50 hover:border-brand-300 text-sm font-medium transition; }
+    .symbol-btn { @apply min-w-[2rem] px-2 py-1 rounded border border-slate-200 bg-white hover:bg-brand-50 hover:border-brand-300 text-sm font-medium transition; }
 </style>
 @endpush
 
@@ -146,7 +146,9 @@
             <div class="text-sm font-semibold text-ink-900">Klik untuk menyisipkan ke editor "<span x-text="symbolTarget"></span>"</div>
             <button type="button" @click="showSymbols = false" class="text-ink-500 hover:text-ink-900 text-lg">×</button>
         </div>
-        <div class="grid grid-cols-10 sm:grid-cols-14 gap-1 text-base">
+        {{-- flex-wrap, bukan grid kolom tetap: tombol "log/sin/cos" lebih lebar dari
+             tombol 1 karakter, jadi grid 10 kolom memaksa palet melebihi layar HP. --}}
+        <div class="flex flex-wrap gap-1 text-base">
             @php
                 $symbols = [
                     // Operator

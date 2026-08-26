@@ -29,12 +29,14 @@
 
 {{-- ============ HEADER ============ --}}
 <header class="sticky top-0 z-20 bg-white border-b border-slate-200">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
+    <div class="max-w-6xl mx-auto px-3 sm:px-6 h-16 flex items-center justify-between gap-2 sm:gap-3">
         <div class="min-w-0">
             <div class="text-xs text-green-500 truncate">Ujian — {{ auth()->user()->nama_siswa ?? '' }}</div>
-            <h1 class="text-base font-bold text-black truncate">{{ $quiz->name }}</h1>
+            <h1 class="text-sm sm:text-base font-bold text-black truncate">{{ $quiz->name }}</h1>
         </div>
-        <div class="flex items-center gap-3">
+        {{-- shrink-0: timer & tombol Selesai tidak boleh terdesak di layar kecil;
+             yang mengalah adalah judul ujian di kiri (sudah truncate). --}}
+        <div class="flex items-center gap-2 sm:gap-3 shrink-0">
             @if($protectionEnabled)
                 <div class="text-right hidden sm:block">
                     <div class="text-xs text-ink-500">Pelanggaran</div>
@@ -45,14 +47,14 @@
                 </div>
             @endif
             <div class="text-right">
-                <div class="text-xs text-ink-500">Sisa waktu</div>
-                <div class="text-xl font-bold tabular-nums text-rose-600"
+                <div class="text-[10px] sm:text-xs text-ink-500">Sisa waktu</div>
+                <div class="text-lg sm:text-xl font-bold tabular-nums text-rose-600"
                      :class="seconds < 60 ? 'animate-pulse' : ''" x-text="formatted"></div>
             </div>
             <form method="POST" action="{{ route('siswa.ujian.submit', [$quiz, $attempt]) }}"
                   x-ref="submitForm">
                 @csrf
-                <button type="button" @click="confirmSubmit = true" class="btn-primary text-sm">Selesai</button>
+                <button type="button" @click="confirmSubmit = true" class="btn-primary text-sm px-3 sm:px-4">Selesai</button>
             </form>
         </div>
     </div>
@@ -68,7 +70,7 @@
 </header>
 
 {{-- ============ KONTEN SOAL ============ --}}
-<div class="max-w-6xl mx-auto px-4 sm:px-6 py-6 grid lg:grid-cols-[1fr_280px] gap-6">
+<div class="max-w-6xl mx-auto px-3 sm:px-6 py-6 grid lg:grid-cols-[1fr_280px] gap-4 sm:gap-6">
     <div class="space-y-4">
         @foreach($quiz->questions as $idx => $qq)
             @php $q = $qq->question; @endphp
@@ -116,7 +118,7 @@
 
 {{-- ============ MODAL KONFIRMASI SELESAI (dalam fullscreen) ============ --}}
 <div x-show="confirmSubmit" x-cloak x-transition
-     class="fixed inset-0 z-[60] bg-ink-900/70 backdrop-blur grid place-items-center p-6"
+     class="fixed inset-0 z-[60] bg-ink-900/70 backdrop-blur grid place-items-center p-4 sm:p-6"
      @keydown.escape.window="confirmSubmit = false">
     <div class="card max-w-md w-full p-6 text-center" @click.outside="confirmSubmit = false">
         <div class="mx-auto w-14 h-14 rounded-2xl bg-brand-50 text-brand-600 grid place-items-center mb-3 text-2xl">📤</div>

@@ -7,7 +7,7 @@
 
 @include('cbt.hasil._nav', ['active' => 'statistik'])
 
-<form class="card card-pad mb-4 grid md:grid-cols-3 gap-2">
+<form class="card card-pad mb-4 grid grid-cols-1 md:grid-cols-3 gap-2">
     <select name="quiz" class="select md:col-span-2" required>
         <option value="">-- Pilih Ujian --</option>
         @foreach($quizzes as $q)
@@ -158,6 +158,7 @@
                 </div>
             </div>
 
+            <div class="table-wrap">
             <table class="table-modern">
                 <thead class="bg-slate-700 text-white">
                     <tr>
@@ -181,6 +182,7 @@
                     </template>
                 </tbody>
             </table>
+            </div>
         </div>
 
         {{-- DONUT: Status Pengerjaan --}}

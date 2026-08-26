@@ -61,7 +61,7 @@
         </div>
     </div>
 
-    <div class="card overflow-x-auto">
+    <div class="card table-wrap">
         <table class="table-modern">
             <thead>
                 <tr>

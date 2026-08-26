@@ -8,7 +8,7 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="h-full hero-gradient">
-<div class="min-h-screen grid place-items-center p-6">
+<div class="min-h-screen grid place-items-center p-4 sm:p-6">
     <div class="card max-w-md w-full overflow-hidden">
         <div class="p-6 bg-gradient-to-br from-brand-600 to-brand-800 text-white text-center">
             <div class="mx-auto w-14 h-14 rounded-full bg-white/20 grid place-items-center mb-3">

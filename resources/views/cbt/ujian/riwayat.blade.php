@@ -4,7 +4,7 @@
 @section('content')
 <x-page-header title="Riwayat & Nilai" subtitle="Daftar ujian yang pernah Anda kerjakan"/>
 
-<div class="card">
+<div class="card table-wrap">
     <table class="table-modern">
         <thead><tr><th>Ujian</th><th>Mapel</th><th>Tanggal</th><th class="text-right">Nilai</th><th></th></tr></thead>
         <tbody>

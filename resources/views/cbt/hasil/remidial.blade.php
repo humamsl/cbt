@@ -7,7 +7,7 @@
 
 @include('cbt.hasil._nav', ['active' => 'remidial'])
 
-<form class="card card-pad mb-4 grid md:grid-cols-3 gap-2">
+<form class="card card-pad mb-4 grid grid-cols-1 md:grid-cols-3 gap-2">
     <select name="quiz" class="select md:col-span-2" required>
         <option value="">-- Pilih Ujian --</option>
         @foreach($quizzes as $q)
@@ -92,7 +92,7 @@
 
     <div class="grid lg:grid-cols-2 gap-4">
         {{-- TABEL REMIDIAL --}}
-        <div class="card overflow-x-auto">
+        <div class="card table-wrap">
             <div class="px-4 pt-4 pb-2">
                 <h3 class="font-semibold text-ink-900">Program Remidial</h3>
                 <p class="text-xs text-ink-500">Nilai di bawah KKM {{ $kkm }} — bentuk pelaksanaan: {{ $data['bentuk_remidial_default'] }}</p>
@@ -124,7 +124,7 @@
         </div>
 
         {{-- TABEL PENGAYAAN --}}
-        <div class="card overflow-x-auto">
+        <div class="card table-wrap">
             <div class="px-4 pt-4 pb-2">
                 <h3 class="font-semibold text-ink-900">Program Pengayaan</h3>
                 <p class="text-xs text-ink-500">Nilai mencapai / melampaui KKM {{ $kkm }}</p>

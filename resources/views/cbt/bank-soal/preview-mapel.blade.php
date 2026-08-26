@@ -15,8 +15,8 @@
 </x-page-header>
 
 {{-- FILTER --}}
-<form class="card card-pad mb-4 grid md:grid-cols-5 gap-2 print:hidden">
-    <select name="mapel" class="select md:col-span-2" required onchange="this.form.submit()">
+<form class="card card-pad mb-4 grid grid-cols-2 md:grid-cols-5 gap-2 print:hidden">
+    <select name="mapel" class="select col-span-2 md:col-span-2" required onchange="this.form.submit()">
         <option value="">-- Pilih Mapel --</option>
         @foreach($mapelList as $m)
             <option value="{{ $m->id }}" @selected(request('mapel')==$m->id)>
@@ -42,7 +42,7 @@
             <option value="{{ $nomor }}" @selected(request('tingkat') == $nomor)>{{ $nama }}</option>
         @endforeach
     </select>
-    <div class="md:col-span-5 flex gap-2">
+    <div class="col-span-2 md:col-span-5 flex flex-wrap gap-2">
         <button class="btn-primary"><x-icon name="search" class="w-4 h-4"/> Tampilkan</button>
         @if(request('mapel'))
             <a href="{{ route('bank-soal.preview.mapel') }}" class="btn-ghost">Reset</a>

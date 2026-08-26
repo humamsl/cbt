@@ -12,7 +12,7 @@
     <button class="btn-secondary"><x-icon name="search" class="w-4 h-4"/></button>
 </form>
 
-<div class="card">
+<div class="card table-wrap">
     <table class="table-modern">
         <thead>
             <tr>

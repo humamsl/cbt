@@ -9,12 +9,12 @@
 @section('content')
 <div class="card overflow-hidden">
     {{-- Header bar --}}
-    <div class="px-6 py-4 bg-gradient-to-r from-brand-700 to-violet-700 text-white flex items-center justify-between">
+    <div class="px-4 sm:px-6 py-4 bg-gradient-to-r from-brand-700 to-violet-700 text-white flex flex-wrap items-center justify-between gap-3">
         <div class="flex items-center gap-3">
             <div class="w-9 h-9 rounded-lg bg-white/20 grid place-items-center">
                 <x-icon name="clock" class="w-5 h-5"/>
             </div>
-            <h2 class="text-lg font-bold">Monitoring Ujian Siswa</h2>
+            <h2 class="text-base sm:text-lg font-bold">Monitoring Ujian Siswa</h2>
         </div>
         @if((auth()->user()->user_type ?? 'admin') === 'admin')
             <a href="{{ route('monitoring.akses') }}"
@@ -25,7 +25,7 @@
     </div>
 
     {{-- Filter bar --}}
-    <form method="GET" class="grid md:grid-cols-4 gap-3 p-5 bg-slate-50/60 border-b border-slate-100">
+    <form method="GET" class="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 sm:p-5 bg-slate-50/60 border-b border-slate-100">
         <div>
             <label class="label">Kelas</label>
             <select name="rombel" class="select" onchange="this.form.submit()">
@@ -69,12 +69,12 @@
     </form>
 
     {{-- Tabel agregat --}}
-    <div class="px-5 pt-4 flex items-center justify-between text-sm text-ink-600">
+    <div class="px-4 sm:px-5 pt-4 flex flex-wrap items-center justify-between gap-2 text-sm text-ink-600">
         <div>Menampilkan <strong>{{ $items->count() }}</strong> dari <strong>{{ $items->total() }}</strong> ujian</div>
         <a href="{{ route('monitoring.index') }}" class="text-brand-600 hover:underline text-xs">↻ Reset filter</a>
     </div>
 
-    <div class="overflow-x-auto px-5 pb-5 mt-2">
+    <div class="table-wrap px-4 sm:px-5 pb-5 mt-2">
         <table class="table-modern">
             <thead><tr>
                 <th class="text-center w-12">No.</th>
@@ -160,7 +160,7 @@
         </table>
     </div>
 
-    <div class="px-5 pb-5">{{ $items->links() }}</div>
+    <div class="px-4 sm:px-5 pb-5">{{ $items->links() }}</div>
 </div>
 
 <div class="mt-4 text-xs text-ink-500 text-center">

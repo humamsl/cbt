@@ -7,9 +7,9 @@
     @vite(['resources/css/app.css'])
 </head>
 <body class="h-full hero-gradient">
-<div class="min-h-screen grid place-items-center p-6">
+<div class="min-h-screen grid place-items-center p-4 sm:p-6">
     <div class="card max-w-lg w-full overflow-hidden text-center">
-        <div class="p-8 bg-gradient-to-br from-rose-600 to-rose-700 text-white">
+        <div class="p-6 sm:p-8 bg-gradient-to-br from-rose-600 to-rose-700 text-white">
             <div class="mx-auto w-16 h-16 rounded-full bg-white/20 grid place-items-center mb-3 text-3xl">🌐</div>
             <h1 class="text-xl font-bold">Akses Ditolak</h1>
             <p class="text-rose-100 text-sm mt-1">IP Anda tidak diizinkan mengakses ujian</p>

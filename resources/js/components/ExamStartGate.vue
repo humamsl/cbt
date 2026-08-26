@@ -4,8 +4,8 @@ import { examProtectionStore as store } from '../stores/examProtection';
 
 <template>
     <div v-show="store.needStart"
-         class="fixed inset-0 z-50 bg-ink-900/95 backdrop-blur grid place-items-center p-6">
-        <div class="card max-w-lg w-full p-8 text-center">
+         class="fixed inset-0 z-50 bg-ink-900/95 backdrop-blur grid place-items-center p-4 sm:p-6 overflow-y-auto">
+        <div class="card max-w-lg w-full p-6 sm:p-8 text-center my-auto">
             <div class="mx-auto w-16 h-16 rounded-2xl bg-rose-50 text-rose-600 grid place-items-center mb-3 text-2xl">🛡️</div>
             <h2 class="text-xl font-bold text-ink-900">Ujian Berproteksi</h2>
             <p class="text-sm text-ink-600 mt-2">{{ store.quizName }}</p>

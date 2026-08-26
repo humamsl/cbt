@@ -15,17 +15,19 @@
 
 <{{ $Tag }} @if($href) href="{{ $href }}" @endif
     class="card card-pad card-hover stat-glow fade-in-up block">
-    <div class="flex items-start justify-between">
-        <div>
-            <div class="text-xs font-semibold text-ink-500 uppercase tracking-wider">{{ $label }}</div>
-            <div class="mt-2 text-3xl font-bold text-ink-900 tabular-nums">{{ $value }}</div>
+    <div class="flex items-start justify-between gap-2">
+        {{-- min-w-0 supaya label panjang ("Rombongan Belajar") boleh turun baris
+             dan tidak terpotong saat kartu dipasang 2 kolom di HP. --}}
+        <div class="min-w-0">
+            <div class="text-[11px] sm:text-xs font-semibold text-ink-500 uppercase tracking-wider">{{ $label }}</div>
+            <div class="mt-2 text-2xl sm:text-3xl font-bold text-ink-900 tabular-nums">{{ $value }}</div>
             @if($delta)
                 <div class="mt-1.5 text-xs font-semibold text-emerald-600 flex items-center gap-1">
                     <span>↗</span> {{ $delta }}
                 </div>
             @endif
         </div>
-        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br {{ $grad }} text-white grid place-items-center shadow-soft ring-4 ring-white">
+        <div class="shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br {{ $grad }} text-white grid place-items-center shadow-soft ring-4 ring-white">
             <x-icon :name="$icon" class="w-5 h-5"/>
         </div>
     </div>

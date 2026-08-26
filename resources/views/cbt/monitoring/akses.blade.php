@@ -56,6 +56,7 @@
             <h3 class="font-bold text-ink-900">Petugas Terdaftar</h3>
             <span class="badge-brand">{{ $aksesPerGuru->count() }} petugas</span>
         </div>
+        <div class="table-wrap">
         <table class="table-modern">
             <thead><tr><th>Petugas</th><th>Kelas yang Dimonitoring</th></tr></thead>
             <tbody>
@@ -85,6 +86,7 @@
             @endforelse
             </tbody>
         </table>
+        </div>
     </div>
 </div>
 @endsection

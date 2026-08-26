@@ -58,7 +58,7 @@
     @endif
 </form>
 
-<div class="card overflow-x-auto">
+<div class="card table-wrap">
     <table class="table-modern">
         <thead><tr>
             <th class="w-12 text-center">No.</th>
