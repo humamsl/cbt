@@ -123,7 +123,7 @@
             <button type="button" @click="showSymbols = !showSymbols; symbolTarget = 'question'"
                     class="text-xs text-brand-600 hover:underline">∑ Sisip Simbol Matematika</button>
         </div>
-        <textarea name="question" id="editor-question" data-editor="full">{{ old('question', $item->question) }}</textarea>
+        <textarea name="question" id="editor-question" data-editor="full" data-preview-target="math-preview">{{ old('question', $item->question) }}</textarea>
         @error('question')<p class="mt-1 text-xs text-rose-600">{{ $message }}</p>@enderror
 
         {{-- Pratinjau rumus: teks LaTeX (\( ... \), \[ ... \], $$ ... $$) disimpan
@@ -184,6 +184,10 @@
             <span class="label mb-0" x-text="slug === 'pgk' ? 'Opsi (Multi Jawaban Benar)' : 'Opsi Jawaban (Pilihan Ganda)'"></span>
             <span class="text-xs text-ink-500" x-text="slug === 'pgk' ? 'Centang semua opsi benar' : 'Pilih radio untuk opsi benar'"></span>
         </div>
+        <p class="text-[11px] text-ink-500 mb-2">
+            Rumus matematika hasil salin dari ChatGPT/Gemini/Wikipedia juga otomatis jadi LaTeX di sini —
+            pratinjau rumusnya muncul di bawah tiap opsi.
+        </p>
         <div class="space-y-3">
             @for ($i = 0; $i < $pgCount; $i++)
                 <div class="card card-pad py-3 space-y-2">
@@ -202,7 +206,13 @@
                                 class="text-[10px] text-brand-600 hover:underline ml-auto">∑ simbol</button>
                     </div>
                     <textarea name="options[{{ $i }}]" data-editor="mini" data-opsi-label="opsi {{ chr(65 + $i) }}"
+                              data-preview-target="math-preview-opsi-{{ $i }}"
                               class="opsi">{{ $pgOldOpts[$i] ?? '' }}</textarea>
+                    <div id="math-preview-opsi-{{ $i }}-wrap" class="hidden">
+                        <div class="text-[11px] text-ink-500 mb-1">Pratinjau rumus</div>
+                        <div id="math-preview-opsi-{{ $i }}"
+                             class="soal-math prose prose-sm max-w-none border border-brand-200 rounded-lg p-2 bg-brand-50/40 text-sm [&_img]:max-w-full"></div>
+                    </div>
                 </div>
             @endfor
         </div>
@@ -422,13 +432,17 @@ function bankSoalForm({ typesMap, currentType, pgCorrect, pgkCorrect, bsAnswer, 
                 setup: (editor) => {
                     editor.on('focus click keyup', () => { lastFocusedEditor = editor; });
 
-                    if (kind === 'full') {
+                    // Pratinjau rumus KaTeX: dipasang di editor pertanyaan (id tetap
+                    // "math-preview") maupun tiap editor opsi jawaban (id per-opsi,
+                    // lihat data-preview-target di textarea masing-masing).
+                    const previewTarget = editor.getElement()?.dataset?.previewTarget;
+                    if (previewTarget) {
                         let timer = null;
                         const sync = () => {
                             clearTimeout(timer);
-                            timer = setTimeout(() => this.updateMathPreview(editor.getContent()), 250);
+                            timer = setTimeout(() => this.updateMathPreview(editor.getContent(), previewTarget), 250);
                         };
-                        editor.on('init', () => this.updateMathPreview(editor.getContent()));
+                        editor.on('init', () => this.updateMathPreview(editor.getContent(), previewTarget));
                         editor.on('input change keyup SetContent Undo Redo', sync);
                     }
                 },
@@ -459,11 +473,19 @@ function bankSoalForm({ typesMap, currentType, pgCorrect, pgkCorrect, bsAnswer, 
         },
 
         /** Tampilkan isi editor dengan rumus LaTeX yang sudah dirender KaTeX. */
-        updateMathPreview(html) {
-            this.hasMath = /\\\(|\\\[|\$\$/.test(html || '');
-            const el = document.getElementById('math-preview');
+        updateMathPreview(html, targetId = 'math-preview') {
+            const hasMath = /\\\(|\\\[|\$\$/.test(html || '');
+            if (targetId === 'math-preview') this.hasMath = hasMath; // dipakai x-show panel pertanyaan
+
+            const el = document.getElementById(targetId);
             if (! el) return;
-            if (! this.hasMath) { el.innerHTML = ''; return; }
+
+            // Panel opsi jawaban tidak dikendalikan Alpine x-show (jumlah opsi
+            // dinamis) — toggle manual lewat wrapper "{id}-wrap".
+            const wrapEl = document.getElementById(targetId + '-wrap');
+            if (wrapEl) wrapEl.classList.toggle('hidden', ! hasMath);
+
+            if (! hasMath) { el.innerHTML = ''; return; }
             el.innerHTML = html;
             window.renderSoalMath?.(el);
         },
