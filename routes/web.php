@@ -159,6 +159,11 @@ Route::middleware([
         Route::get('/ujian', [UjianController::class, 'index'])->name('siswa.ujian.index');
         Route::post('/ujian/{quiz}/start', [UjianController::class, 'start'])->name('siswa.ujian.start');
         Route::get('/ujian/{quiz}/{attempt}', [UjianController::class, 'show'])->name('siswa.ujian.show');
+        // Heartbeat halaman ujian. Isinya sengaja sepele — nilainya ada pada
+        // middleware yang dilewati: begitu akun login di perangkat lain,
+        // SingleSessionGuard membalas 409 di sini, dan halaman ujian perangkat
+        // lama langsung tahu harus keluar (tanpa menunggu siswa menjawab soal).
+        Route::get('/ujian/{quiz}/{attempt}/ping', [UjianController::class, 'ping'])->name('siswa.ujian.ping');
         Route::post('/ujian/{quiz}/{attempt}/save', [UjianController::class, 'saveAnswer'])->name('siswa.ujian.save');
         Route::post('/ujian/{quiz}/{attempt}/violation', [UjianController::class, 'logViolation'])->name('siswa.ujian.violation');
         Route::post('/ujian/{quiz}/{attempt}/submit', [UjianController::class, 'submit'])->name('siswa.ujian.submit');

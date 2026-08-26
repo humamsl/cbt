@@ -49,6 +49,8 @@ export const examProtectionStore = reactive({
     // ---- callback hook, di-set oleh Alpine (cbtExam) di show.blade.php ----
     onExamStarted: null,
     onViolationsChanged: null,
+    /** Dipanggil saat server membalas 409: akun login di perangkat lain. */
+    onSessionConflict: null,
 
     _warningTimer: null,
     _zoomHintTimer: null,
@@ -497,6 +499,17 @@ export const examProtectionStore = reactive({
                 headers: this._headers(),
                 body: JSON.stringify({ type, detail }),
             });
+
+            // Sesi perangkat ini sudah tidak berlaku (409 = ditendang
+            // SingleSessionGuard karena akun login di perangkat lain, 401/419 =
+            // sesi/token sudah hangus). Serahkan ke halaman ujian untuk
+            // memunculkan alert & keluar -- jangan diproses seperti balasan
+            // pelanggaran biasa (body-nya memang bukan format itu).
+            if ([409, 401, 419].includes(r.status)) {
+                this.onSessionConflict?.(r.status);
+                return;
+            }
+
             const data = await r.json();
             if (data.blocked) {
                 // Mode "blokir" -> halaman blokir

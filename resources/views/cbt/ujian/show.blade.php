@@ -29,8 +29,10 @@
           endsAt: '{{ $endsAt->toIso8601String() }}',
           saveUrl: '{{ route('siswa.ujian.save', [$quiz, $attempt]) }}',
           blockedUrl: '{{ route('siswa.ujian.blocked', [$quiz, $attempt]) }}',
+          pingUrl: '{{ route('siswa.ujian.ping', [$quiz, $attempt]) }}',
+          loginUrl: '{{ route('login') }}',
           initialViolations: {{ (int) $attempt->violation_count }},
-          existing: @js($existingAnswers->mapWithKeys(fn ($a) => [$a->quiz_question_id => $a->question_option_id])->toArray())
+          existing: @js($existingAnswers->mapWithKeys(fn ($a) => [$a->quiz_question_id => $a->question_option_id ?? $a->answer_text])->toArray())
       })">
 
 {{-- ============ START GATE (Vue: ExamStartGate.vue) ============ --}}
@@ -82,7 +84,11 @@
 <div class="max-w-6xl mx-auto px-3 sm:px-6 py-6 grid lg:grid-cols-[1fr_280px] gap-4 sm:gap-6">
     <div class="space-y-4">
         @foreach($quiz->questions as $idx => $qq)
-            @php $q = $qq->question; @endphp
+            @php
+                $q = $qq->question;
+                $typeSlug = strtolower((string) (optional($q->type)->slug ?? optional($q->type)->question_type ?? ''));
+                $isFillBlank = $typeSlug === 'fill-blank' || $typeSlug === 'fill_blank' || str_contains($typeSlug, 'fill');
+            @endphp
             <div class="card card-pad soal-math" id="soal-{{ $qq->id }}">
                 <div class="flex items-center justify-between mb-2">
                     <div class="text-xs text-ink-500">Soal {{ $idx + 1 }} dari {{ $quiz->questions->count() }}</div>
@@ -91,17 +97,25 @@
                 <div class="font-semibold text-ink-900 mb-3">{{ $q->title }}</div>
                 <div class="prose prose-sm max-w-none text-ink-700 mb-4">{!! \App\Support\SoalHtml::render($q->question) !!}</div>
 
-                <div class="space-y-2">
-                    @foreach($q->options as $opt)
-                        <label class="flex items-start gap-3 p-3 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50 transition has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50">
-                            <input type="radio" name="q_{{ $qq->id }}" value="{{ $opt->id }}"
-                                   @checked(($existingAnswers[$qq->id] ?? null)?->question_option_id == $opt->id)
-                                   @change="saveAnswer({{ $qq->id }}, $event.target.value)"
-                                   class="mt-0.5 text-brand-600 focus:ring-brand-500 border-slate-300">
-                            <div class="text-sm prose prose-sm max-w-none">{!! \App\Support\SoalHtml::render($opt->option_text) !!}</div>
-                        </label>
-                    @endforeach
-                </div>
+                @if($isFillBlank)
+                    <input type="text" name="q_{{ $qq->id }}" autocomplete="off"
+                           value="{{ ($existingAnswers[$qq->id] ?? null)?->answer_text }}"
+                           @change="saveTextAnswer({{ $qq->id }}, $event.target.value)"
+                           placeholder="Tulis jawaban Anda di sini..."
+                           class="w-full p-3 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none text-sm">
+                @else
+                    <div class="space-y-2">
+                        @foreach($q->options as $opt)
+                            <label class="flex items-start gap-3 p-3 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50 transition has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50">
+                                <input type="radio" name="q_{{ $qq->id }}" value="{{ $opt->id }}"
+                                       @checked(($existingAnswers[$qq->id] ?? null)?->question_option_id == $opt->id)
+                                       @change="saveAnswer({{ $qq->id }}, $event.target.value)"
+                                       class="mt-0.5 text-brand-600 focus:ring-brand-500 border-slate-300">
+                                <div class="text-sm prose prose-sm max-w-none">{!! \App\Support\SoalHtml::render($opt->option_text) !!}</div>
+                            </label>
+                        @endforeach
+                    </div>
+                @endif
             </div>
         @endforeach
     </div>
@@ -158,6 +172,27 @@
     </div>
 </div>
 
+{{-- ============ ALERT: AKUN DIPAKAI DI PERANGKAT LAIN ============
+     Muncul saat perangkat ini ditendang SingleSessionGuard karena akun yang
+     sama login di perangkat lain. z-index paling tinggi & tanpa tombol tutup:
+     sesi di perangkat ini memang sudah mati, satu-satunya jalan adalah keluar. --}}
+{{-- Sengaja TANPA x-transition. Transisi Alpine memakai requestAnimationFrame,
+     dan rAF berhenti saat halaman tidak terlihat (siswa pindah aplikasi). Kalau
+     tendangan datang tepat saat itu, animasinya bisa tertahan di opacity 0 dan
+     alert sepenting ini tidak pernah kelihatan. Tampil langsung saja. --}}
+<div x-show="kicked" x-cloak
+     class="fixed inset-0 z-[80] bg-ink-900/80 backdrop-blur grid place-items-center p-4 sm:p-6">
+    <div class="card max-w-md w-full p-6 text-center">
+        <div class="mx-auto w-14 h-14 rounded-2xl bg-rose-50 text-rose-600 grid place-items-center mb-3 text-2xl">🔒</div>
+        <h3 class="text-lg font-bold text-ink-900" x-text="kickedTitle"></h3>
+        <p class="text-sm text-ink-600 mt-2" x-text="kickedBody"></p>
+        <a href="{{ route('login') }}" class="btn-primary w-full mt-5 justify-center">Kembali ke Halaman Login</a>
+        <p class="text-xs text-ink-500 mt-2">
+            Otomatis dialihkan dalam <span x-text="kickedCountdown"></span> detik…
+        </p>
+    </div>
+</div>
+
 {{-- Config proteksi ujian untuk store Vue (resources/js/stores/examProtection.js). --}}
 <script type="application/json" id="exam-protection-config">{!! json_encode([
     'quizName' => $quiz->name,
@@ -167,6 +202,7 @@
     'soundEnabled' => (bool) $violationSoundEnabled,
     'violationUrl' => route('siswa.ujian.violation', [$quiz, $attempt]),
     'blockedUrl' => route('siswa.ujian.blocked', [$quiz, $attempt]),
+    'loginUrl' => route('login'),
 ]) !!}</script>
 
 <script>
@@ -175,6 +211,8 @@ function cbtExam(cfg) {
         endsAt: new Date(cfg.endsAt).getTime(),
         saveUrl: cfg.saveUrl,
         blockedUrl: cfg.blockedUrl,
+        pingUrl: cfg.pingUrl,
+        loginUrl: cfg.loginUrl,
 
         seconds: 0,
         formatted: '00:00:00',
@@ -185,18 +223,98 @@ function cbtExam(cfg) {
         timeOverShown: false,
         autoSubmitted: false,
 
+        // Perangkat ini ditendang karena akun dipakai login di perangkat lain.
+        kicked: false,
+        kickedCountdown: 8,
+        kickedTitle: '',
+        kickedBody: '',
+
         init() {
             // Timer HANYA dimulai lewat callback ini -- baik untuk quiz dengan
             // proteksi aktif (dipanggil oleh examProtectionStore.startExam()
             // setelah siswa klik "Mulai Ujian") maupun proteksi nonaktif
             // (dipanggil langsung dari examProtectionStore.init()).
-            examProtectionStore.onExamStarted = () => this.startTimer();
+            examProtectionStore.onExamStarted = () => { this.startTimer(); this.startHeartbeat(); };
             examProtectionStore.onViolationsChanged = (n) => { this.violations = n; };
+
+            // Store juga perlu bisa memunculkan alert ini, karena fetch lapor
+            // pelanggaran bisa jadi yang lebih dulu kena 409 daripada heartbeat.
+            examProtectionStore.onSessionConflict = (status) => this.handleKickedResponse({ status });
         },
 
         startTimer() {
             this.tick();
             setInterval(() => this.tick(), 1000);
+        },
+
+        /**
+         * Denyut ke server tiap 10 detik. Halaman ujian nyaris tidak pernah
+         * pindah halaman, jadi tanpa denyut ini perangkat lama baru sadar sudah
+         * ditendang saat siswa kebetulan menjawab soal -- bisa belasan menit.
+         */
+        startHeartbeat() {
+            if (! this.pingUrl) return;
+            setInterval(async () => {
+                if (this.kicked || this.autoSubmitted) return;
+                try {
+                    const r = await fetch(this.pingUrl, { headers: this.headers() });
+                    if (this.handleKickedResponse(r)) return;
+                    if (r.ok) {
+                        const data = await r.json();
+                        if (data.blocked) this.goToBlocked();
+                    }
+                } catch (e) { /* jaringan putus sesaat -- coba lagi denyut berikutnya */ }
+            }, 10000);
+        },
+
+        /**
+         * Deteksi "sesi di perangkat ini sudah tidak berlaku". Return true
+         * kalau sudah ditangani, supaya pemanggil berhenti memproses respons.
+         *
+         *  409 = SingleSessionGuard: akun barusan login di perangkat lain.
+         *        Ini status yang muncul pada request PERTAMA setelah ditendang.
+         *  401 = sesi sudah dihanguskan (request kedua dst, atau sesi kedaluwarsa).
+         *  419 = token CSRF ikut mati bersama sesinya.
+         *
+         * 401/419 ikut ditangani supaya siswa tidak pernah terdampar di halaman
+         * ujian yang sudah mati -- mis. kalau request pertama pasca-tendangan
+         * kebetulan gagal karena jaringan, yang tersisa hanya 401/419.
+         */
+        handleKickedResponse(r) {
+            if (r.status === 409) {
+                this.showKicked(
+                    'Akun Anda sedang dilogin di perangkat lain',
+                    'Ujian di perangkat ini dihentikan karena akun Anda baru saja dipakai login di perangkat lain. Jawaban yang sudah tersimpan tetap aman dan bisa dilanjutkan dari perangkat tersebut.'
+                );
+                return true;
+            }
+            if (r.status === 401 || r.status === 419) {
+                this.showKicked(
+                    'Sesi ujian Anda sudah berakhir',
+                    'Sesi login di perangkat ini sudah tidak berlaku. Jawaban yang sudah tersimpan tetap aman — silakan login kembali untuk melanjutkan.'
+                );
+                return true;
+            }
+            return false;
+        },
+
+        showKicked(judul, isi) {
+            if (this.kicked) return;
+            this.kickedTitle = judul || 'Akun Anda sedang dilogin di perangkat lain';
+            this.kickedBody = isi || 'Ujian di perangkat ini dihentikan karena akun Anda baru saja dipakai login di perangkat lain. Jawaban yang sudah tersimpan tetap aman.';
+            this.kicked = true;
+
+            // Hentikan proteksi anti-curang: siswa akan meninggalkan halaman ini
+            // atas perintah sistem, jangan sampai dihitung sebagai pelanggaran.
+            examProtectionStore.protectionEnabled = false;
+
+            const timer = setInterval(() => {
+                this.kickedCountdown--;
+                if (this.kickedCountdown <= 0) {
+                    clearInterval(timer);
+                    window.location.replace(this.loginUrl);
+                }
+            }, 1000);
         },
 
         tick() {
@@ -227,6 +345,20 @@ function cbtExam(cfg) {
                     headers: this.headers(),
                     body: JSON.stringify({ quiz_question_id: qqId, question_option_id: optionId })
                 });
+                if (this.handleKickedResponse(r)) return;
+                if (r.status === 423) this.goToBlocked();
+            } catch (e) { console.error(e); }
+        },
+
+        async saveTextAnswer(qqId, text) {
+            if (text.trim() === '') { delete this.answered[qqId]; } else { this.answered[qqId] = text; }
+            try {
+                const r = await fetch(this.saveUrl, {
+                    method: 'POST',
+                    headers: this.headers(),
+                    body: JSON.stringify({ quiz_question_id: qqId, answer_text: text })
+                });
+                if (this.handleKickedResponse(r)) return;
                 if (r.status === 423) this.goToBlocked();
             } catch (e) { console.error(e); }
         },

@@ -87,14 +87,9 @@ class UjianController extends Controller
             return redirect()->route('siswa.ujian.result', [$quiz, $selesai]);
         }
 
-        $existing = QuizAttempt::where('quiz_id', $quiz->id)
-            ->where('siswa_id', $siswa->id)
-            ->where('is_done', false)
-            ->first();
-
         // Wajib token sesi -- DICEK SETIAP KALI tombol "Mulai Ujian" ditekan
         // selama require_session_token aktif, TANPA terkecuali. Sebelumnya
-        // pengecekan ini digantungkan pada "! $existing" (anggapan: kalau
+        // pengecekan ini digantungkan pada ada/tidaknya attempt aktif (anggapan: kalau
         // sudah ada attempt aktif berarti sekadar melanjutkan) -- itu lubang
         // keamanan: begitu ada baris QuizAttempt is_done=false untuk siswa+quiz
         // ini (misalnya dari percobaan sebelumnya), token APAPUN jadi diterima
@@ -121,11 +116,17 @@ class UjianController extends Controller
             }
         }
 
-        // Lock IP
-        if ($existing && $existing->ip_address && $existing->ip_address !== $r->ip()) {
-            abort(409, 'Sesi ujian Anda sudah dibuka dari perangkat/IP lain.');
-        }
-
+        // CATATAN: dulu di sini ada "Lock IP" yang meng-abort(409) begitu attempt
+        // dibuka dari IP berbeda. Itu dihapus karena menghukum kasus yang sah --
+        // HP berpindah dari WiFi ke data seluler saja sudah berganti IP, dan
+        // siswa langsung terkunci dari ujiannya sendiri tanpa jalan keluar.
+        //
+        // Aturan "satu akun satu perangkat" sekarang sepenuhnya dipegang
+        // SingleSessionGuard (middleware 'sso'): perangkat yang login TERAKHIR
+        // yang berhak, dan perangkat lama otomatis ditendang keluar dari ujian.
+        // Perangkat baru melanjutkan attempt yang sama (firstOrCreate di bawah
+        // menemukan baris is_done=false), jadi jawaban yang sudah tersimpan
+        // tidak hilang.
         $attempt = QuizAttempt::firstOrCreate(
             ['quiz_id' => $quiz->id, 'siswa_id' => $siswa->id, 'is_done' => false],
             [
@@ -134,6 +135,15 @@ class UjianController extends Controller
                 'user_agent' => substr((string) $r->userAgent(), 0, 500),
             ]
         );
+
+        // Catat perangkat/IP terakhir yang memegang ujian ini -- berguna untuk
+        // monitoring guru, dan menggantikan informasi yang dulu dipakai lock IP.
+        if (! $attempt->wasRecentlyCreated) {
+            $attempt->forceFill([
+                'ip_address' => $r->ip(),
+                'user_agent' => substr((string) $r->userAgent(), 0, 500),
+            ])->save();
+        }
 
         return redirect()->route('siswa.ujian.show', [$quiz, $attempt]);
     }
@@ -194,6 +204,29 @@ class UjianController extends Controller
     {
         abort_unless($attempt->siswa_id === request()->user()->id, 403);
         return view('cbt.ujian.blocked', compact('quiz', 'attempt'));
+    }
+
+    /**
+     * Heartbeat halaman ujian.
+     *
+     * Request ini nyaris tidak melakukan apa-apa -- gunanya adalah MELEWATI
+     * middleware 'sso'. Kalau akun sudah login di perangkat lain,
+     * SingleSessionGuard yang menjawab duluan dengan 409 + session_conflict,
+     * sehingga halaman ujian di perangkat lama tahu harus keluar dalam
+     * hitungan detik, bukan menunggu siswa kebetulan menjawab soal.
+     *
+     * Status attempt ikut dikembalikan supaya perangkat yang idle juga sadar
+     * kalau ujiannya diblokir/diselesaikan dari sisi guru.
+     */
+    public function ping(Quiz $quiz, QuizAttempt $attempt, Request $r)
+    {
+        abort_unless($attempt->siswa_id === $r->user()->id, 403);
+
+        return response()->json([
+            'ok'      => true,
+            'blocked' => (bool) $attempt->is_blocked,
+            'done'    => (bool) $attempt->is_done,
+        ]);
     }
 
     public function saveAnswer(Quiz $quiz, QuizAttempt $attempt, Request $r)

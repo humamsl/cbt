@@ -50,8 +50,24 @@ class SingleSessionGuard
             }
             $request->session()->invalidate();
             $request->session()->regenerateToken();
-            return redirect()->route('login')
-                ->with('error', '⚠ Akun Anda sedang aktif di perangkat lain. Anda di-logout dari perangkat ini.');
+
+            $pesan = '⚠ Akun Anda sedang aktif di perangkat lain. Anda di-logout dari perangkat ini.';
+
+            // Halaman ujian tidak pernah pindah halaman selama siswa mengerjakan
+            // -- yang jalan cuma fetch (simpan jawaban, lapor pelanggaran, ping).
+            // Kalau kita balas redirect HTML, fetch akan mengikutinya diam-diam
+            // dan siswa tetap duduk di halaman ujian yang sudah mati tanpa tahu
+            // apa-apa. Jadi untuk request JSON kita balas 409 + penanda eksplisit
+            // yang dibaca cbtExam.handleKickedResponse() di show.blade.php.
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'session_conflict' => true,
+                    'message'          => $pesan,
+                    'redirect'         => route('login'),
+                ], 409);
+            }
+
+            return redirect()->route('login')->with('error', $pesan);
         }
 
         return $next($request);
