@@ -1,5 +1,21 @@
 <script setup>
+import { computed } from 'vue';
 import { examProtectionStore as store } from '../stores/examProtection';
+
+/** Ekor peringatan disesuaikan proteksi_mode — jangan janjikan "diblokir"
+ *  untuk mode yang sebenarnya tidak memblokir apa pun. */
+const warningTail = computed(() => {
+    switch (store.proteksiMode) {
+        case 'pengurangan_nilai':
+            return `Nilai akhir dipotong ${store.nilaiPengurangan} poin!`;
+        case 'logout_otomatis':
+            return 'Ujian akan disubmit otomatis jika berlanjut!';
+        case 'peringatan':
+            return 'Dicatat sebagai peringatan.';
+        default:
+            return 'Ujian akan diblokir jika berlanjut!';
+    }
+});
 </script>
 
 <template>
@@ -7,7 +23,7 @@ import { examProtectionStore as store } from '../stores/examProtection';
         <div v-if="store.protectionEnabled && store.showWarning"
              class="bg-rose-600 text-white px-4 py-2 text-sm text-center font-semibold">
             ⚠ Pelanggaran: {{ store.lastViolation }}
-            ({{ store.violations }}/{{ store.maxViolations }}) — Ujian akan diblokir jika berlanjut!
+            ({{ store.violations }}/{{ store.maxViolations }}) — {{ warningTail }}
         </div>
         <!-- Info zoom dikunci: BUKAN pelanggaran, jadi warnanya netral (slate,
              bukan merah) dan tidak menyebut hitungan pelanggaran sama sekali.

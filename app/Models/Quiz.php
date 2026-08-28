@@ -23,6 +23,7 @@ class Quiz extends Model
         'require_session_token' => 'boolean',
         'protection_enabled' => 'boolean',
         'violation_sound_enabled' => 'boolean',
+        'nilai_pengurangan' => 'float',
         'settings' => 'array',
         'target_tingkat' => 'array',
     ];

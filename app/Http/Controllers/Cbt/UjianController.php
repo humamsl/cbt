@@ -292,6 +292,11 @@ class UjianController extends Controller
                 case 'peringatan':
                     // tidak ambil aksi otomatis — hanya tampilkan peringatan
                     break;
+                case 'pengurangan_nilai':
+                    // tidak ada aksi di sini walau ambang tercapai — potongan
+                    // nilainya dihitung dari SELURUH violation_count (bukan
+                    // hanya yang di atas ambang) saat finalize(), lihat di sana.
+                    break;
                 case 'tanpa_proteksi':
                     // skip
                     break;
@@ -405,6 +410,15 @@ class UjianController extends Controller
                 $ans->update(['is_correct' => $isCorrect]);
                 if ($isCorrect) { $correct++; $score += $qq->marks; }
                 else { $wrong++; }
+            }
+
+            // Mode "pengurangan_nilai": tiap pelanggaran (bukan cuma yang
+            // melewati max_violations) langsung memotong nilai akhir. Beda
+            // dari mode blokir/logout_otomatis yang menghentikan ujian saat
+            // ambang batas tercapai — mode ini biarkan ujian tetap jalan,
+            // potongannya baru terlihat di nilai akhir. Nilai tidak boleh minus.
+            if (($quiz->proteksi_mode ?? null) === 'pengurangan_nilai' && $quiz->nilai_pengurangan > 0) {
+                $score = max(0, $score - ($attempt->violation_count * (float) $quiz->nilai_pengurangan));
             }
 
             $attempt->update([

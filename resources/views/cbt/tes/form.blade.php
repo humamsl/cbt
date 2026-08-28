@@ -7,10 +7,11 @@
 
 @php
     $proteksiOptions = [
-        'logout_otomatis' => 'Logout Otomatis',
-        'blokir'          => 'Blokir Otomatis',
-        'peringatan'      => 'Peringatan Saja',
-        'tanpa_proteksi'  => 'Off',
+        'logout_otomatis'   => 'Logout Otomatis',
+        'blokir'            => 'Blokir Otomatis',
+        'pengurangan_nilai' => 'Kurangi Nilai',
+        'peringatan'        => 'Peringatan Saja',
+        'tanpa_proteksi'    => 'Off',
     ];
     $defaultMode = old('target_mode', $item->target_mode ?? 'per_kelas');
     $defaultTingkat = old('target_tingkat.0', ($item->target_tingkat[0] ?? null));
@@ -224,7 +225,7 @@
                  :value="(int) ($item->is_published ?? 0)"
                  :options="[0 => 'Draft', 1 => 'Publikasikan']" required/>
 
-        <div x-data="{ showHelp: false }">
+        <div x-data="{ showHelp: false, proteksiMode: '{{ old('proteksi_mode', $item->proteksi_mode ?? 'blokir') }}' }">
             <div class="flex items-center gap-1.5">
                 <span class="label">Proteksi Ujian <span class="text-rose-500">*</span></span>
 
@@ -236,11 +237,19 @@
                     ?
                 </button>
             </div>
-            <select name="proteksi_mode" class="select mt-1.5" required>
+            <select name="proteksi_mode" class="select mt-1.5" x-model="proteksiMode" required>
                 @foreach($proteksiOptions as $val => $lbl)
                     <option value="{{ $val }}" @selected(($item->proteksi_mode ?? 'blokir') === $val)>{{ $lbl }}</option>
                 @endforeach
             </select>
+
+            {{-- Jumlah pengurangan nilai — hanya relevan utk mode "Kurangi Nilai" --}}
+            <div x-show="proteksiMode === 'pengurangan_nilai'" x-cloak class="mt-3">
+                <x-field name="nilai_pengurangan" type="number" label="Jumlah Pengurangan Nilai"
+                         :value="old('nilai_pengurangan', $item->nilai_pengurangan ?? 5)"
+                         min="0.01" max="100" step="0.5"
+                         help="Poin nilai yang dipotong setiap kali siswa melakukan pelanggaran (mis. 5 = tiap pelanggaran memotong 5 poin dari nilai akhir)."/>
+            </div>
 
             {{-- MODAL PANDUAN PROTEKSI UJIAN --}}
             <div x-show="showHelp" x-cloak
@@ -268,7 +277,7 @@
                                 </div>
                                 <div class="min-w-0">
                                     <h3 class="font-bold text-[15px] leading-tight tracking-tight">Panduan Proteksi Ujian</h3>
-                                    <p class="text-[11px] text-white/75 mt-1 leading-snug">4 mode tindakan saat siswa melanggar</p>
+                                    <p class="text-[11px] text-white/75 mt-1 leading-snug">5 mode tindakan saat siswa melanggar</p>
                                 </div>
                             </div>
                             <button type="button" @click="showHelp = false"
@@ -325,7 +334,28 @@
                             </div>
                         </div>
 
-                        {{-- Card 3: Peringatan Saja --}}
+                        {{-- Card 3: Kurangi Nilai --}}
+                        <div class="group relative rounded-xl border border-orange-200/70 bg-gradient-to-br from-orange-50/70 to-white p-3 hover:border-orange-300 hover:shadow-soft transition-all">
+                            <div class="absolute left-0 top-3 bottom-3 w-1 rounded-r bg-orange-500"></div>
+                            <div class="flex items-start gap-3 pl-1.5">
+                                <div class="w-9 h-9 shrink-0 rounded-lg bg-gradient-to-br from-orange-100 to-orange-200 text-orange-700 grid place-items-center text-base shadow-sm group-hover:scale-110 transition-transform">➖</div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center gap-1.5 flex-wrap">
+                                        <h4 class="font-bold text-orange-800 text-[13px]">Kurangi Nilai</h4>
+                                        <span class="text-[9px] px-1.5 py-0.5 rounded-full bg-orange-500/15 text-orange-700 font-semibold"></span>
+                                    </div>
+                                    <p class="text-[11px] text-ink-700 mt-1 leading-snug">
+                                        Ujian <strong class="text-orange-700">tetap lanjut</strong>, tapi tiap pelanggaran langsung memotong nilai akhir siswa.
+                                    </p>
+                                    <div class="mt-1.5 text-[10px] text-orange-700 font-medium flex items-center gap-1">
+                                        <span class="w-3.5 h-3.5 rounded-full bg-orange-500 text-white grid place-items-center text-[8px]">✓</span>
+                                        <span>Efek jera tanpa mengganggu ujian</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Card 4: Peringatan Saja --}}
                         <div class="group relative rounded-xl border border-amber-200/70 bg-gradient-to-br from-amber-50/70 to-white p-3 hover:border-amber-300 hover:shadow-soft transition-all">
                             <div class="absolute left-0 top-3 bottom-3 w-1 rounded-r bg-amber-500"></div>
                             <div class="flex items-start gap-3 pl-1.5">
@@ -346,7 +376,7 @@
                             </div>
                         </div>
 
-                        {{-- Card 4: Off --}}
+                        {{-- Card 5: Off --}}
                         <div class="group relative rounded-xl border border-slate-200 bg-gradient-to-br from-slate-50/70 to-white p-3 hover:border-slate-300 hover:shadow-soft transition-all">
                             <div class="absolute left-0 top-3 bottom-3 w-1 rounded-r bg-slate-400"></div>
                             <div class="flex items-start gap-3 pl-1.5">
@@ -371,7 +401,9 @@
                         <div class="mt-1.5 rounded-lg bg-gradient-to-r from-brand-50 to-accent-50/50 border border-brand-100 px-3 py-2 flex items-start gap-2">
                             <div class="w-5 h-5 shrink-0 rounded-full bg-brand-100 grid place-items-center text-[10px]">💡</div>
                             <p class="text-[10px] text-brand-800 leading-snug">
-                                Batas pelanggaran diatur di field <strong>Max Pelanggaran</strong>.
+                                Batas pelanggaran diatur di field <strong>Max Pelanggaran</strong>. Untuk mode
+                                <strong>Kurangi Nilai</strong>, poin potongan per pelanggaran diatur di field
+                                <strong>Jumlah Pengurangan Nilai</strong> yang muncul di bawah dropdown ini.
                             </p>
                         </div>
                     </div>

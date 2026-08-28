@@ -40,6 +40,7 @@ class ExportSoalService
             $section->addText('#JENIS: '.$jenis, ['bold' => true]);
             if ($q->mapel) $section->addText('#MAPEL: '.$q->mapel->kode_mapel);
             if ($q->tingkat) $section->addText('#TINGKAT: '.$q->tingkat);
+            if ($q->topic) $section->addText('#TOPIK: '.$this->plainText($q->topic->topic));
             $section->addText('#JUDUL: '.$this->plainText($q->title));
             $section->addText('#SOAL: '.$this->plainText($q->question));
             $this->writeWordImages($section, $q->question);
@@ -103,6 +104,7 @@ class ExportSoalService
         $section->addText('#JENIS: pg', ['bold' => true]);
         $section->addText('#MAPEL: MTK');
         $section->addText('#TINGKAT: 10');
+        $section->addText('#TOPIK: Bilangan Berpangkat & Akar');
         $section->addText('#JUDUL: Akar 144');
         $section->addText('#SOAL: Berapa akar dari 144?');
         $section->addText('A. 10');
@@ -117,6 +119,7 @@ class ExportSoalService
         $section->addText('#JENIS: pgk', ['bold' => true]);
         $section->addText('#MAPEL: MTK');
         $section->addText('#TINGKAT: 10');
+        $section->addText('#TOPIK: Bilangan Prima');
         $section->addText('#JUDUL: Bilangan Prima');
         $section->addText('#SOAL: Manakah yang termasuk bilangan prima?');
         $section->addText('A. 2');
@@ -132,6 +135,7 @@ class ExportSoalService
         $section->addText('#JENIS: fill-blank', ['bold' => true]);
         $section->addText('#MAPEL: BIN');
         $section->addText('#TINGKAT: 10');
+        $section->addText('#TOPIK: Geografi Indonesia');
         $section->addText('#JUDUL: Ibu Kota Indonesia');
         $section->addText('#SOAL: Ibu kota negara Indonesia adalah ___');
         $section->addText('#JAWABAN: Jakarta');
@@ -142,6 +146,7 @@ class ExportSoalService
         $section->addText('#JENIS: benar-salah', ['bold' => true]);
         $section->addText('#MAPEL: IPS');
         $section->addText('#TINGKAT: 10');
+        $section->addText('#TOPIK: Bentuk Bumi');
         $section->addText('#JUDUL: Bumi Bulat');
         $section->addText('#SOAL: Bumi berbentuk bulat sempurna.');
         $section->addText('#JAWABAN: S');
@@ -152,6 +157,7 @@ class ExportSoalService
         $section->addText('#JENIS: penjodohan', ['bold' => true]);
         $section->addText('#MAPEL: IPA');
         $section->addText('#TINGKAT: 10');
+        $section->addText('#TOPIK: Organ Tubuh Manusia');
         $section->addText('#JUDUL: Pasangkan Organ');
         $section->addText('#SOAL: Pasangkan organ dengan fungsinya');
         $section->addText('A. Jantung');
@@ -167,6 +173,7 @@ class ExportSoalService
         $section->addText('#JENIS: pg', ['bold' => true]);
         $section->addText('#MAPEL: MTK');
         $section->addText('#TINGKAT: 10');
+        $section->addText('#TOPIK: Bangun Datar');
         $section->addText('#JUDUL: Luas Persegi');
         $section->addText('#SOAL: Perhatikan gambar berikut. Berapakah luas persegi tersebut?');
         if ($png = $this->placeholderImagePng('CONTOH GAMBAR SOAL')) {
@@ -188,6 +195,8 @@ class ExportSoalService
         $section->addListItem('Kode jenis: pg, pgk, fill-blank, benar-salah, penjodohan.');
         $section->addListItem('Kode #MAPEL harus sama dengan kode mapel di Data Center.');
         $section->addListItem('Tingkat opsional (1–12). Boleh dikosongkan.');
+        $section->addListItem('#TOPIK wajib diisi. Kalau nama topiknya belum ada untuk mapel+tingkat '
+            .'tsb, akan otomatis dibuatkan sesuai nama yang ditulis.');
         $section->addListItem('Jawaban PG = huruf tunggal (A/B/C/D/E).');
         $section->addListItem('Jawaban PGK = huruf dipisah koma (mis. A,C,E).');
         $section->addListItem('Jawaban Benar-Salah = B (benar) atau S (salah).');
@@ -211,34 +220,38 @@ class ExportSoalService
         $sheet->setTitle('Bank Soal');
 
         $headers = [
-            'jenis', 'mapel_kode', 'tingkat',
+            'jenis', 'mapel_kode', 'tingkat', 'topik',
             'judul', 'pertanyaan',
             'opsi_a', 'opsi_b', 'opsi_c', 'opsi_d', 'opsi_e',
             'jawaban', 'gambar',
         ];
+        $lastCol = chr(64 + count($headers)); // 13 kolom -> 'M'
         $sheet->fromArray([$headers], null, 'A1');
-        $sheet->getStyle('A1:L1')->getFont()->setBold(true);
-        $sheet->getStyle('A1:L1')->getFill()
+        $sheet->getStyle("A1:{$lastCol}1")->getFont()->setBold(true);
+        $sheet->getStyle("A1:{$lastCol}1")->getFill()
             ->setFillType(Fill::FILL_SOLID)
             ->getStartColor()->setRGB('1F47F5');
-        $sheet->getStyle('A1:L1')->getFont()->getColor()->setRGB('FFFFFF');
-        $sheet->getStyle('A1:L1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $sheet->getStyle("A1:{$lastCol}1")->getFont()->getColor()->setRGB('FFFFFF');
+        $sheet->getStyle("A1:{$lastCol}1")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
         // Paksa kolom data jadi TEXT supaya Excel tidak auto-convert
         // (mis. kode mapel "7-1", jawaban "A,C,E", angka tetap text)
-        $sheet->getStyle('A2:L9999')->getNumberFormat()->setFormatCode(NumberFormat::FORMAT_TEXT);
-        foreach (range('A', 'L') as $col) {
+        $sheet->getStyle("A2:{$lastCol}9999")->getNumberFormat()->setFormatCode(NumberFormat::FORMAT_TEXT);
+        foreach (range('A', $lastCol) as $col) {
             $sheet->getStyle($col)->getNumberFormat()->setFormatCode(NumberFormat::FORMAT_TEXT);
         }
 
-        // Contoh baris untuk tiap jenis. Kolom terakhir = gambar (URL / data-URI,
-        // opsional). Contoh URL diberikan pada baris PG untuk menunjukkan formatnya.
+        // Contoh baris untuk tiap jenis. Kolom "topik" WAJIB diisi (nama topik
+        // yang sudah ada di menu Topik untuk mapel+tingkat tsb — kalau belum
+        // ada, akan otomatis dibuatkan sesuai nama yang ditulis di sini).
+        // Kolom terakhir = gambar (URL / data-URI, opsional). Contoh URL
+        // diberikan pada baris PG untuk menunjukkan formatnya.
         $examples = [
-            ['pg',          'MTK', '10', 'Akar 144',            'Berapa akar dari 144?',                '10','11','12','13','',           'C',      'https://situs-anda.com/gambar/soal.png'],
-            ['pgk',         'MTK', '10', 'Bilangan prima',      'Manakah bilangan prima?',              '2','4','7','9','11',             'A,C,E',  ''],
-            ['fill-blank',  'BIN', '10', 'Ibu kota Indonesia',  'Ibu kota negara Indonesia adalah ___', '','','','','',                   'Jakarta',''],
-            ['benar-salah', 'IPS', '10', 'Bumi bulat',          'Bumi berbentuk bulat sempurna.',       '','','','','',                   'S',      ''],
-            ['penjodohan',  'IPA', '10', 'Pasangkan organ',     'Pasangkan organ dengan fungsinya',     'Jantung','Paru-paru','Hati','','', 'A=Memompa darah; B=Pernapasan; C=Detoksifikasi', ''],
+            ['pg',          'MTK', '10', 'Bilangan Berpangkat & Akar', 'Akar 144',            'Berapa akar dari 144?',                '10','11','12','13','',           'C',      'https://situs-anda.com/gambar/soal.png'],
+            ['pgk',         'MTK', '10', 'Bilangan Prima',             'Bilangan prima',      'Manakah bilangan prima?',              '2','4','7','9','11',             'A,C,E',  ''],
+            ['fill-blank',  'BIN', '10', 'Geografi Indonesia',         'Ibu kota Indonesia',  'Ibu kota negara Indonesia adalah ___', '','','','','',                   'Jakarta',''],
+            ['benar-salah', 'IPS', '10', 'Bentuk Bumi',                'Bumi bulat',          'Bumi berbentuk bulat sempurna.',       '','','','','',                   'S',      ''],
+            ['penjodohan',  'IPA', '10', 'Organ Tubuh Manusia',        'Pasangkan organ',     'Pasangkan organ dengan fungsinya',     'Jantung','Paru-paru','Hati','','', 'A=Memompa darah; B=Pernapasan; C=Detoksifikasi', ''],
         ];
         foreach ($examples as $rIdx => $row) {
             $r = 2 + $rIdx;
@@ -250,7 +263,7 @@ class ExportSoalService
             }
         }
 
-        foreach (range('A', 'L') as $col) $sheet->getColumnDimension($col)->setAutoSize(true);
+        foreach (range('A', $lastCol) as $col) $sheet->getColumnDimension($col)->setAutoSize(true);
 
         $this->addExcelPetunjukSheet($spreadsheet);
         // Pastikan file terbuka pada sheet data (bukan "Petunjuk") saat dibuka
@@ -280,6 +293,8 @@ class ExportSoalService
             ['Kolom jenis: pg, pgk, fill-blank, benar-salah, penjodohan.', false],
             ['Kolom mapel_kode: harus sama dengan kode mapel di Data Center.', false],
             ['Kolom tingkat: 1-12, opsional (boleh dikosongkan).', false],
+            ['Kolom topik: WAJIB diisi. Kalau nama topiknya belum ada di menu Topik', false],
+            ['   untuk mapel+tingkat tsb, akan otomatis dibuatkan sesuai nama yang ditulis.', false],
             ['Jawaban PG = huruf tunggal (mis. C). PGK = huruf dipisah koma (mis. A,C,E).', false],
             ['Jawaban Benar-Salah = B atau S. Fill-blank = teks jawaban.', false],
             ['Jawaban Penjodohan = "huruf=teks" dipisah titik koma (mis. A=..; B=..).', false],

@@ -6,6 +6,7 @@ use App\Models\MataPelajaran;
 use App\Models\Question;
 use App\Models\QuestionOption;
 use App\Models\QuestionType;
+use App\Models\Topic;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use PhpOffice\PhpSpreadsheet\IOFactory as SpreadsheetIOFactory;
@@ -53,6 +54,9 @@ use PhpOffice\PhpWord\IOFactory as WordIOFactory;
  */
 class ImportSoalService
 {
+    /** Cache resolveTopicId() per (nama|mapel|tingkat) selama satu proses import. */
+    protected array $topicCache = [];
+
     public function __construct(protected ImageLocalizer $localizer)
     {
     }
@@ -205,7 +209,7 @@ class ImportSoalService
         if ($current) $blocks[] = $current;
 
         $map = [
-            'jenis' => 'jenis', 'mapel' => 'mapel_kode', 'tingkat' => 'tingkat',
+            'jenis' => 'jenis', 'mapel' => 'mapel_kode', 'tingkat' => 'tingkat', 'topik' => 'topik',
             'judul' => 'judul', 'soal' => 'pertanyaan', 'jawaban' => 'jawaban',
         ];
 
@@ -228,7 +232,7 @@ class ImportSoalService
                 }
 
                 $t = trim($tok['text']);
-                if (preg_match('/^#(JENIS|MAPEL|TINGKAT|JUDUL|SOAL|JAWABAN):\s*(.*)$/i', $t, $m)) {
+                if (preg_match('/^#(JENIS|MAPEL|TINGKAT|TOPIK|JUDUL|SOAL|JAWABAN):\s*(.*)$/i', $t, $m)) {
                     $field = $map[strtolower($m[1])] ?? strtolower($m[1]);
                     $val = trim($m[2]);
                     // Teks soal ditaruh di DEPAN (gambar menyusul setelahnya).
@@ -346,6 +350,7 @@ class ImportSoalService
             'jenis'      => $jenis,
             'mapel_kode' => trim((string) ($r['mapel_kode'] ?? '')) ?: null,
             'tingkat'    => $r['tingkat'] ?? null,
+            'topik'      => trim((string) ($r['topik'] ?? '')),
             'judul'      => $judul,
             'pertanyaan' => $pertanyaan,
             'opsi'       => $opsi,
@@ -366,13 +371,22 @@ class ImportSoalService
                     throw new \RuntimeException("Jenis '{$r['jenis']}' tidak dikenal");
                 }
 
-                DB::transaction(function () use ($r, $typeMap, $mapelMap, $guruId) {
+                if (trim((string) ($r['topik'] ?? '')) === '') {
+                    throw new \RuntimeException("Kolom topik wajib diisi");
+                }
+
+                $mapelId = $mapelMap[$r['mapel_kode']] ?? null;
+                $tingkat = is_numeric($r['tingkat']) ? (int) $r['tingkat'] : null;
+                $topicId = $this->resolveTopicId($r['topik'], $mapelId, $tingkat);
+
+                DB::transaction(function () use ($r, $typeMap, $mapelId, $tingkat, $topicId, $guruId) {
                     $q = Question::create([
                         'title'              => $r['judul'],
                         'question'           => $r['pertanyaan'],
                         'question_type_id'   => $typeMap[$r['jenis']],
-                        'mata_pelajaran_id'  => $mapelMap[$r['mapel_kode']] ?? null,
-                        'tingkat'            => is_numeric($r['tingkat']) ? (int) $r['tingkat'] : null,
+                        'mata_pelajaran_id'  => $mapelId,
+                        'tingkat'            => $tingkat,
+                        'topic_id'           => $topicId,
                         'created_by_guru_id' => $guruId,
                         'is_active'          => true,
                     ]);
@@ -388,6 +402,40 @@ class ImportSoalService
         }
 
         return $result;
+    }
+
+    /**
+     * Cocokkan nama topik ke master Topic (case-insensitive, dicocokkan pada
+     * mapel+tingkat yang sama). Topik yang belum ada otomatis dibuat — sama
+     * seperti status kepegawaian pada import guru — supaya import tidak
+     * berhenti hanya gara-gara topiknya belum sempat ditambahkan lebih dulu
+     * lewat menu Topik.
+     */
+    protected function resolveTopicId(string $nama, ?int $mapelId, ?int $tingkat): int
+    {
+        $nama = trim($nama);
+        $cacheKey = mb_strtolower($nama).'|'.($mapelId ?? '').'|'.($tingkat ?? '');
+
+        if (isset($this->topicCache[$cacheKey])) {
+            return $this->topicCache[$cacheKey];
+        }
+
+        $topic = Topic::where('mata_pelajaran_id', $mapelId)
+            ->where('tingkat', $tingkat)
+            ->whereRaw('LOWER(topic) = ?', [mb_strtolower($nama)])
+            ->first();
+
+        if (! $topic) {
+            $topic = Topic::create([
+                'topic' => $nama,
+                'slug' => \Illuminate\Support\Str::slug($nama).'-'.\Illuminate\Support\Str::random(5),
+                'mata_pelajaran_id' => $mapelId,
+                'tingkat' => $tingkat,
+                'is_active' => true,
+            ]);
+        }
+
+        return $this->topicCache[$cacheKey] = $topic->id;
     }
 
     protected function createOptions(Question $q, array $r): void

@@ -1,5 +1,22 @@
 <script setup>
+import { computed } from 'vue';
 import { examProtectionStore as store } from '../stores/examProtection';
+
+/** Konsekuensi pelanggaran, disesuaikan dgn proteksi_mode ujian ini — supaya
+ *  siswa tidak dijanjikan "diblokir" padahal mode-nya sebenarnya cuma
+ *  memotong nilai / mencatat peringatan. */
+const consequenceText = computed(() => {
+    switch (store.proteksiMode) {
+        case 'pengurangan_nilai':
+            return `Tiap pelanggaran memotong ${store.nilaiPengurangan} poin dari nilai akhir`;
+        case 'logout_otomatis':
+            return `> ${store.maxViolations} pelanggaran = ujian otomatis disubmit & keluar`;
+        case 'peringatan':
+            return 'Pelanggaran dicatat sebagai peringatan';
+        default:
+            return `> ${store.maxViolations} pelanggaran = ujian diblokir`;
+    }
+});
 </script>
 
 <template>
@@ -12,7 +29,7 @@ import { examProtectionStore as store } from '../stores/examProtection';
         <div>• Dilarang copy / paste / klik kanan</div>
         <div>• Dilarang membuka DevTools</div>
         <div class="pt-2 mt-2 border-t border-slate-100 text-rose-600 font-semibold">
-            > {{ store.maxViolations }} pelanggaran = ujian diblokir
+            {{ consequenceText }}
         </div>
         <!-- Dipisah dari daftar larangan di atas: ini catatan, bukan pelanggaran. -->
         <div class="pt-2 mt-2 border-t border-slate-100 text-ink-500">

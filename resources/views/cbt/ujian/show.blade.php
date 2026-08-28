@@ -200,6 +200,8 @@
     'initialViolations' => (int) $attempt->violation_count,
     'protectionEnabled' => (bool) $protectionEnabled,
     'soundEnabled' => (bool) $violationSoundEnabled,
+    'proteksiMode' => $quiz->proteksi_mode,
+    'nilaiPengurangan' => (float) ($quiz->nilai_pengurangan ?? 0),
     'violationUrl' => route('siswa.ujian.violation', [$quiz, $attempt]),
     'blockedUrl' => route('siswa.ujian.blocked', [$quiz, $attempt]),
     'loginUrl' => route('login'),

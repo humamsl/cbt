@@ -45,6 +45,12 @@ export const examProtectionStore = reactive({
     soundEnabled: false,
     violationUrl: '',
     blockedUrl: '',
+    /** proteksi_mode aktif (mis. 'blokir', 'pengurangan_nilai') — dipakai
+     *  komponen tampilan (ExamRulesCard, ExamViolationBanner) supaya pesan
+     *  peringatannya sesuai konsekuensi mode ini, bukan selalu "diblokir". */
+    proteksiMode: '',
+    /** Poin nilai yang dipotong tiap pelanggaran, hanya relevan saat proteksiMode === 'pengurangan_nilai'. */
+    nilaiPengurangan: 0,
 
     // ---- callback hook, di-set oleh Alpine (cbtExam) di show.blade.php ----
     onExamStarted: null,
@@ -72,6 +78,8 @@ export const examProtectionStore = reactive({
         this.violationUrl = config.violationUrl;
         this.blockedUrl = config.blockedUrl;
         this.violations = config.initialViolations || 0;
+        this.proteksiMode = config.proteksiMode || '';
+        this.nilaiPengurangan = config.nilaiPengurangan || 0;
 
         this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
                         || (window.matchMedia && window.matchMedia('(pointer:coarse)').matches);

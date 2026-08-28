@@ -42,6 +42,7 @@ class TesController extends Controller
             'proteksi_mode' => 'blokir',
             'max_violations' => 5,
             'violation_sound_enabled' => true,
+            'nilai_pengurangan' => 5,
         ]), $user));
     }
 
@@ -262,13 +263,19 @@ class TesController extends Controller
             'is_published' => 'nullable|boolean',
             'require_session_token' => 'nullable|boolean',
             'session_token_id' => 'nullable|required_if:require_session_token,1|exists:session_tokens,id',
-            'proteksi_mode' => 'required|in:logout_otomatis,blokir,peringatan,tanpa_proteksi',
+            'proteksi_mode' => 'required|in:logout_otomatis,blokir,peringatan,pengurangan_nilai,tanpa_proteksi',
             'max_violations' => 'nullable|integer|min:1|max:99',
             'violation_sound_enabled' => 'nullable|boolean',
+            'nilai_pengurangan' => 'nullable|required_if:proteksi_mode,pengurangan_nilai|numeric|min:0.01|max:100',
         ]);
 
         // Sync legacy fields
         $data['protection_enabled'] = $data['proteksi_mode'] !== 'tanpa_proteksi';
+
+        // Poin pengurangan hanya relevan utk mode 'pengurangan_nilai' — kosongkan
+        // di mode lain supaya tidak ada nilai "nyangkut" dari mode sebelumnya.
+        $data['nilai_pengurangan'] = $data['proteksi_mode'] === 'pengurangan_nilai'
+            ? (float) $data['nilai_pengurangan'] : null;
 
         // Normalisasi field target per mode — field mode lain dikosongkan
         // supaya tidak ada target "nyangkut" saat admin berganti-ganti mode.

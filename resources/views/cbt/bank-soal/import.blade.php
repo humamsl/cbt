@@ -52,8 +52,9 @@
             <div class="font-semibold mb-1">📊 Excel (.xlsx)</div>
             <p class="text-ink-600 text-xs">Header wajib di baris 1, urutan kolom:</p>
             <code class="block text-[10px] bg-slate-50 p-2 rounded mt-1 border border-slate-200 break-all">
-                jenis | mapel_kode | tingkat | judul | pertanyaan | opsi_a | opsi_b | opsi_c | opsi_d | opsi_e | jawaban | gambar
+                jenis | mapel_kode | tingkat | topik | judul | pertanyaan | opsi_a | opsi_b | opsi_c | opsi_d | opsi_e | jawaban | gambar
             </code>
+            <p class="mt-1 text-xs text-rose-600">Kolom <code>topik</code> wajib diisi. Kalau nama topiknya belum ada untuk mapel+tingkat tsb, akan otomatis dibuatkan.</p>
         </div>
 
         <div>
@@ -61,6 +62,7 @@
             <p class="text-ink-600 text-xs">Satu soal = satu blok, dipisah <code>---</code></p>
             <pre class="text-[10px] bg-slate-50 p-2 rounded mt-1 border border-slate-200 whitespace-pre-wrap">#JENIS: pg
 #MAPEL: MTK
+#TOPIK: Bilangan Berpangkat & Akar
 #JUDUL: Akar 144
 #SOAL: Berapa akar dari 144?
 [tempel gambar di sini → ikut ke soal]
@@ -70,6 +72,7 @@ C. 12
 D. 13
 #JAWABAN: C
 ---</pre>
+            <p class="mt-1 text-xs text-rose-600"><code>#TOPIK:</code> wajib diisi. Kalau nama topiknya belum ada untuk mapel+tingkat tsb, akan otomatis dibuatkan.</p>
         </div>
 
         <div>
