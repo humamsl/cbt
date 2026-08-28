@@ -106,7 +106,7 @@
                     <option :value="String(t.id)" x-text="t.topic"></option>
                 </template>
             </select>
-            <p x-show="!mapelId" x-cloak class="mt-1 text-xs text-ink-500">Pilih mata pelajaran dulu untuk memuat topik.</p>
+            <p x-show="!mapelId" x-cloak class="mt-1 text-xs text-ink-500"></p>
             <p x-show="mapelId && !tingkat" x-cloak class="mt-1 text-xs text-ink-500">Pilih tingkat kelas dulu untuk memuat topik.</p>
             <p x-show="mapelId && tingkat && filteredTopics.length === 0" x-cloak class="mt-1 text-xs text-amber-600">Belum ada topik untuk mapel &amp; tingkat ini. Tambahkan dulu lewat menu Topik sebelum menyimpan soal ini.</p>
             @error('topic_id')<p class="mt-1 text-xs text-rose-600">{{ $message }}</p>@enderror
