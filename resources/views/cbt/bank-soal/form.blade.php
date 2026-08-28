@@ -99,15 +99,16 @@
         {{-- Topik: muncul setelah memilih tingkat, difilter sesuai tingkat. Wajib diisi. --}}
         <div>
             <label class="label">Topik <span class="text-rose-500">*</span></label>
-            <select name="topic_id" class="select" x-model="topicId" :disabled="!tingkat" required
+            <select name="topic_id" class="select" x-model="topicId" :disabled="!tingkat || !mapelId" required
                     x-init="$nextTick(() => { if (topicId) $el.value = topicId })">
                 <option value="">— Pilih topik —</option>
                 <template x-for="t in filteredTopics" :key="t.id">
                     <option :value="String(t.id)" x-text="t.topic"></option>
                 </template>
             </select>
-            <p x-show="!tingkat" x-cloak class="mt-1 text-xs text-ink-500">Pilih tingkat kelas dulu untuk memuat topik.</p>
-            <p x-show="tingkat && filteredTopics.length === 0" x-cloak class="mt-1 text-xs text-amber-600">Belum ada topik untuk tingkat ini. Tambahkan dulu lewat menu Topik sebelum menyimpan soal ini.</p>
+            <p x-show="!mapelId" x-cloak class="mt-1 text-xs text-ink-500">Pilih mata pelajaran dulu untuk memuat topik.</p>
+            <p x-show="mapelId && !tingkat" x-cloak class="mt-1 text-xs text-ink-500">Pilih tingkat kelas dulu untuk memuat topik.</p>
+            <p x-show="mapelId && tingkat && filteredTopics.length === 0" x-cloak class="mt-1 text-xs text-amber-600">Belum ada topik untuk mapel &amp; tingkat ini. Tambahkan dulu lewat menu Topik sebelum menyimpan soal ini.</p>
             @error('topic_id')<p class="mt-1 text-xs text-rose-600">{{ $message }}</p>@enderror
         </div>
     </div>
@@ -376,18 +377,25 @@ function bankSoalForm({ typesMap, currentType, pgCorrect, pgkCorrect, bsAnswer, 
             return allowed.includes(Number(nomor));
         },
 
-        /** Saat mapel berubah, reset tingkat (dan topik) jika tak lagi valid */
+        /** Saat mapel berubah, reset tingkat jika tak lagi valid, lalu topik
+         *  selalu ikut divalidasi ulang -- topik terikat ke mapel+tingkat,
+         *  jadi walau tingkat tetap sama, topik lama bisa jadi milik mapel lain. */
         onMapelChange() {
             if (this.tingkat && ! this.tingkatBoleh(this.tingkat)) {
                 this.tingkat = '';
-                this.onTingkatChange();
             }
+            this.onTingkatChange();
         },
 
-        // Topik yang cocok dengan tingkat terpilih
+        // Topik yang cocok dengan mapel + tingkat terpilih. Topik SELALU
+        // dibuat terikat ke satu mapel (wajib diisi di menu Topik), jadi
+        // difilter berdasarkan keduanya -- bukan cuma tingkat -- supaya topik
+        // mapel lain (mis. Aljabar Dasar milik Matematika) tidak nyasar
+        // muncul saat mapel yang dipilih di sini Bahasa Indonesia.
         get filteredTopics() {
-            if (!this.tingkat) return [];
-            return this.topics.filter(t => String(t.tingkat) === String(this.tingkat));
+            if (!this.tingkat || !this.mapelId) return [];
+            return this.topics.filter(t =>
+                String(t.tingkat) === String(this.tingkat) && String(t.mapel) === String(this.mapelId));
         },
 
         // Saat tingkat berubah, reset topik jika tak lagi valid
