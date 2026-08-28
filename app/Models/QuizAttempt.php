@@ -44,6 +44,50 @@ class QuizAttempt extends Model
     public function violations() { return $this->hasMany(ExamViolation::class); }
 
     /**
+     * Ringkas konsekuensi pelanggaran attempt ini untuk Monitoring Ujian:
+     * apakah berujung diblokir, logout otomatis, nilai dipotong, atau
+     * sekadar tercatat (mode "Peringatan Saja"). null kalau tidak ada
+     * pelanggaran sama sekali. Butuh relasi `quiz` sudah di-load (lihat
+     * MonitoringController::detail() yang men-set-relation manual).
+     */
+    public function getKonsekuensiPelanggaranAttribute(): ?array
+    {
+        if (($this->violation_count ?? 0) === 0) return null;
+
+        if ($this->is_blocked) {
+            return [
+                'text' => 'Ujian diblokir',
+                'detail' => $this->blocked_reason,
+                'badge' => 'badge-danger',
+            ];
+        }
+
+        if ($this->is_force_submitted) {
+            return [
+                'text' => 'Disubmit otomatis & keluar (logout)',
+                'detail' => 'Jawaban disubmit paksa karena melebihi batas pelanggaran.',
+                'badge' => 'badge-warning',
+            ];
+        }
+
+        $quiz = $this->quiz;
+        if ($quiz && $quiz->proteksi_mode === 'pengurangan_nilai' && $quiz->nilai_pengurangan > 0) {
+            $potongan = $this->violation_count * (float) $quiz->nilai_pengurangan;
+            return [
+                'text' => ($this->is_done ? 'Nilai dipotong ' : 'Nilai akan dipotong ').$potongan.' poin',
+                'detail' => "{$this->violation_count} pelanggaran × {$quiz->nilai_pengurangan} poin/pelanggaran.",
+                'badge' => 'badge-warning',
+            ];
+        }
+
+        return [
+            'text' => 'Tercatat sebagai peringatan',
+            'detail' => 'Tidak ada aksi otomatis untuk mode proteksi ujian ini.',
+            'badge' => 'badge-muted',
+        ];
+    }
+
+    /**
      * Nilai akhir skala 0–100 (otomatis "puluhan").
      *
      * Kolom `score` menyimpan POIN mentah (jumlah marks jawaban benar) —

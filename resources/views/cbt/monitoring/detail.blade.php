@@ -3,7 +3,20 @@
 @section('breadcrumb', 'Admin / Monitoring / Detail')
 
 @push('head')
-<meta http-equiv="refresh" content="15">  {{-- detail = 15 detik --}}
+<script>
+// Auto-refresh 15 detik, TAPI ditunda kalau modal riwayat kecurangan sedang
+// terbuka -- meta-refresh biasa akan menutup paksa modal itu di tengah admin
+// membacanya. window.__pauseAutoRefresh di-toggle dari x-effect di bawah.
+(function () {
+    function scheduleReload() {
+        setTimeout(function () {
+            if (window.__pauseAutoRefresh) { scheduleReload(); return; }
+            location.reload();
+        }, 15000);
+    }
+    scheduleReload();
+})();
+</script>
 @endpush
 
 @section('content')
@@ -58,6 +71,7 @@
     @endif
 </form>
 
+<div x-data="{ openViolations: null }" x-effect="window.__pauseAutoRefresh = openViolations !== null">
 <div class="card table-wrap">
     <table class="table-modern">
         <thead><tr>
@@ -95,10 +109,14 @@
                     @endif
                 </td>
                 <td class="text-center">
-                    @if($a)
-                        <span class="font-bold {{ $a->violation_count >= 3 ? 'text-rose-600' : ($a->violation_count > 0 ? 'text-amber-600' : 'text-emerald-600') }}">
+                    @if($a && $a->violation_count > 0)
+                        <button type="button" @click="openViolations = {{ $a->id }}"
+                                title="Lihat riwayat kecurangan"
+                                class="font-bold underline decoration-dotted underline-offset-2 hover:opacity-70 {{ $a->violation_count >= 3 ? 'text-rose-600' : 'text-amber-600' }}">
                             {{ $a->violation_count }}
-                        </span>
+                        </button>
+                    @elseif($a)
+                        <span class="font-bold text-emerald-600">0</span>
                     @else
                         <span class="text-ink-400">—</span>
                     @endif
@@ -169,6 +187,58 @@
     <span class="text-emerald-600 ml-2">Buka Blokir</span> ·
     <span class="text-amber-600 ml-2">Reset / Ujian Ulang</span> ·
     <span class="text-sky-600 ml-2">Lihat Jawaban</span>
-    <br>🔄 Halaman ini auto-refresh setiap 15 detik
+    <br>🔄 Halaman ini auto-refresh setiap 15 detik. Klik angka di kolom
+    <strong>Pelanggaran</strong> untuk lihat riwayat kecurangan.
+</div>
+
+{{-- ====================== MODAL: RIWAYAT KECURANGAN ======================
+     Satu modal per siswa yang punya pelanggaran (>0) -- tersembunyi via
+     x-show, konten sudah dirender server-side (bukan fetch AJAX) supaya
+     tetap sederhana untuk jumlah peserta per halaman ini (maks 15/rombel). --}}
+@foreach($siswas as $s)
+    @php $a = $attempts[$s->id] ?? null; @endphp
+    @if($a && $a->violation_count > 0)
+        <div x-show="openViolations === {{ $a->id }}" x-cloak
+             class="fixed inset-0 z-50 bg-ink-900/60 backdrop-blur-sm grid place-items-center p-4"
+             @keydown.escape.window="openViolations = null">
+            <div @click.outside="openViolations = null"
+                 class="card max-w-lg w-full max-h-[85vh] flex flex-col overflow-hidden p-0">
+                <div class="p-4 border-b border-slate-100 flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                        <div class="font-bold text-ink-900 truncate">{{ $s->nama_siswa }}</div>
+                        <div class="text-xs text-ink-500">Riwayat Kecurangan — {{ $a->violation_count }} pelanggaran tercatat</div>
+                    </div>
+                    <button type="button" @click="openViolations = null"
+                            class="text-ink-400 hover:text-ink-900 text-xl leading-none shrink-0">×</button>
+                </div>
+
+                @php $k = $a->konsekuensi_pelanggaran; @endphp
+                @if($k)
+                    <div class="px-4 py-2.5 border-b border-slate-100 bg-slate-50/60">
+                        <span class="{{ $k['badge'] }}">{{ $k['text'] }}</span>
+                        @if($k['detail'])
+                            <div class="text-xs text-ink-500 mt-1">{{ $k['detail'] }}</div>
+                        @endif
+                    </div>
+                @endif
+
+                <div class="overflow-y-auto p-4 space-y-2.5">
+                    @forelse($a->violations as $v)
+                        <div class="flex items-start gap-3 text-sm pb-2.5 border-b border-slate-50 last:border-0 last:pb-0">
+                            <span class="text-[11px] text-ink-400 font-mono w-[70px] shrink-0 pt-0.5">{{ $v->created_at->format('H:i:s') }}</span>
+                            <div class="min-w-0">
+                                <div class="font-medium text-ink-800">{{ $v->label }}</div>
+                                @if($v->detail)<div class="text-xs text-ink-500 break-words">{{ $v->detail }}</div>@endif
+                                @if($v->ip_address)<div class="text-[10px] text-ink-400 mt-0.5">IP: {{ $v->ip_address }}</div>@endif
+                            </div>
+                        </div>
+                    @empty
+                        <p class="text-sm text-ink-500 text-center py-4">Belum ada rincian tercatat.</p>
+                    @endforelse
+                </div>
+            </div>
+        </div>
+    @endif
+@endforeach
 </div>
 @endsection

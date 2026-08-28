@@ -302,6 +302,7 @@ class MonitoringController extends Controller
         // `nilai` tidak lazy-load quiz yang sama berulang-ulang per baris)
         $attempts = QuizAttempt::where('quiz_id', $quiz->id)
             ->whereIn('siswa_id', $siswas->pluck('id'))
+            ->with(['violations' => fn ($q) => $q->orderBy('created_at')])
             ->get()->each->setRelation('quiz', $quiz)->keyBy('siswa_id');
 
         return view('cbt.monitoring.detail', [
