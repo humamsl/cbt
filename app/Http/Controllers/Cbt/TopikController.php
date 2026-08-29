@@ -22,16 +22,7 @@ class TopikController extends Controller
 
         $items = Topic::with('mapel')
             ->when($r->q, fn ($x) => $x->where('topic', 'like', "%{$r->q}%"))
-            ->when($this->shouldScope($user), function ($q) use ($user) {
-                $mapelIds    = $this->guruMapelIds($user);
-                $tingkatList = $this->guruTingkatList($user);
-
-                $q->whereIn('mata_pelajaran_id', $mapelIds ?: [0])
-                  ->where(function ($x) use ($tingkatList) {
-                      $x->whereNull('tingkat')
-                        ->when(! empty($tingkatList), fn ($y) => $y->orWhereIn('tingkat', $tingkatList));
-                  });
-            })
+            ->tap(fn ($q) => $this->scopeOwnedOrSharedForUser($q, $user))
             ->orderBy('topic')->paginate(20)->withQueryString();
 
         return view('cbt.topik.index', compact('items'));
@@ -129,17 +120,7 @@ class TopikController extends Controller
 
     protected function authorizeTopic($user, Topic $topik): void
     {
-        if (! $this->shouldScope($user)) return;
-
-        $mapelIds    = $this->guruMapelIds($user);
-        $tingkatList = $this->guruTingkatList($user);
-
-        $okMapel   = in_array($topik->mata_pelajaran_id, $mapelIds, true);
-        $okTingkat = ! $topik->tingkat || empty($tingkatList) || in_array($topik->tingkat, $tingkatList, true);
-
-        if (! $okMapel || ! $okTingkat) {
-            abort(403, 'Topik di luar mapel / tingkat yang Anda ajar.');
-        }
+        $this->assertOwnedOrShared($user, $topik, 'topik');
     }
 
     /** Daftar tingkat (nomor) yang termasuk dalam rombel-rombel yang diajar guru. */

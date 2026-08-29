@@ -91,6 +91,13 @@ class ExportSoalService
      */
     public function templateWord(): StreamedResponse
     {
+        // WAJIB: sama seperti exportWord() -- tanpa ini, karakter XML spesial
+        // (&, <, >) di teks apa pun di bawah (mis. "Bilangan Berpangkat & Akar")
+        // ditulis mentah ke document.xml dan membuat file .docx KORUP (Word
+        // menolak membukanya / minta "repair"). Baru ketahuan karena template
+        // ini plain text-only sehingga sebelumnya dikira aman tanpa escaping.
+        \PhpOffice\PhpWord\Settings::setOutputEscapingEnabled(true);
+
         $phpWord = new PhpWord();
         $section = $phpWord->addSection();
 

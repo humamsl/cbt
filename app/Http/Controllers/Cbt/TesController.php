@@ -124,6 +124,7 @@ class TesController extends Controller
             ->when($tes->mata_pelajaran_id, fn ($q) => $q->where('mata_pelajaran_id', $tes->mata_pelajaran_id))
             ->whereNotIn('id', $tes->questions->pluck('question_id'))
             ->when($r->q, fn ($q) => $q->where('title', 'like', "%{$r->q}%"))
+            ->tap(fn ($q) => $this->scopeBankSoalForUser($q, $r->user()))
             ->paginate(10)->withQueryString();
         return view('cbt.tes.questions', compact('tes', 'available'));
     }
@@ -238,6 +239,14 @@ class TesController extends Controller
             ? 'required|exists:mysql_datacenter.mata_pelajaran,id'
             : 'nullable|exists:mysql_datacenter.mata_pelajaran,id';
 
+        // Guru lazim menulis desimal pakai koma (mis. "2,5") -- field ini
+        // type="text" (bukan number) justru supaya itu diterima. Normalisasi
+        // ke titik SEBELUM validate() supaya rule 'numeric' & cast float di
+        // bawah membacanya dengan benar.
+        if ($r->filled('nilai_pengurangan')) {
+            $r->merge(['nilai_pengurangan' => str_replace(',', '.', (string) $r->input('nilai_pengurangan'))]);
+        }
+
         $data = $r->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -274,8 +283,11 @@ class TesController extends Controller
 
         // Poin pengurangan hanya relevan utk mode 'pengurangan_nilai' — kosongkan
         // di mode lain supaya tidak ada nilai "nyangkut" dari mode sebelumnya.
+        // Field ini :disabled di form saat mode lain aktif, jadi browser tidak
+        // mengirimkannya sama sekali -- ?? null menjaga baris ini tetap aman
+        // walau key-nya tidak ada di $data.
         $data['nilai_pengurangan'] = $data['proteksi_mode'] === 'pengurangan_nilai'
-            ? (float) $data['nilai_pengurangan'] : null;
+            ? (float) ($data['nilai_pengurangan'] ?? 0) : null;
 
         // Normalisasi field target per mode — field mode lain dikosongkan
         // supaya tidak ada target "nyangkut" saat admin berganti-ganti mode.

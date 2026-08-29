@@ -160,6 +160,11 @@ class BankSoalController extends Controller
             $data = $this->validateBase($r);
             $data['correct_answer_text'] = $r->input('correct_answer_text');
             $data['case_sensitive'] = $r->boolean('case_sensitive');
+            // WAJIB diisi supaya soal ini terikat ke guru pembuatnya -- tanpa
+            // ini created_by_guru_id tetap null (dianggap "bersama"/shared)
+            // dan bisa terlihat/dikelola guru LAIN yang mengajar mapel+tingkat
+            // yang sama, padahal seharusnya privat milik guru ini saja.
+            $data['created_by_guru_id'] = $this->shouldScope($r->user()) ? $r->user()->id : null;
             $q = Question::create($data);
             $this->syncOptionsByType($r, $q);
         });

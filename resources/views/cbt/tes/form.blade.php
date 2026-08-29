@@ -243,12 +243,23 @@
                 @endforeach
             </select>
 
-            {{-- Jumlah pengurangan nilai — hanya relevan utk mode "Kurangi Nilai" --}}
+            {{-- Jumlah pengurangan nilai — hanya relevan utk mode "Kurangi Nilai".
+                 type="text" + inputmode="decimal" (BUKAN type="number"): input
+                 number HTML5 menolak koma sebagai desimal (guru terbiasa
+                 menulis "0,5"/"2,5"), dan step/min number-nya sempat bikin
+                 field yang lagi disembunyikan (x-show) tetap ikut divalidasi
+                 browser dengan nilai default "5" yang stepMismatch -- itu
+                 diam-diam memblokir SELURUH form submit tanpa pesan error
+                 apa pun karena fieldnya tidak terlihat. :disabled saat
+                 tersembunyi memastikan browser benar-benar tidak
+                 memvalidasi/mengirim field ini di luar mode "Kurangi Nilai". --}}
             <div x-show="proteksiMode === 'pengurangan_nilai'" x-cloak class="mt-3">
-                <x-field name="nilai_pengurangan" type="number" label="Jumlah Pengurangan Nilai"
+                <x-field name="nilai_pengurangan" type="text" label="Jumlah Pengurangan Nilai"
                          :value="old('nilai_pengurangan', $item->nilai_pengurangan ?? 5)"
-                         min="0.01" max="100" step="0.5"
-                         help="Poin nilai yang dipotong setiap kali siswa melakukan pelanggaran (mis. 5 = tiap pelanggaran memotong 5 poin dari nilai akhir)."/>
+                         inputmode="decimal" pattern="[0-9]+([.,][0-9]+)?"
+                         x-bind:disabled="proteksiMode !== 'pengurangan_nilai'"
+                         placeholder="mis. 5 atau 2,5"
+                         help="Poin nilai yang dipotong setiap kali siswa melakukan pelanggaran (mis. 5 = tiap pelanggaran memotong 5 poin dari nilai akhir). Bebas diisi angka apa pun, boleh desimal — pakai koma atau titik (mis. 0,5 / 2.5)."/>
             </div>
 
             {{-- MODAL PANDUAN PROTEKSI UJIAN --}}
