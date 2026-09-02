@@ -243,6 +243,35 @@ class BankSoalController extends Controller
         return back()->with('success', 'Soal dihapus.');
     }
 
+    /**
+     * Hapus beberapa soal sekaligus. Setiap ID tetap dicek lewat guard yang
+     * sama dengan destroy() satu-per-satu -- supaya guru tidak bisa
+     * menghapus soal guru lain hanya dengan menyisipkan ID-nya di request.
+     */
+    public function bulkDestroy(Request $r)
+    {
+        $data = $r->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer|exists:questions,id',
+        ]);
+        $user = $r->user();
+
+        $questions = Question::whereIn('id', $data['ids'])->get();
+
+        // Guard dicek untuk SEMUA soal dulu sebelum ada yang dihapus -- supaya
+        // kalau satu saja bukan hak guru ini, seluruh batch batal (bukan
+        // hapus-sebagian) dan errornya jelas bukan "berhasil separuh".
+        foreach ($questions as $q) {
+            $this->assertBolehKelolaSoal($user, $q);
+        }
+
+        DB::transaction(function () use ($questions) {
+            foreach ($questions as $q) $q->delete();
+        });
+
+        return back()->with('success', count($questions).' soal dihapus.');
+    }
+
     /* ===================== IMPORT ===================== */
 
     public function importForm()

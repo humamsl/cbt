@@ -92,6 +92,7 @@ Route::middleware([
         Route::get('/bank-soal/import-template-word',  [BankSoalController::class, 'importTemplateWord'])->name('bank-soal.import.template.word');
         // Export Bank Soal dipindah ke modul Kelola Soal Ujian (tes.export.word / tes.export.pdf)
         Route::post('/bank-soal/upload-image', [BankSoalController::class, 'uploadImage'])->name('bank-soal.upload-image');
+        Route::post('/bank-soal/bulk-destroy', [BankSoalController::class, 'bulkDestroy'])->name('bank-soal.bulk-destroy');
 
         Route::resource('bank-soal', BankSoalController::class)->except('show')
             ->parameters(['bank-soal' => 'bankSoal']);
@@ -99,6 +100,7 @@ Route::middleware([
 
         Route::resource('tes', TesController::class)->except('show')
             ->parameters(['tes' => 'tes']);
+        Route::post('/tes/{tes}/duplicate', [TesController::class, 'duplicate'])->name('tes.duplicate');
         // AJAX daftar siswa per rombel — untuk mode target "Per Siswa" di form registrasi
         Route::get('/tes-siswa-by-rombel', [TesController::class, 'siswaByRombel'])->name('tes.siswa-by-rombel');
         Route::get('/tes/{tes}/questions', [TesController::class, 'questions'])->name('tes.questions');

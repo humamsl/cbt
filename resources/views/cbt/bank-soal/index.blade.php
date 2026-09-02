@@ -58,9 +58,26 @@
     <button class="btn-secondary col-span-2 sm:col-span-1 xl:col-span-1"><x-icon name="search" class="w-4 h-4"/> <span class="xl:hidden">Cari</span></button>
 </form>
 
+@if($items->count())
+<div class="card card-pad mb-3 flex items-center justify-between gap-3 flex-wrap">
+    <label class="flex items-center gap-2 text-sm text-ink-600 select-none">
+        <input type="checkbox" class="rounded text-brand-600 focus:ring-brand-500" :checked="allOnPageSelected()" @change="toggleAllOnPage($event.target.checked)">
+        Pilih semua di halaman ini
+    </label>
+    <div x-show="selected.length" x-cloak class="flex items-center gap-3">
+        <span class="text-sm text-ink-500"><span x-text="selected.length"></span> soal dipilih</span>
+        <button type="button" @click="bulkDelete()" class="btn-secondary text-rose-600">
+            <x-icon name="trash" class="w-4 h-4"/> Hapus Terpilih
+        </button>
+    </div>
+</div>
+@endif
+
 <div class="grid gap-3">
     @forelse($items as $q)
         <div class="card card-pad flex items-start justify-between gap-4">
+            <input type="checkbox" class="rounded text-brand-600 focus:ring-brand-500 mt-1 shrink-0" value="{{ $q->id }}"
+                   :checked="selected.includes({{ $q->id }})" @change="toggleSelect({{ $q->id }}, $event.target.checked)">
             <div class="min-w-0 flex-1">
                 <div class="flex items-center gap-2 mb-1.5 flex-wrap">
                     <span class="badge-info">{{ optional($q->type)->question_type }}</span>
@@ -92,6 +109,14 @@
 </div>
 <div class="mt-4">{{ $items->links() }}</div>
 
+{{-- Form tersembunyi untuk submit hapus massal --}}
+<form method="POST" action="{{ route('bank-soal.bulk-destroy') }}" x-ref="bulkDeleteForm">
+    @csrf
+    <template x-for="id in selected" :key="id">
+        <input type="hidden" name="ids[]" :value="id">
+    </template>
+</form>
+
 {{-- MODAL PREVIEW SOAL --}}
 <div x-show="modalOpen" x-cloak
      class="fixed inset-0 z-50 grid place-items-center bg-slate-900/60 p-4"
@@ -120,6 +145,34 @@ function bankSoalPage() {
         modalOpen: false,
         loading: false,
         content: '',
+        selected: [],
+        idsOnPage: [@foreach($items as $q){{ $q->id }},@endforeach],
+
+        toggleSelect(id, checked) {
+            if (checked) {
+                if (! this.selected.includes(id)) this.selected.push(id);
+            } else {
+                this.selected = this.selected.filter(x => x !== id);
+            }
+        },
+
+        allOnPageSelected() {
+            return this.idsOnPage.length > 0 && this.idsOnPage.every(id => this.selected.includes(id));
+        },
+
+        toggleAllOnPage(checked) {
+            if (checked) {
+                this.idsOnPage.forEach(id => { if (! this.selected.includes(id)) this.selected.push(id); });
+            } else {
+                this.selected = this.selected.filter(id => ! this.idsOnPage.includes(id));
+            }
+        },
+
+        bulkDelete() {
+            if (! this.selected.length) return;
+            if (! confirm(`Hapus ${this.selected.length} soal terpilih?`)) return;
+            this.$refs.bulkDeleteForm.submit();
+        },
 
         async openPreview(id) {
             this.modalOpen = true;

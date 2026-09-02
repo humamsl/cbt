@@ -117,6 +117,64 @@ class TesController extends Controller
         return back()->with('success', 'Tes dihapus.');
     }
 
+    /**
+     * Duplikat registrasi ujian: bikin Quiz baru + salinan soal & target,
+     * TANPA menyentuh Quiz sumbernya sama sekali -- ini alternatif yang aman
+     * untuk kasus "mau lanjut sesi 2 dgn jadwal beda": daripada mengedit jam
+     * tes yang sudah dipakai (attempt sesi 1 tetap ada, tapi historinya jadi
+     * susah dibedakan dari sesi 2 di halaman Monitoring), guru duplikat lalu
+     * atur jadwal & publish di salinannya. Attempt/jawaban siswa TIDAK ikut
+     * disalin -- itu memang punya tes sumber, bukan bagian dari "template".
+     *
+     * Selalu dibuat sebagai Draft (is_published=false) supaya guru wajib
+     * meninjau & menyesuaikan jadwal dulu sebelum salinan ini terlihat siswa.
+     */
+    public function duplicate(Quiz $tes)
+    {
+        $tes->load('rombelTargets', 'siswaTargets', 'questions');
+        $user = request()->user();
+
+        $baru = DB::transaction(function () use ($tes, $user) {
+            $data = $tes->only([
+                'description', 'mata_pelajaran_id', 'rombongan_belajar_id',
+                'target_mode', 'target_tingkat', 'tahun_ajaran_id', 'tingkat',
+                'total_marks', 'pass_marks', 'max_attempts', 'cover_url',
+                'duration', 'valid_from', 'valid_upto', 'randomize',
+                'randomize_options', 'show_score', 'require_session_token',
+                'session_token_id', 'settings', 'protection_enabled',
+                'proteksi_mode', 'max_violations', 'violation_sound_enabled',
+                'nilai_pengurangan',
+            ]);
+
+            $data['name'] = $tes->name.' (Salinan)';
+            $data['slug'] = Str::slug($data['name']).'-'.Str::random(5);
+            $data['is_published'] = false;
+            // Sama seperti store(): pencatat guru mengikuti user yg sedang
+            // menduplikat, bukan pembuat aslinya.
+            $data['created_by_guru_id'] = $this->shouldScope($user) ? $user->id : null;
+
+            $baru = Quiz::create($data);
+
+            foreach ($tes->questions as $qq) {
+                QuizQuestion::create([
+                    'quiz_id' => $baru->id,
+                    'question_id' => $qq->question_id,
+                    'marks' => $qq->marks,
+                    'negative_marks' => $qq->negative_marks,
+                    'order' => $qq->order,
+                ]);
+            }
+
+            $baru->rombelTargets()->sync($tes->rombelTargets->pluck('id'));
+            $baru->siswaTargets()->sync($tes->siswaTargets->pluck('id'));
+
+            return $baru;
+        });
+
+        return redirect()->route('tes.edit', $baru)
+            ->with('success', 'Tes berhasil diduplikat sebagai "'.$baru->name.'" (Draft). Periksa & sesuaikan jadwalnya sebelum dipublikasikan.');
+    }
+
     public function questions(Quiz $tes, Request $r)
     {
         $tes->load('questions.question.mapel');

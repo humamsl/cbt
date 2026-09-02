@@ -47,6 +47,9 @@
                         <x-icon name="document" class="w-4 h-4"/> Soal
                     </a>
                     <a href="{{ route('tes.edit', $t) }}" class="btn-ghost p-2"><x-icon name="edit"/></a>
+                    <form method="POST" action="{{ route('tes.duplicate', $t) }}" onsubmit="return confirm('Duplikat tes \'{{ $t->name }}\'? Salinannya dibuat sebagai Draft, soal &amp; target ikut disalin (jawaban siswa tidak).')">
+                        @csrf<button type="submit" class="btn-ghost p-2 text-brand-600" title="Duplikat tes"><x-icon name="copy"/></button>
+                    </form>
                     <form method="POST" action="{{ route('tes.destroy', $t) }}" onsubmit="return confirm('Hapus tes?')">
                         @csrf @method('DELETE')<button class="btn-ghost p-2 text-rose-600"><x-icon name="trash"/></button>
                     </form>

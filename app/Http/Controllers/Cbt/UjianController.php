@@ -417,8 +417,23 @@ class UjianController extends Controller
             // dari mode blokir/logout_otomatis yang menghentikan ujian saat
             // ambang batas tercapai — mode ini biarkan ujian tetap jalan,
             // potongannya baru terlihat di nilai akhir. Nilai tidak boleh minus.
+            //
+            // PENTING soal skala: guru mengisi `nilai_pengurangan` sebagai poin
+            // di skala NILAI AKHIR 0-100 (lihat help text form: "memotong 5
+            // poin dari nilai akhir"), sedangkan `$score` di sini masih di
+            // skala POIN MENTAH (0..total_marks) -- baru dikonversi ke 0-100
+            // belakangan oleh QuizAttempt::getNilaiAttribute(). Kalau
+            // dikurangkan langsung tanpa konversi, potongannya jadi berlipat
+            // ganda untuk quiz dengan sedikit soal (mis. quiz 5 soal x 1 poin,
+            // potongan "5" per pelanggaran = 100% dari nilai akhir, bukan 5%)
+            // sehingga satu pelanggaran ringan bisa langsung menge-nol-kan
+            // nilai siswa yang sebenarnya menjawab benar semua.
             if (($quiz->proteksi_mode ?? null) === 'pengurangan_nilai' && $quiz->nilai_pengurangan > 0) {
-                $score = max(0, $score - ($attempt->violation_count * (float) $quiz->nilai_pengurangan));
+                $totalMarks = (float) ($quiz->total_marks ?? 0);
+                if ($totalMarks > 0) {
+                    $potonganPoinMentah = $attempt->violation_count * (float) $quiz->nilai_pengurangan / 100 * $totalMarks;
+                    $score = max(0, $score - $potonganPoinMentah);
+                }
             }
 
             $attempt->update([
