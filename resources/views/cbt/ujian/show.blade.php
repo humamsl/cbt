@@ -78,6 +78,15 @@
          class="bg-amber-500 text-white px-4 py-3 text-center font-bold animate-pulse">
          Waktu Habis! Jawaban Anda otomatis dikirim ke server...
     </div>
+
+    {{-- Banner GAGAL SIMPAN — sengaja TIDAK auto-dismiss (harus diklik Tutup
+         sendiri) supaya siswa benar-benar sadar, bukan sekadar berkedip lalu
+         hilang sementara dia sedang menatap soal berikutnya. --}}
+    <div x-show="saveError" x-cloak x-transition
+         class="bg-rose-600 text-white px-4 py-3 text-center font-bold flex items-center justify-center gap-3 flex-wrap">
+         <span>⚠ Jawaban gagal tersimpan ke server. Periksa koneksi internet Anda, lalu jawab ulang soal yang tandanya belum tersimpan.</span>
+         <button type="button" @click="saveError = false" class="underline shrink-0">Tutup</button>
+    </div>
 </header>
 
 {{-- ============ KONTEN SOAL ============ --}}
@@ -224,6 +233,7 @@ function cbtExam(cfg) {
         confirmSubmit: false,
         timeOverShown: false,
         autoSubmitted: false,
+        saveError: false,
 
         // Perangkat ini ditendang karena akun dipakai login di perangkat lain.
         kicked: false,
@@ -340,6 +350,7 @@ function cbtExam(cfg) {
         },
 
         async saveAnswer(qqId, optionId) {
+            const previous = this.answered[qqId];
             this.answered[qqId] = optionId;
             try {
                 const r = await fetch(this.saveUrl, {
@@ -348,11 +359,13 @@ function cbtExam(cfg) {
                     body: JSON.stringify({ quiz_question_id: qqId, question_option_id: optionId })
                 });
                 if (this.handleKickedResponse(r)) return;
-                if (r.status === 423) this.goToBlocked();
-            } catch (e) { console.error(e); }
+                if (r.status === 423) { this.goToBlocked(); return; }
+                if (! r.ok) this.markSaveFailed(qqId, previous);
+            } catch (e) { this.markSaveFailed(qqId, previous); }
         },
 
         async saveTextAnswer(qqId, text) {
+            const previous = this.answered[qqId];
             if (text.trim() === '') { delete this.answered[qqId]; } else { this.answered[qqId] = text; }
             try {
                 const r = await fetch(this.saveUrl, {
@@ -361,8 +374,26 @@ function cbtExam(cfg) {
                     body: JSON.stringify({ quiz_question_id: qqId, answer_text: text })
                 });
                 if (this.handleKickedResponse(r)) return;
-                if (r.status === 423) this.goToBlocked();
-            } catch (e) { console.error(e); }
+                if (r.status === 423) { this.goToBlocked(); return; }
+                if (! r.ok) this.markSaveFailed(qqId, previous);
+            } catch (e) { this.markSaveFailed(qqId, previous); }
+        },
+
+        /**
+         * Sebelumnya kegagalan simpan (selain 409/401/419/423 yang sudah
+         * ditangani) DIAM SAJA -- cuma console.error, sementara tanda
+         * "terjawab" di this.answered TETAP menyala hijau karena sudah
+         * di-set optimis sebelum request. Siswa mengira jawabannya
+         * tersimpan padahal server menolak (mis. soal itu baru saja
+         * dihapus dari tes oleh guru -> 422 "quiz_question_id" tidak
+         * valid lagi) atau request gagal jaringan -- dan itu baru
+         * ketahuan setelah submit, saat nilainya sudah telanjur 0.
+         * Balikkan tanda ke keadaan sebelumnya (jujur: belum tersimpan)
+         * dan tampilkan banner supaya siswa tahu harus mengulang.
+         */
+        markSaveFailed(qqId, previous) {
+            if (previous === undefined) { delete this.answered[qqId]; } else { this.answered[qqId] = previous; }
+            this.saveError = true;
         },
 
         /** Pindah ke halaman blokir tanpa prompt browser (dipakai saat saveAnswer ditolak server, terlepas dari counting pelanggaran Vue). */

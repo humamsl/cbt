@@ -202,6 +202,20 @@ class TesController extends Controller
 
     public function detachQuestion(Quiz $tes, QuizQuestion $quizQuestion)
     {
+        // Menghapus soal dari tes ikut MENGHAPUS PERMANEN jawaban siswa untuk
+        // soal itu (quiz_attempt_answers.quiz_question_id cascadeOnDelete —
+        // lihat migrasi create_cbt_tables). Kalau sudah ada siswa yang
+        // menyelesaikan tes ini, tolak: total_marks yang jadi acuan nilai
+        // (QuizAttempt::getNilaiAttribute) juga ikut berubah untuk SEMUA
+        // attempt lama begitu soal dihapus/ditambah, bukan cuma yang baru --
+        // jadi nilai attempt yang sudah selesai bisa mendadak salah/nol.
+        // Guru yang perlu susunan soal beda untuk sesi berikutnya sebaiknya
+        // duplikat tes-nya (tombol "Duplikat" di daftar Registrasi Ujian)
+        // lalu ubah soal di salinannya, bukan mengedit tes yang sudah dipakai.
+        if ($tes->attempts()->where('is_done', true)->exists()) {
+            return back()->with('error', 'Soal tidak bisa dihapus: sudah ada siswa yang mengerjakan tes ini — menghapus soal akan menghapus jawaban mereka & mengubah nilai yang sudah tercatat. Duplikat tes ini kalau perlu susunan soal yang berbeda.');
+        }
+
         $quizQuestion->delete();
         $tes->update(['total_marks' => $tes->questions()->sum('marks')]);
         return back()->with('success', 'Soal dihapus dari tes.');
