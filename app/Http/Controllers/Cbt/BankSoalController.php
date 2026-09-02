@@ -7,6 +7,7 @@ use App\Models\MataPelajaran;
 use App\Models\Question;
 use App\Models\QuestionOption;
 use App\Models\QuestionType;
+use App\Models\QuizQuestion;
 use App\Models\Topic;
 use App\Services\Soal\ExportSoalService;
 use App\Services\Soal\ImageLocalizer;
@@ -196,6 +197,7 @@ class BankSoalController extends Controller
     public function update(Request $r, Question $bankSoal, ImageLocalizer $localizer)
     {
         $this->assertBolehKelolaSoal($r->user(), $bankSoal);
+        $this->assertSoalTidakSedangDipakai($bankSoal);
 
         $this->localizeRequestImages($r, $localizer);
 
@@ -238,9 +240,45 @@ class BankSoalController extends Controller
     public function destroy(Question $bankSoal)
     {
         $this->assertBolehKelolaSoal(request()->user(), $bankSoal);
+        $this->assertSoalTidakSedangDipakai($bankSoal);
 
         $bankSoal->delete();
         return back()->with('success', 'Soal dihapus.');
+    }
+
+    /**
+     * Tolak edit/hapus soal yang masih terpasang di tes yang SUDAH punya
+     * siswa mengerjakan (attempt apa pun -- lagi jalan maupun sudah selesai).
+     *
+     * KENAPA: BankSoalController::update() (lewat syncOptionsByType()) selalu
+     * menghapus SEMUA pilihan jawaban lama lalu membuat yang baru dari nol,
+     * apa pun field yang sebenarnya diubah guru. quiz_attempt_answers.
+     * question_option_id memakai nullOnDelete (lihat migrasi create_cbt_tables)
+     * -- bukan dihapus, tapi jawaban siswa yang sudah tersimpan jadi
+     * "terputus" (null) begitu opsi lamanya hilang: siswa yang masih
+     * mengerjakan akan dinilai pakai kunci jawaban BARU tanpa sadar, dan
+     * siswa yang sudah selesai akan terlihat "belum menjawab" soal itu di
+     * halaman Lihat Jawaban walau nilai akhirnya sendiri tidak berubah.
+     * Menghapus soal (destroy) lebih parah lagi: soalnya jadi soft-deleted
+     * sehingga $qq->question bernilai null dan me-crash halaman ujian siswa
+     * yang masih mengerjakan, serta membuat soal itu otomatis dianggap SALAH
+     * untuk semua peserta saat dinilai.
+     *
+     * Kalau soal ini terpasang di tes tapi BELUM ada siswa yang mengerjakan
+     * sama sekali, edit/hapus tetap aman dan diizinkan.
+     */
+    protected function assertSoalTidakSedangDipakai(Question $soal): void
+    {
+        $terpakai = QuizQuestion::where('question_id', $soal->id)
+            ->whereHas('quiz.attempts')
+            ->with('quiz:id,name')
+            ->first();
+
+        if ($terpakai) {
+            $pesan = 'Soal ini tidak bisa diedit/dihapus: sudah dipakai di tes "'.$terpakai->quiz->name.'" yang sudah ada siswa mengerjakan -- mengubahnya bisa merusak jawaban & nilai yang sudah tercatat. Tunggu tes tersebut selesai, atau lepas dulu soal ini dari tes itu kalau memang belum ada yang mengerjakan.';
+
+            abort(back()->with('error', $pesan));
+        }
     }
 
     /**
@@ -263,6 +301,7 @@ class BankSoalController extends Controller
         // hapus-sebagian) dan errornya jelas bukan "berhasil separuh".
         foreach ($questions as $q) {
             $this->assertBolehKelolaSoal($user, $q);
+            $this->assertSoalTidakSedangDipakai($q);
         }
 
         DB::transaction(function () use ($questions) {

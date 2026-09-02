@@ -74,7 +74,79 @@
         <a href="{{ route('monitoring.index') }}" class="text-brand-600 hover:underline text-xs">↻ Reset filter</a>
     </div>
 
-    <div class="table-wrap px-4 sm:px-5 pb-5 mt-2">
+    {{-- KARTU (HP/tablet, < lg): tabel 11 kolom di bawah tidak mungkin muat --
+         digulir horizontal pun tombol "Lihat Detail" (kolom TERAKHIR) jadi
+         nyaris mustahil dijangkau di layar sempit. Kartu menaruh tombol
+         detail sebagai satu baris penuh yang selalu kelihatan. --}}
+    <div class="lg:hidden px-4 sm:px-5 pt-2 pb-5 grid gap-3">
+        @forelse($items as $idx => $q)
+            <div class="card card-pad">
+                <div class="flex items-start justify-between gap-3 mb-2">
+                    <div class="min-w-0">
+                        <div class="text-xs text-ink-500">{{ $items->firstItem() + $idx }}.</div>
+                        <div class="font-semibold text-ink-900">{{ $q->name }}</div>
+                        <div class="text-xs text-ink-500 mt-0.5">{{ optional($q->mapel)->nama_mapel ?? '🌐 Ujian Umum' }}</div>
+                    </div>
+                    <span class="{{ $q->status_badge }} shrink-0">{{ ucfirst($q->status) }}</span>
+                </div>
+
+                <div class="flex flex-wrap gap-1.5 mb-2">
+                    @if($q->target_mode === 'per_siswa')
+                        <span class="badge-info">👤 {{ $q->total_peserta }} siswa terpilih</span>
+                    @elseif($q->target_mode === 'per_tingkat' && ! empty($q->target_tingkat))
+                        @foreach((array) $q->target_tingkat as $tk)
+                            <span class="badge-info">Tingkat {{ $tk }}</span>
+                        @endforeach
+                    @elseif($q->rombelTargets->isNotEmpty())
+                        @foreach($q->rombelTargets as $rb)
+                            <span class="badge-info">{{ $rb->nama_rombel }}</span>
+                        @endforeach
+                    @elseif($q->rombel)
+                        <span class="badge-info">{{ $q->rombel->nama_rombel }}</span>
+                    @else
+                        <span class="badge-muted">Semua kelas</span>
+                    @endif
+                </div>
+
+                <div class="text-xs text-ink-500 mb-3">
+                    {{ optional($q->valid_from)->format('H:i') }} ({{ optional($q->valid_from)->translatedFormat('d M Y') }})
+                    &middot;
+                    {{ optional($q->valid_upto)->format('H:i') }} ({{ optional($q->valid_upto)->translatedFormat('d M Y') }})
+                </div>
+
+                <div class="grid grid-cols-3 gap-2 text-center mb-3">
+                    <div class="rounded-lg bg-slate-50 p-2">
+                        <div class="text-sm font-bold text-ink-900">{{ $q->total_peserta }}</div>
+                        <div class="text-[10px] text-ink-500">Peserta</div>
+                    </div>
+                    <div class="rounded-lg bg-slate-50 p-2">
+                        <div class="text-sm font-bold text-sky-700">{{ $q->total_mulai }}</div>
+                        <div class="text-[10px] text-ink-500">Mengerjakan</div>
+                    </div>
+                    <div class="rounded-lg bg-slate-50 p-2">
+                        <div class="text-sm font-bold text-emerald-700">{{ $q->total_selesai }}</div>
+                        <div class="text-[10px] text-ink-500">Selesai</div>
+                    </div>
+                </div>
+
+                @if(($q->total_pelanggar ?? 0) > 0)
+                    <div class="mb-3"><span class="badge-danger">⚠ {{ $q->total_pelanggar }} peserta melanggar</span></div>
+                @endif
+
+                <a href="{{ route('monitoring.detail', $q) }}" class="btn-secondary w-full justify-center">
+                    <x-icon name="document" class="w-4 h-4"/> Lihat Detail Peserta
+                </a>
+            </div>
+        @empty
+            <div class="card card-pad text-center py-12 text-ink-500">
+                <div class="text-3xl mb-2">📭</div>
+                <div>Tidak ada ujian yang cocok dengan filter</div>
+            </div>
+        @endforelse
+    </div>
+
+    {{-- TABEL (lg ke atas): cukup lebar untuk 11 kolom tanpa geser --}}
+    <div class="hidden lg:block table-wrap px-4 sm:px-5 pb-5 mt-2">
         <table class="table-modern">
             <thead><tr>
                 <th class="text-center w-12">No.</th>

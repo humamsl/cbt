@@ -72,7 +72,95 @@
 </form>
 
 <div x-data="{ openViolations: null }" x-effect="window.__pauseAutoRefresh = openViolations !== null">
-<div class="card table-wrap">
+{{-- KARTU (HP/tablet, < lg): tabel 9 kolom di bawah kalau digulir horizontal
+     membuat kolom Aksi (tombol lihat/blokir/reset) nyaris tidak terjangkau. --}}
+<div class="lg:hidden grid gap-3">
+    @foreach($siswas as $i => $s)
+        @php $a = $attempts[$s->id] ?? null; @endphp
+        <div class="card card-pad">
+            <div class="flex items-start justify-between gap-3 mb-2">
+                <div class="flex items-center gap-2 min-w-0">
+                    <x-avatar :src="$s->profile_photo_url" :name="$s->nama_siswa" size="w-9 h-9"/>
+                    <div class="min-w-0">
+                        <div class="font-semibold text-ink-900 truncate">{{ $s->nama_siswa }}</div>
+                        <div class="text-[11px] text-ink-500">{{ $s->jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan' }} &middot; {{ $s->nisn }}</div>
+                    </div>
+                </div>
+                <span class="badge-info shrink-0">{{ $s->nama_kelas }}</span>
+            </div>
+
+            <div class="flex items-center flex-wrap gap-2 mb-3">
+                @if(! $a)
+                    <span class="badge-muted">Belum</span>
+                @else
+                    <span class="{{ $a->status_badge }}">{{ ucfirst($a->status) }}</span>
+                @endif
+
+                @if($a && $a->violation_count > 0)
+                    <button type="button" @click="openViolations = {{ $a->id }}"
+                            class="text-xs font-bold underline decoration-dotted underline-offset-2 {{ $a->violation_count >= 3 ? 'text-rose-600' : 'text-amber-600' }}">
+                        ⚠ {{ $a->violation_count }} pelanggaran
+                    </button>
+                @endif
+
+                @if($a && $a->nilai !== null)
+                    <span class="text-xs font-bold text-brand-600 ml-auto">Nilai: {{ number_format($a->nilai, 1) }}</span>
+                @endif
+            </div>
+
+            @if($a)
+                <div class="text-xs text-ink-500 mb-3">
+                    Mulai {{ optional($a->time_start)->format('d/m H:i') ?: '—' }} &middot;
+                    Selesai {{ optional($a->time_end)->format('d/m H:i') ?: '—' }}
+                </div>
+
+                <div class="flex items-center gap-1.5 flex-wrap">
+                    <a href="{{ route('monitoring.lihat', $a) }}" class="btn-secondary text-xs">
+                        <x-icon name="document" class="w-4 h-4"/> Lihat Jawaban
+                    </a>
+
+                    @if(! $a->is_blocked && ! $a->is_done)
+                        <form method="POST" action="{{ route('monitoring.block', $a) }}"
+                              onsubmit="return confirm('Blokir ujian siswa ini?')">
+                            @csrf
+                            <button class="btn-secondary text-xs text-rose-600">
+                                <x-icon name="trash" class="w-4 h-4"/> Blokir
+                            </button>
+                        </form>
+                    @endif
+
+                    @if($a->is_blocked)
+                        <form method="POST" action="{{ route('monitoring.unblock', $a) }}"
+                              onsubmit="return confirm('Buka blokir? Jawaban & pelanggaran dipertahankan.')">
+                            @csrf
+                            <button class="btn-secondary text-xs text-emerald-600">
+                                <x-icon name="check" class="w-4 h-4"/> Buka Blokir
+                            </button>
+                        </form>
+                    @endif
+
+                    <form method="POST" action="{{ route('monitoring.reset', $a) }}"
+                          onsubmit="return confirm('Aktifkan ujian ulang? Jawaban & pelanggaran akan dihapus.')">
+                        @csrf @method('DELETE')
+                        <button class="btn-secondary text-xs text-amber-600">
+                            <x-icon name="clock" class="w-4 h-4"/> Reset
+                        </button>
+                    </form>
+                </div>
+            @else
+                <div class="text-xs text-ink-400">Belum ujian</div>
+            @endif
+        </div>
+    @endforeach
+    @if($siswas->isEmpty())
+        <div class="card card-pad text-center py-10 text-ink-500">
+            Tidak ada peserta{{ $search !== '' ? ' yang cocok dengan pencarian "'.$search.'"' : '' }}.
+        </div>
+    @endif
+</div>
+
+{{-- TABEL (lg ke atas) --}}
+<div class="hidden lg:block card table-wrap">
     <table class="table-modern">
         <thead><tr>
             <th class="w-12 text-center">No.</th>
