@@ -73,6 +73,7 @@ D. 13
 #JAWABAN: C
 ---</pre>
             <p class="mt-1 text-xs text-rose-600"><code>#TOPIK:</code> wajib diisi. Kalau nama topiknya belum ada untuk mapel+tingkat tsb, akan otomatis dibuatkan.</p>
+            <p class="mt-1 text-xs text-rose-600">⚠ Untuk rumus matematika, JANGAN pakai menu <em>Insert &gt; Equation</em> Word — tulis sebagai teks biasa (mis. <code>1/2</code>) atau simbol Unicode (½, √, ×, π, dst). Rumus dari Equation Editor akan membuat seluruh import gagal.</p>
         </div>
 
         <div>

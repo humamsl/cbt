@@ -324,7 +324,26 @@ class BankSoalController extends Controller
             'file' => 'required|file|mimes:xlsx,xls,csv,docx,doc|max:5120',
         ]);
         $guruId = $r->user()?->user_type === 'guru' ? $r->user()->id : null;
-        $result = $svc->import($r->file('file'), $guruId);
+
+        try {
+            $result = $svc->import($r->file('file'), $guruId);
+        } catch (\Throwable $e) {
+            // Kegagalan DI SINI beda dari kegagalan per-baris (yang sudah
+            // ditangkap satu-satu di ImportSoalService::persist() dan tidak
+            // pernah nyampe ke sini) -- ini berarti SELURUH file gagal
+            // dibaca sebelum sempat diurai jadi baris soal. Penyebab paling
+            // umum: file .docx berisi rumus matematika yang dibuat lewat
+            // Equation Editor bawaan Word (Insert > Equation, elemen XML
+            // <m:oMath>) -- PHPWord (library pembaca .docx yang dipakai di
+            // sini) tidak mendukungnya dan gagal total membaca filenya.
+            // Tanpa try/catch ini, exception itu tembus jadi halaman 500
+            // mentah yang tidak menjelaskan apa-apa ke guru.
+            $pesan = str_contains($e->getMessage(), 'oMath')
+                ? 'Gagal membaca file Word: dokumen ini mengandung rumus matematika yang dibuat lewat Equation Editor (menu Insert > Equation di Word), dan format itu tidak didukung sistem import. Ganti rumusnya dengan mengetik teks biasa (mis. pecahan ditulis "1/2") atau simbol Unicode (½, √, ×, π, dst), lalu upload ulang filenya.'
+                : 'Gagal membaca file: '.$e->getMessage().'. Pastikan formatnya sesuai contoh template, lalu coba lagi.';
+
+            return redirect()->route('bank-soal.import.form')->with('error', $pesan);
+        }
 
         return redirect()->route('bank-soal.import.form')
             ->with('success', "Import selesai: {$result->success} sukses, {$result->failed} gagal.")
