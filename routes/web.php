@@ -97,6 +97,7 @@ Route::middleware([
         Route::resource('bank-soal', BankSoalController::class)->except('show')
             ->parameters(['bank-soal' => 'bankSoal']);
         Route::get('/bank-soal/{bankSoal}/preview', [BankSoalController::class, 'preview'])->name('bank-soal.preview');
+        Route::post('/bank-soal/{bankSoal}/duplicate', [BankSoalController::class, 'duplicate'])->name('bank-soal.duplicate');
 
         Route::resource('tes', TesController::class)->except('show')
             ->parameters(['tes' => 'tes']);

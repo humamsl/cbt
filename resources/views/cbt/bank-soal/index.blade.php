@@ -100,6 +100,9 @@
 </svg>
                 </button>
                 <a href="{{ route('bank-soal.edit', $q) }}" class="btn-ghost p-2"><x-icon name="edit"/></a>
+                <form method="POST" action="{{ route('bank-soal.duplicate', $q) }}" onsubmit="return confirm('Duplikat soal \'{{ $q->title }}\'? Salinannya (berikut opsi jawaban) langsung dibuka untuk diperiksa & disesuaikan.')">
+                    @csrf<button type="submit" class="btn-ghost p-2 text-brand-600" title="Duplikat soal"><x-icon name="copy"/></button>
+                </form>
                 <form method="POST" action="{{ route('bank-soal.destroy', $q) }}" onsubmit="return confirm('Hapus soal?')">
                     @csrf @method('DELETE')<button class="btn-ghost p-2 text-rose-600"><x-icon name="trash"/></button>
                 </form>

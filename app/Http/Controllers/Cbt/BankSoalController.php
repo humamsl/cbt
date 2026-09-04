@@ -244,6 +244,42 @@ class BankSoalController extends Controller
     }
 
     /**
+     * Duplikat 1 soal berikut opsi jawabannya -- guru bisa bikin variasi
+     * soal mirip tanpa mengetik ulang dari nol, tanpa menyentuh soal
+     * sumbernya sama sekali (aman walau soal sumber sedang dipakai di tes
+     * yang sudah ada siswa mengerjakan).
+     *
+     * Salinannya selalu tercatat milik guru yang menduplikat (sama seperti
+     * store()), bukan ikut pembuat aslinya -- supaya guru lain tidak
+     * tiba-tiba kehilangan hak edit/hapus atas soal yang dia duplikat
+     * sendiri dari bank bersama.
+     */
+    public function duplicate(Question $bankSoal)
+    {
+        $this->assertBolehKelolaSoal(request()->user(), $bankSoal);
+        $bankSoal->load('options');
+        $user = request()->user();
+
+        $baru = DB::transaction(function () use ($bankSoal, $user) {
+            $baru = $bankSoal->replicate(['created_at', 'updated_at']);
+            $baru->title = $bankSoal->title.' (Salinan)';
+            $baru->created_by_guru_id = $this->shouldScope($user) ? $user->id : null;
+            $baru->save();
+
+            foreach ($bankSoal->options as $opt) {
+                $newOpt = $opt->replicate(['created_at', 'updated_at']);
+                $newOpt->question_id = $baru->id;
+                $newOpt->save();
+            }
+
+            return $baru;
+        });
+
+        return redirect()->route('bank-soal.edit', $baru)
+            ->with('success', 'Soal berhasil diduplikat sebagai "'.$baru->title.'". Periksa & sesuaikan sebelum dipakai.');
+    }
+
+    /**
      * Tolak edit/hapus soal yang masih terpasang di tes yang SUDAH punya
      * siswa mengerjakan (attempt apa pun -- lagi jalan maupun sudah selesai).
      *

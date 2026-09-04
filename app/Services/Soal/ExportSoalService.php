@@ -204,6 +204,8 @@ class ExportSoalService
         $section->addListItem('Tingkat opsional (1–12). Boleh dikosongkan.');
         $section->addListItem('#TOPIK wajib diisi. Kalau nama topiknya belum ada untuk mapel+tingkat '
             .'tsb, akan otomatis dibuatkan sesuai nama yang ditulis.');
+        $section->addListItem('Opsi jawaban PG/PGK: minimal A-D, opsi E opsional -- tulis baris '
+            .'"E. ..." hanya kalau soalnya memang butuh 5 pilihan, kalau tidak cukup A-D saja.');
         $section->addListItem('Jawaban PG = huruf tunggal (A/B/C/D/E).');
         $section->addListItem('Jawaban PGK = huruf dipisah koma (mis. A,C,E).');
         $section->addListItem('Jawaban Benar-Salah = B (benar) atau S (salah).');
@@ -302,6 +304,8 @@ class ExportSoalService
             ['Kolom tingkat: 1-12, opsional (boleh dikosongkan).', false],
             ['Kolom topik: WAJIB diisi. Kalau nama topiknya belum ada di menu Topik', false],
             ['   untuk mapel+tingkat tsb, akan otomatis dibuatkan sesuai nama yang ditulis.', false],
+            ['Kolom opsi_e: opsional. Kosongkan kalau soal PG/PGK cukup 4 opsi (A-D) seperti biasa;', false],
+            ['   isi kalau memang butuh opsi ke-5.', false],
             ['Jawaban PG = huruf tunggal (mis. C). PGK = huruf dipisah koma (mis. A,C,E).', false],
             ['Jawaban Benar-Salah = B atau S. Fill-blank = teks jawaban.', false],
             ['Jawaban Penjodohan = "huruf=teks" dipisah titik koma (mis. A=..; B=..).', false],
