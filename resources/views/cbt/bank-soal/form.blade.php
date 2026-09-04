@@ -204,7 +204,7 @@
                                class="rounded text-brand-600 focus:ring-brand-500 border-slate-300">
                         <span class="w-7 text-center font-bold text-ink-700">{{ chr(65 + $i) }}</span>
                         @if ($i === 4)
-                            <span class="text-[11px] text-ink-500">(opsional, kosongkan jika tidak dipakai)</span>
+                            <span class="text-[11px] text-ink-500"></span>
                         @endif
                         <button type="button" @click="symbolTarget = 'opsi {{ chr(65 + $i) }}'; showSymbols = true"
                                 class="text-[10px] text-brand-600 hover:underline ml-auto">∑ simbol</button>
