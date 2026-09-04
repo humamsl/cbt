@@ -55,7 +55,6 @@
                 jenis | mapel_kode | tingkat | topik | judul | pertanyaan | opsi_a | opsi_b | opsi_c | opsi_d | opsi_e | jawaban | gambar
             </code>
             <p class="mt-1 text-xs text-rose-600">Kolom <code>topik</code> wajib diisi. Kalau nama topiknya belum ada untuk mapel+tingkat tsb, akan otomatis dibuatkan.</p>
-            <p class="mt-1 text-xs text-ink-500">Kolom <code>opsi_e</code> opsional — kosongkan kalau soal PG/PGK cukup 4 opsi (A-D), isi kalau butuh opsi ke-5.</p>
         </div>
 
         <div>
@@ -74,7 +73,6 @@ D. 13
 #JAWABAN: C
 ---</pre>
             <p class="mt-1 text-xs text-rose-600"><code>#TOPIK:</code> wajib diisi. Kalau nama topiknya belum ada untuk mapel+tingkat tsb, akan otomatis dibuatkan.</p>
-            <p class="mt-1 text-xs text-ink-500">Baris opsi bisa sampai <code>E.</code> — opsional, tambahkan hanya kalau soalnya memang butuh 5 pilihan (A-D saja tetap valid).</p>
             <p class="mt-1 text-xs text-rose-600">⚠ Untuk rumus matematika, JANGAN pakai menu <em>Insert &gt; Equation</em> Word — tulis sebagai teks biasa (mis. <code>1/2</code>) atau simbol Unicode (½, √, ×, π, dst). Rumus dari Equation Editor akan membuat seluruh import gagal.</p>
         </div>
 
