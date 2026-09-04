@@ -44,24 +44,35 @@
         </div>
         <ul class="divide-y divide-slate-100">
             @forelse($tes->questions as $idx => $qq)
-                <li class="px-4 sm:px-6 py-3 flex items-start justify-between gap-3">
-                    <div>
-                        <div class="text-xs text-ink-500">#{{ $idx + 1 }} &middot; {{ $qq->marks }} poin</div>
-                        <div class="font-semibold text-ink-900">{{ $qq->question->title }}</div>
+                <li class="px-4 sm:px-6 py-3">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <div class="text-xs text-ink-500">#{{ $idx + 1 }} &middot; {{ $qq->marks }} poin</div>
+                            <div class="font-semibold text-ink-900">{{ $qq->question->title }}</div>
+                        </div>
+                        <div class="flex items-center gap-1 shrink-0">
+                            <button type="button" @click="openPreview({{ $qq->question_id }})"
+                                    class="btn-ghost p-2 text-brand-600" title="Preview soal">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                    <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8M1.173 8a13 13 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5s3.879 1.168 5.168 2.457A13 13 0 0 1 14.828 8q-.086.13-.195.288c-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5s-3.879-1.168-5.168-2.457A13 13 0 0 1 1.172 8z"/>
+                                    <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5M4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0"/>
+                                </svg>
+                            </button>
+                            <form method="POST" action="{{ route('tes.detach-question', [$tes, $qq]) }}" onsubmit="return confirm('Hapus dari tes?')">
+                                @csrf @method('DELETE')
+                                <button class="btn-ghost p-2 text-rose-600"><x-icon name="trash"/></button>
+                            </form>
+                        </div>
                     </div>
-                    <div class="flex items-center gap-1 shrink-0">
-                        <button type="button" @click="openPreview({{ $qq->question_id }})"
-                                class="btn-ghost p-2 text-brand-600" title="Preview soal">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8M1.173 8a13 13 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5s3.879 1.168 5.168 2.457A13 13 0 0 1 14.828 8q-.086.13-.195.288c-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5s-3.879-1.168-5.168-2.457A13 13 0 0 1 1.172 8z"/>
-                                <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5M4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0"/>
-                            </svg>
-                        </button>
-                        <form method="POST" action="{{ route('tes.detach-question', [$tes, $qq]) }}" onsubmit="return confirm('Hapus dari tes?')">
-                            @csrf @method('DELETE')
-                            <button class="btn-ghost p-2 text-rose-600"><x-icon name="trash"/></button>
-                        </form>
+                    {{-- Isi pertanyaan + opsi/kunci jawaban ditampilkan langsung --}}
+                    <div class="soal-math prose prose-sm max-w-none mt-2 text-sm text-ink-800 border border-slate-200 rounded-lg p-3 bg-slate-50/50 [&_img]:max-w-full [&_img]:h-auto">
+                        @if(filled($qq->question->question))
+                            {!! \App\Support\SoalHtml::render($qq->question->question) !!}
+                        @else
+                            <span class="text-ink-500 italic">— pertanyaan belum diisi —</span>
+                        @endif
                     </div>
+                    @include('cbt.bank-soal._soal-opsi', ['q' => $qq->question])
                 </li>
             @empty
                 <li class="px-4 sm:px-6 py-6 text-center text-ink-500">Belum ada soal. Tambahkan dari panel kanan.</li>
@@ -96,7 +107,7 @@
                             <button class="btn-primary text-xs px-3 py-1.5"><x-icon name="plus" class="w-4 h-4"/></button>
                         </form>
                     </div>
-                    {{-- Isi pertanyaan langsung ditampilkan (menggantikan modal preview) --}}
+                    {{-- Isi pertanyaan + opsi/kunci jawaban langsung ditampilkan (menggantikan modal preview) --}}
                     <div class="soal-math prose prose-sm max-w-none mt-2 text-sm text-ink-800 border border-slate-200 rounded-lg p-3 bg-slate-50/50 [&_img]:max-w-full [&_img]:h-auto">
                         @if(filled($q->question))
                             {!! \App\Support\SoalHtml::render($q->question) !!}
@@ -104,6 +115,7 @@
                             <span class="text-ink-500 italic">— pertanyaan belum diisi —</span>
                         @endif
                     </div>
+                    @include('cbt.bank-soal._soal-opsi', ['q' => $q])
                 </li>
             @empty
                 <li class="px-4 sm:px-6 py-6 text-center text-ink-500">Tidak ada soal tersedia.</li>

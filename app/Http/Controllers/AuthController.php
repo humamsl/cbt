@@ -19,10 +19,7 @@ class AuthController extends Controller
 
     public function showLogin(Request $request, ?string $module = null)
     {
-        // Pintu login modul (Data Center / CBT): kalau user sedang login di
-        // modul LAIN, wajib login ulang untuk pindah -> logout paksa dulu.
-        // Kalau modul yang dituju SAMA dengan yang sedang aktif, tidak perlu
-        // login ulang, langsung saja ke dashboard.
+
         if ($module && $this->currentGuardName()) {
             if (session('active_module') === $module) {
                 return redirect()->route('dashboard');
@@ -49,9 +46,7 @@ class AuthController extends Controller
 
     public function login(Request $request, ?string $module = null)
     {
-        // Jaga-jaga: kalau form ke-submit saat sesi lama (modul lain) masih
-        // menempel (mis. tab lama), paksa logout dulu sebelum memproses
-        // percobaan login yang baru.
+
         if ($module && $this->currentGuardName() && session('active_module') !== $module) {
             $this->forceLogout($request);
         }
@@ -67,7 +62,6 @@ class AuthController extends Controller
         $remember = (bool) $request->boolean('remember');
         $guard = $data['role'];
 
-        // ---- IP-based rate limit (anti brute force) ----
         $rateKey = 'login:'.$request->ip().':'.$data['role'];
         if (RateLimiter::tooManyAttempts($rateKey, 10)) {
             $seconds = RateLimiter::availableIn($rateKey);
@@ -80,8 +74,6 @@ class AuthController extends Controller
             ? $this->attemptAdmin($request, $data, $remember, $rateKey)
             : $this->attemptRemote($request, $guard, $data, $remember, $rateKey);
 
-        // attemptAdmin/attemptRemote mengembalikan RedirectResponse kalau akun
-        // ditemukan tapi statusnya bukan 'active' (suspended/locked/inactive).
         if ($result instanceof \Illuminate\Http\RedirectResponse) {
             return $result;
         }
@@ -98,9 +90,6 @@ class AuthController extends Controller
         RateLimiter::clear($rateKey);
         $request->session()->regenerate();
 
-        // Simpan konteks modul yang dipakai untuk login (menentukan tampilan
-        // sidebar setelah masuk). Login umum (module null) tidak mengubah
-        // konteks lama — perilaku lama (tampilkan semua menu) tetap berjalan.
         if ($module) {
             $request->session()->put('active_module', $module);
         } else {
@@ -175,13 +164,6 @@ class AuthController extends Controller
         return true;
     }
 
-    /**
-     * Login guru/siswa — model Guru/Siswa terhubung LANGSUNG ke database Data
-     * Center (connection 'mysql_datacenter', lihat App\Models\Guru/Siswa), jadi
-     * Auth::attempt() di sini mengecek password persis terhadap baris asli di
-     * Data Center secara real-time. Tidak ada API call, tidak ada cache lokal,
-     * tidak perlu sinkronisasi manual — sama seperti login admin di bawah.
-     */
     protected function attemptRemote(Request $request, string $guard, array $data, bool $remember, string $rateKey): bool|\Illuminate\Http\RedirectResponse
     {
         $model = $guard === 'guru' ? Guru::class : Siswa::class;

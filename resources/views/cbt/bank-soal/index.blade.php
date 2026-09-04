@@ -41,20 +41,15 @@
             <option value="{{ $t->slug }}" @selected(request('jenis')==$t->slug)>{{ $t->question_type }}</option>
         @endforeach
     </select>
-    {{-- RULE guru: filter kelas baru aktif setelah pilih mapel — daftar
-         tingkatnya pun hanya tingkat di mana dia mengajar mapel tsb --}}
-    @if($tingkatButuhMapel ?? false)
-        <select class="select xl:col-span-2" disabled title="Pilih mapel dulu untuk memfilter kelas">
-            <option>Pilih mapel dulu…</option>
-        </select>
-    @else
-        <select name="tingkat" class="select xl:col-span-2">
-            <option value="">Semua kelas</option>
-            @foreach($tingkatList as $nomor => $nama)
-                <option value="{{ $nomor }}" @selected(request('tingkat') == $nomor)>{{ $nama }}</option>
-            @endforeach
-        </select>
-    @endif
+    {{-- Guru: daftar kelas mengikuti mapel terpilih, atau gabungan semua
+         mapel yang diajar kalau belum pilih mapel — filter kelas bisa
+         dipakai sendirian tanpa perlu pilih mapel dulu. --}}
+    <select name="tingkat" class="select xl:col-span-2">
+        <option value="">Semua kelas</option>
+        @foreach($tingkatList as $nomor => $nama)
+            <option value="{{ $nomor }}" @selected(request('tingkat') == $nomor)>{{ $nama }}</option>
+        @endforeach
+    </select>
     <button class="btn-secondary col-span-2 sm:col-span-1 xl:col-span-1"><x-icon name="search" class="w-4 h-4"/> <span class="xl:hidden">Cari</span></button>
 </form>
 
@@ -87,7 +82,14 @@
                     </span>
                 </div>
                 <div class="font-semibold text-ink-900">{{ $q->title }}</div>
-                <div class="text-sm text-ink-500 mt-1 line-clamp-2">{{ Str::limit(html_entity_decode(strip_tags($q->question)), 200) }}</div>
+                <div class="prose prose-sm max-w-none mt-1.5 text-sm text-ink-800 border border-slate-200 rounded-lg p-3 bg-slate-50/50 soal-math [&_img]:max-w-full [&_img]:h-auto">
+                    @if(filled($q->question))
+                        {!! \App\Support\SoalHtml::render($q->question) !!}
+                    @else
+                        <span class="text-ink-500 italic">— pertanyaan belum diisi —</span>
+                    @endif
+                </div>
+                @include('cbt.bank-soal._soal-opsi', ['q' => $q])
             </div>
             <div class="flex items-center gap-1 shrink-0">
                 <button type="button" @click="openPreview({{ $q->id }})"

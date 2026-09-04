@@ -177,8 +177,8 @@ class TesController extends Controller
 
     public function questions(Quiz $tes, Request $r)
     {
-        $tes->load('questions.question.mapel');
-        $available = Question::with('mapel')
+        $tes->load('questions.question.mapel', 'questions.question.type', 'questions.question.options');
+        $available = Question::with('mapel', 'type', 'options')
             ->when($tes->mata_pelajaran_id, fn ($q) => $q->where('mata_pelajaran_id', $tes->mata_pelajaran_id))
             ->whereNotIn('id', $tes->questions->pluck('question_id'))
             ->when($r->q, fn ($q) => $q->where('title', 'like', "%{$r->q}%"))

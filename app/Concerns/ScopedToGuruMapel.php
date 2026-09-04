@@ -141,7 +141,9 @@ trait ScopedToGuruMapel
      * Dropdown tingkat (nomor => nama) sesuai hak user & mapel terpilih:
      *  - admin → semua tingkat;
      *  - guru + mapel dipilih → hanya tingkat di mana dia mengajar MAPEL ITU;
-     *  - guru tanpa mapel → kosong (rule: filter kelas wajib pilih mapel dulu).
+     *  - guru tanpa mapel dipilih → gabungan (union) semua tingkat dari SELURUH
+     *    mapel yang diajarnya, supaya filter kelas tetap bisa dipakai sendirian
+     *    tanpa harus memilih mapel dulu.
      */
     protected function tingkatDropdownFor($user, $mapelId = null): array
     {
@@ -150,14 +152,33 @@ trait ScopedToGuruMapel
 
         $map = $this->guruMapelTingkatMap($user);
         $mapelId = (int) $mapelId;
-        if (! $mapelId || ! array_key_exists($mapelId, $map)) return [];
 
-        $allowed = $map[$mapelId];
-        if (empty($allowed)) return $all; // penugasan mapel ini tanpa rombel → tak dibatasi
+        if ($mapelId && array_key_exists($mapelId, $map)) {
+            $allowed = $map[$mapelId];
+            if (empty($allowed)) return $all; // penugasan mapel ini tanpa rombel → tak dibatasi
+
+            return array_filter(
+                $all,
+                fn ($nama, $nomor) => in_array((int) $nomor, $allowed, true),
+                ARRAY_FILTER_USE_BOTH
+            );
+        }
+
+        if (empty($map)) return [];
+
+        // Tanpa mapel dipilih: gabungkan tingkat dari semua penugasan. Kalau
+        // ADA satu saja penugasan tanpa batas rombel (tanpa_batas), tingkatnya
+        // tidak bisa dipersempit lagi → tampilkan semua.
+        $union = [];
+        foreach ($map as $tingkatList) {
+            if (empty($tingkatList)) return $all;
+            $union = array_merge($union, $tingkatList);
+        }
+        $union = array_unique($union);
 
         return array_filter(
             $all,
-            fn ($nama, $nomor) => in_array((int) $nomor, $allowed, true),
+            fn ($nama, $nomor) => in_array((int) $nomor, $union, true),
             ARRAY_FILTER_USE_BOTH
         );
     }

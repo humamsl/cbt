@@ -23,12 +23,7 @@ class BankSoalController extends Controller
     {
         $user = $r->user();
 
-        // RULE filter kelas utk GURU: wajib pilih mapel dulu. Tanpa mapel,
-        // filter tingkat diabaikan (dropdownnya pun dinonaktifkan di view) —
-        // supaya daftar tingkat bisa dibatasi sesuai penugasan mapel tsb.
-        $tingkatFilterAktif = $r->tingkat && (! $this->shouldScope($user) || $r->mapel);
-
-        $query = Question::with('type', 'mapel', 'topic')
+        $query = Question::with('type', 'mapel', 'topic', 'options')
             // Pencarian WAJIB dibungkus grup sendiri: tanpa itu OR-nya "bocor"
             // keluar (AND lebih kuat dari OR di SQL) sehingga soal yang judulnya
             // cocok ikut lolos walau di luar mapel yang diajar guru.
@@ -36,7 +31,10 @@ class BankSoalController extends Controller
                 ->where('title', 'like', "%{$r->q}%")
                 ->orWhere('question', 'like', "%{$r->q}%")))
             ->when($r->mapel, fn ($x) => $x->where('mata_pelajaran_id', $r->mapel))
-            ->when($tingkatFilterAktif, fn ($x) => $x->where('tingkat', (int) $r->tingkat))
+            // Filter kelas berdiri sendiri (tidak butuh mapel dipilih dulu) —
+            // aman karena scopeBankSoalForUser() di bawah tetap membatasi soal
+            // ke milik/penugasan guru ini apa pun kombinasi filternya.
+            ->when($r->tingkat, fn ($x) => $x->where('tingkat', (int) $r->tingkat))
             ->when($r->jenis, fn ($x) => $x->whereHas('type', fn ($t) => $t->where('slug', $r->jenis)));
 
         $query = $this->scopeBankSoalForUser($query, $user);
@@ -52,9 +50,8 @@ class BankSoalController extends Controller
             'items' => $items,
             'mapelList' => $mapelList,
             'types' => QuestionType::orderBy('id')->get(),
-            // Guru → dropdown tingkat mengikuti mapel terpilih (pasangan penugasan)
+            // Guru tanpa mapel dipilih → gabungan tingkat dari semua mapel yang diajar
             'tingkatList' => $this->tingkatDropdownFor($user, $r->mapel),
-            'tingkatButuhMapel' => $this->shouldScope($user) && ! $r->mapel,
         ]);
     }
 
