@@ -311,6 +311,40 @@ function imagesUploadHandler(blobInfo) {
 }
 
 /**
+ * Susun ulang 1 node MathML presentation markup (<msqrt>, <mfrac>, <msup>,
+ * dst -- struktur TAMPILAN, bukan makna semantik) jadi teks LaTeX setara.
+ *
+ * Dipakai HANYA sebagai fallback saat sumber paste tidak menyertakan
+ * anotasi TeX aslinya (lihat pemanggilnya di normalizeMathHtml). Sengaja
+ * cuma menangani tag yang paling umum dipakai soal matematika sekolah
+ * (akar, pecahan, pangkat, indeks) -- tag MathML lain (mis. matriks/limit)
+ * jatuh ke default: teks anak-anaknya digabung apa adanya. Itu tetap lebih
+ * aman daripada menebak-nebak strukturnya salah (bisa mengubah nilai/kunci
+ * jawaban soal tanpa disadari), dan sebelumnya tag itu dibuang total (tidak
+ * tampil sama sekali) jadi ini tetap perbaikan bersih.
+ */
+function mathmlToLatex(node) {
+    if (node.nodeType === Node.TEXT_NODE) return node.textContent;
+    if (node.nodeType !== Node.ELEMENT_NODE) return '';
+
+    const kids = () => Array.from(node.childNodes).map(mathmlToLatex).join('');
+    const nthChild = (i) => (node.children[i] ? mathmlToLatex(node.children[i]) : '');
+
+    switch (node.tagName.toLowerCase()) {
+        case 'msqrt':  return `\\sqrt{${kids()}}`;
+        case 'mroot':  return `\\sqrt[${nthChild(1)}]{${nthChild(0)}}`;
+        case 'mfrac':  return `\\frac{${nthChild(0)}}{${nthChild(1)}}`;
+        case 'msup':   return `{${nthChild(0)}}^{${nthChild(1)}}`;
+        case 'msub':   return `{${nthChild(0)}}_{${nthChild(1)}}`;
+        case 'msubsup':return `{${nthChild(0)}}_{${nthChild(1)}}^{${nthChild(2)}}`;
+        // Sumber TeX (kalau ada) sudah dipakai terpisah oleh texOf() di
+        // pemanggil -- jangan diikutkan lagi di sini supaya tidak dobel.
+        case 'annotation': case 'annotation-xml': return '';
+        default: return kids();
+    }
+}
+
+/**
  * Bersihkan HTML hasil paste dari sumber yang me-render matematika (ChatGPT,
  * Gemini, Wikipedia, dsb) menjadi teks LaTeX yang bisa disimpan & diedit.
  *
@@ -342,10 +376,20 @@ function normalizeMathHtml(html) {
         asText(el, tex ? `\\(${tex}\\)` : plainOf(el));
     });
 
-    // MathML biasa yang masih menyimpan sumber TeX-nya
+    // MathML: kalau ada sumber TeX-nya (KaTeX/MathJax), pakai itu. Kalau
+    // tidak (mis. MathML asli dari Google/browser modern, tanpa anotasi
+    // TeX), CEK LEBIH DULU sebelum dibiarkan apa adanya -- tag <math>/
+    // <msqrt> BUKAN HTML valid buat TinyMCE, jadi kalau dibiarkan, seluruh
+    // isinya (termasuk soal & angkanya) dibuang diam-diam saat disimpan ke
+    // editor ("soal jadi kosong / tidak tampil"). Solusinya: susun ulang
+    // strukturnya jadi LaTeX manual lewat mathmlToLatex() supaya tanda akar/
+    // pecahan/pangkatnya tidak ikut hilang atau salah urutan.
     box.querySelectorAll('math').forEach((el) => {
         const tex = texOf(el);
-        if (tex) asText(el, `\\(${tex}\\)`);
+        if (tex) { asText(el, `\\(${tex}\\)`); return; }
+
+        const rebuilt = mathmlToLatex(el).trim();
+        asText(el, rebuilt ? `\\(${rebuilt}\\)` : plainOf(el));
     });
 
     // MathJax v3 tidak menyertakan sumber TeX; cukup buang salinan MathML
