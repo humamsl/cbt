@@ -325,31 +325,45 @@ class HasilController extends Controller
             'siswa.rombelSekarang.rombel',
         ])->where('is_done', true);
 
-        // filter pencarian
+        // PENTING: siswa/siswa_rombel/rombongan_belajar/tahun_ajaran hidup di
+        // database Data Center (koneksi mysql_datacenter), sedangkan
+        // quiz_attempts ada di database cbt (koneksi default). whereHas()
+        // TIDAK boleh dipakai untuk menembus relasi lintas-database ini —
+        // subquery-nya nempel TANPA prefix database di koneksi cbt sehingga
+        // yang kebaca justru tabel `siswa`/`siswa_rombel`/dst LOKAL cbt yang
+        // basi (jumlah barisnya jauh lebih sedikit dari data asli di Data
+        // Center), bukan error — makanya filter kelas/rombel/cari-nama diam-
+        // diam selalu kosong padahal datanya ada. Pola & penjelasan yang sama
+        // sudah didokumentasikan di Quiz::scopeUntukSiswa(). Solusinya: ambil
+        // dulu siswa_id yang cocok lewat koneksi mysql_datacenter-nya
+        // sendiri, baru whereIn() di query quiz_attempts (koneksi cbt).
         if ($r->q) {
-            $q->whereHas('siswa', fn ($s) =>
-                $s->where('nama_siswa', 'like', "%{$r->q}%")
-                  ->orWhere('nisn', 'like', "%{$r->q}%")
-            );
+            $siswaIds = \App\Models\Siswa::where('nama_siswa', 'like', "%{$r->q}%")
+                ->orWhere('nisn', 'like', "%{$r->q}%")
+                ->pluck('id');
+            $q->whereIn('siswa_id', $siswaIds);
         }
         if ($r->quiz)  $q->where('quiz_id', $r->quiz);
         if ($r->mapel) $q->whereHas('quiz', fn ($x) => $x->where('mata_pelajaran_id', $r->mapel));
 
         // filter rombel siswa (lewat siswa_rombel TA aktif)
         if ($r->rombel) {
-            $q->whereHas('siswa.rombelSekarang', fn ($x) =>
-                $x->where('rombongan_belajar_id', $r->rombel)
-            );
+            $siswaIds = \App\Models\SiswaRombel::where('rombongan_belajar_id', $r->rombel)
+                ->whereHas('tahunAjaran', fn ($x) => $x->where('is_aktif', true))
+                ->pluck('siswa_id');
+            $q->whereIn('siswa_id', $siswaIds);
         }
 
         // filter tingkat (rombel.tingkat)
         if ($r->tingkat) {
-            $q->whereHas('siswa.rombelSekarang.rombel', fn ($x) =>
-                $x->where('tingkat', $r->tingkat)
-            );
+            $siswaIds = \App\Models\SiswaRombel::whereHas('rombel', fn ($x) => $x->where('tingkat', $r->tingkat))
+                ->whereHas('tahunAjaran', fn ($x) => $x->where('is_aktif', true))
+                ->pluck('siswa_id');
+            $q->whereIn('siswa_id', $siswaIds);
         }
 
-        // Guru hanya boleh lihat ujian mapel/rombel yang dia ajar
+        // Guru hanya boleh lihat ujian mapel/rombel yang dia ajar (quiz ada
+        // di koneksi cbt yang sama, jadi whereHas di sini aman)
         if ($this->shouldScope($user)) {
             $mapelIds  = $this->guruMapelIds($user);
             $q->whereHas('quiz', fn ($x) => $x->whereIn('mata_pelajaran_id', $mapelIds ?: [0]));
