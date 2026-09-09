@@ -355,7 +355,7 @@ function mathmlToLatex(node) {
  * dikembalikan ke bentuk \( ... \) / \[ ... \] yang nanti dirender KaTeX.
  */
 function normalizeMathHtml(html) {
-    if (!html || !/katex|mjx-|<math/i.test(html)) return html;
+    if (!html || !/katex|mjx-|<math|data-xpm-latex/i.test(html)) return html;
 
     const box = document.createElement('div');
     box.innerHTML = html;
@@ -363,6 +363,30 @@ function normalizeMathHtml(html) {
     const texOf = (el) => (el.querySelector('annotation[encoding="application/x-tex"]')?.textContent || '').trim();
     const plainOf = (el) => (el.querySelector('.katex-html')?.textContent || el.textContent || '').trim();
     const asText = (el, text) => el.replaceWith(document.createTextNode(text));
+
+    // Rumus hasil salin dari Google (fitur "Orang lain juga bertanya"/AI
+    // Overview): tiap rumus dibungkus <div data-xpm-copy-root data-xpm-
+    // math-type="inline|block">, isinya <img data-xpm-latex="..."> (kode
+    // LaTeX ASLI, tersembunyi) + salinan MathML utk pembaca layar + SVG utk
+    // tampilan visual. SVG-nya menaruh angka SEBELUM simbol √ di urutan
+    // dokumen (glyph √ cuma digeser lewat koordinat SVG, bukan urutan
+    // elemen) -- makanya paste mentah menghasilkan "3√" terbalik, bukan
+    // "√3". Ambil kode LaTeX dari data-xpm-latex duluan (paling akurat,
+    // sumber aslinya) SEBELUM SVG/MathML di dalamnya sempat ikut ter-paste
+    // berantakan. Diproses sebelum blok <math> generik di bawah karena
+    // wrapper ini juga membungkus <math> yang sama.
+    box.querySelectorAll('[data-xpm-copy-root]').forEach((el) => {
+        // Kadang LaTeX gabungannya (mis. "4\sqrt{3}") ada langsung di atribut
+        // wrapper ini sendiri; kadang cuma ada di <img> anaknya (token
+        // tunggal, mis. cuma "\sqrt{3}" saja). Utamakan punya wrapper --
+        // itu yang paling lengkap/benar.
+        const tex = (el.getAttribute('data-xpm-latex')
+            || el.querySelector('img[data-xpm-latex]')?.getAttribute('data-xpm-latex')
+            || '').trim();
+        if (! tex) return;
+        const isBlock = el.getAttribute('data-xpm-math-type') === 'block';
+        asText(el, isBlock ? `\\[${tex}\\]` : `\\(${tex}\\)`);
+    });
 
     // Rumus blok KaTeX → \[ ... \]  (diproses lebih dulu; .katex di dalamnya ikut terhapus)
     box.querySelectorAll('.katex-display').forEach((el) => {

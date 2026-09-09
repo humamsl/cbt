@@ -62,7 +62,7 @@ class AuthController extends Controller
         $remember = (bool) $request->boolean('remember');
         $guard = $data['role'];
 
-        $rateKey = 'login:'.$request->ip().':'.$data['role'];
+        $rateKey = 'login:'.$request->ip().':'.$data['role'].':'.$data['username'];
         if (RateLimiter::tooManyAttempts($rateKey, 10)) {
             $seconds = RateLimiter::availableIn($rateKey);
             throw ValidationException::withMessages([

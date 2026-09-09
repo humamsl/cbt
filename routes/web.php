@@ -38,14 +38,18 @@ Route::get('/account/inactive',  [AccountStatusController::class, 'inactive'])->
 Route::middleware('guest:admin,guru,siswa')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login'])
-        ->middleware('throttle:30,1')   // anti brute-force
+        // Batas per-IP dinaikkan agar tidak memblokir ratusan siswa yang login
+        // bersamaan dari IP yang sama (lab/WiFi sekolah biasanya keluar lewat
+        // satu gateway). Brute-force per akun tetap dicegah oleh RateLimiter
+        // khusus (per IP+role+username) di AuthController::login().
+        ->middleware('throttle:300,1')
         ->name('login.post');
 });
 
 Route::get('/cbt/login', [AuthController::class, 'showLogin'])
     ->defaults('module', 'cbt')->name('cbt.login');
 Route::post('/cbt/login', [AuthController::class, 'login'])
-    ->defaults('module', 'cbt')->middleware('throttle:30,1')->name('cbt.login.post');
+    ->defaults('module', 'cbt')->middleware('throttle:300,1')->name('cbt.login.post');
 
 // Endpoint refresh CSRF token — dipakai login form di mobile sebelum submit
 // untuk menghindari 419 saat halaman lama di-cache browser.
