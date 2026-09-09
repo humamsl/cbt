@@ -103,6 +103,8 @@ Route::middleware([
         Route::get('/bank-soal/{bankSoal}/preview', [BankSoalController::class, 'preview'])->name('bank-soal.preview');
         Route::post('/bank-soal/{bankSoal}/duplicate', [BankSoalController::class, 'duplicate'])->name('bank-soal.duplicate');
 
+        Route::post('/tes/hapus-terpilih', [TesController::class, 'destroySelected'])->name('tes.destroy-selected');
+        Route::get('/tes-riwayat-aktivitas', [TesController::class, 'activityLog'])->name('tes.activity-log');
         Route::resource('tes', TesController::class)->except('show')
             ->parameters(['tes' => 'tes']);
         Route::post('/tes/{tes}/duplicate', [TesController::class, 'duplicate'])->name('tes.duplicate');

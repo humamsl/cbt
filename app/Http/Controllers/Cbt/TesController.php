@@ -6,15 +6,18 @@ use App\Http\Controllers\Controller;
 use App\Models\MataPelajaran;
 use App\Models\Question;
 use App\Models\Quiz;
+use App\Models\QuizActivityLog;
 use App\Models\QuizQuestion;
 use App\Models\RombonganBelajar;
 use App\Models\SessionToken;
 use App\Models\TahunAjaran;
 use App\Models\TingkatKelas;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Support\Collection;
+use Illuminate\Validation\ValidationException;
 
 class TesController extends Controller
 {
@@ -23,14 +26,36 @@ class TesController extends Controller
     public function index(Request $r)
     {
         $user = $r->user();
-        $query = Quiz::with('mapel', 'rombelTargets', 'tahunAjaran')
+        // 'creator' di-eager-load supaya index bisa menampilkan "Dibuat oleh"
+        // per tes -- daftar ini menampilkan tes SEMUA guru yang mengajar
+        // mapel+rombel yang sama (scopeQuizForUser), bukan cuma milik
+        // sendiri, jadi label pemilik penting agar tidak salah kira draft
+        // guru lain sebagai milik sendiri saat memilih untuk dihapus.
+        $query = Quiz::with('mapel', 'rombelTargets', 'tahunAjaran', 'creator')
             ->withCount('questions', 'attempts')
             ->when($r->q, fn ($x) => $x->where('name', 'like', "%{$r->q}%"));
 
         $query = $this->scopeQuizForUser($query, $user);
 
         $items = $query->latest()->paginate(15)->withQueryString();
-        return view('cbt.tes.index', compact('items'));
+        $isAdmin = ! $this->shouldScope($user);
+        return view('cbt.tes.index', compact('items', 'isAdmin'));
+    }
+
+    /** Riwayat aktivitas (siapa membuat/mengubah/menghapus/menduplikat tes apa, kapan) -- khusus admin. */
+    public function activityLog(Request $r)
+    {
+        if ($this->shouldScope($r->user())) {
+            abort(403, 'Halaman ini khusus admin.');
+        }
+
+        $logs = QuizActivityLog::query()
+            ->when($r->q, fn ($x) => $x->where('quiz_name', 'like', "%{$r->q}%"))
+            ->when($r->action, fn ($x) => $x->where('action', $r->action))
+            ->latest('created_at')
+            ->paginate(30)->withQueryString();
+
+        return view('cbt.tes.activity-log', compact('logs'));
     }
 
     public function create()
@@ -62,28 +87,45 @@ class TesController extends Controller
             $q->siswaTargets()->sync($siswaIds);
             return $q;
         });
+        $this->logQuizActivity('created', $quiz, $r->user());
 
         return redirect()->route('tes.questions', $quiz)->with('success', 'Tes dibuat. Tambahkan soal sekarang.');
     }
 
     public function edit(Quiz $tes)
     {
+        $this->assertBolehKelolaTes(request()->user(), $tes);
         $tes->load('rombelTargets', 'siswaTargets');
         return view('cbt.tes.form', $this->formData($tes, request()->user()));
     }
 
     public function update(Request $r, Quiz $tes)
     {
+        $this->assertBolehKelolaTes($r->user(), $tes);
         $data = $this->v($r);
         $rombelIds = $data['rombongan_belajar_ids'] ?? [];
         $siswaIds  = $data['siswa_ids'] ?? [];
         unset($data['rombongan_belajar_ids'], $data['siswa_ids']);
+
+        // Snapshot field yang paling relevan buat jejak audit (jadwal & status
+        // publish) SEBELUM diubah -- supaya log bisa menunjukkan APA yang
+        // berubah, bukan cuma "tes X diedit".
+        $before = $tes->only(['name', 'valid_from', 'valid_upto', 'is_published']);
 
         DB::transaction(function () use ($tes, $data, $rombelIds, $siswaIds) {
             $tes->update($data);
             $tes->rombelTargets()->sync($rombelIds);
             $tes->siswaTargets()->sync($siswaIds);
         });
+
+        $after = $tes->only(['name', 'valid_from', 'valid_upto', 'is_published']);
+        $changed = array_diff_assoc(
+            array_map(fn ($v) => (string) $v, $after),
+            array_map(fn ($v) => (string) $v, $before)
+        );
+        if ($changed) {
+            $this->logQuizActivity('updated', $tes, $r->user(), ['before' => array_intersect_key($before, $changed), 'after' => $changed]);
+        }
 
         return redirect()->route('tes.index')->with('success', 'Tes diperbarui.');
     }
@@ -111,10 +153,104 @@ class TesController extends Controller
         return response()->json($siswa);
     }
 
-    public function destroy(Quiz $tes)
+    /**
+     * Sebelumnya siapa saja (admin ATAU guru mapel apapun) bisa MENGEDIT dan
+     * MENGHAPUS registrasi ujian siapapun -- tidak ada cek pemilik sama
+     * sekali, dan hapus cuma dikonfirmasi confirm() JS generik "Hapus tes?"
+     * (tanpa nama tes). Daftar di index (scopeQuizForUser) menampilkan tes
+     * SEMUA guru yang mengajar mapel+rombel yang sama, bukan cuma milik
+     * sendiri -- kombinasi keduanya bikin draft ujian guru lain gampang
+     * ke-klik ubah/hapus tanpa sadar. Sekarang: guru hanya boleh
+     * mengelola (edit & hapus) tes buatannya sendiri (created_by_guru_id
+     * miliknya) -- tes admin/guru lain ditolak 403 walau mapelnya sama.
+     */
+    protected function assertBolehKelolaTes($user, Quiz $tes): void
     {
+        if ($this->shouldScope($user) && (int) $user->id !== (int) ($tes->created_by_guru_id ?? 0)) {
+            abort(403, 'Anda hanya boleh mengelola registrasi ujian buatan sendiri.');
+        }
+    }
+
+    /**
+     * Jejak audit: siapa membuat/mengubah/menghapus/menduplikat registrasi
+     * ujian yang mana, kapan. Ditambahkan setelah kasus draft ujian guru
+     * hilang berkali-kali tanpa ada cara melacak pelakunya. Nama tes & nama
+     * pelaku di-snapshot langsung di baris log supaya tetap terbaca walau
+     * tes-nya sendiri sudah soft-deleted atau akun pelakunya berubah nama.
+     */
+    protected function logQuizActivity(string $action, Quiz $tes, $user, array $meta = []): void
+    {
+        QuizActivityLog::create([
+            'quiz_id' => $tes->id,
+            'quiz_name' => $tes->name,
+            'action' => $action,
+            'actor_type' => $user->user_type ?? ($this->shouldScope($user) ? 'guru' : 'admin'),
+            'actor_id' => $user->id,
+            'actor_name' => $user->name,
+            'meta' => $meta ?: null,
+        ]);
+    }
+
+    /**
+     * Lapis kedua sesuai permintaan: penghapusan registrasi ujian WAJIB
+     * dikonfirmasi dengan password akun ADMIN (bukan sekadar dialog
+     * confirm() browser) -- baik saat admin sendiri yang menghapus (re-auth
+     * sebelum aksi destruktif) maupun saat guru menghapus (perlu persetujuan
+     * admin). Validate() (bukan attempt()) supaya tidak mengubah sesi login
+     * yang sedang aktif.
+     */
+    protected function verifyAdminPassword(Request $r): void
+    {
+        $cred = $r->validate([
+            'admin_email'    => 'required|email',
+            'admin_password' => 'required|string',
+        ], [], [
+            'admin_email' => 'Email admin', 'admin_password' => 'Password admin',
+        ]);
+
+        if (! Auth::guard('admin')->validate(['email' => $cred['admin_email'], 'password' => $cred['admin_password']])) {
+            throw ValidationException::withMessages([
+                'admin_password' => 'Email atau password admin salah.',
+            ]);
+        }
+    }
+
+    public function destroy(Request $r, Quiz $tes)
+    {
+        $this->assertBolehKelolaTes($r->user(), $tes);
+        $this->verifyAdminPassword($r);
+
         $tes->delete();
+        $this->logQuizActivity('deleted', $tes, $r->user());
         return back()->with('success', 'Tes dihapus.');
+    }
+
+    /** Hapus massal dari checkbox terpilih di index -- lihat destroy() untuk penjelasan guard-nya. */
+    public function destroySelected(Request $r)
+    {
+        $data = $r->validate([
+            'ids'   => 'required|array|min:1',
+            'ids.*' => 'integer|exists:quizzes,id',
+        ]);
+        $this->verifyAdminPassword($r);
+
+        $user = $r->user();
+        $quizzes = Quiz::whereIn('id', $data['ids'])->get();
+
+        // Cek hak akses SEMUA dulu sebelum ada yang dihapus -- kalau satu
+        // saja bukan hak guru ini, seluruh batch batal, bukan hapus-sebagian.
+        foreach ($quizzes as $q) {
+            $this->assertBolehKelolaTes($user, $q);
+        }
+
+        DB::transaction(function () use ($quizzes, $user) {
+            foreach ($quizzes as $q) {
+                $q->delete();
+                $this->logQuizActivity('deleted', $q, $user);
+            }
+        });
+
+        return redirect()->route('tes.index')->with('success', count($quizzes).' registrasi ujian dihapus.');
     }
 
     /**
@@ -170,6 +306,10 @@ class TesController extends Controller
 
             return $baru;
         });
+        $this->logQuizActivity('duplicated', $baru, $user, [
+            'source_quiz_id' => $tes->id,
+            'source_quiz_name' => $tes->name,
+        ]);
 
         return redirect()->route('tes.edit', $baru)
             ->with('success', 'Tes berhasil diduplikat sebagai "'.$baru->name.'" (Draft). Periksa & sesuaikan jadwalnya sebelum dipublikasikan.');
