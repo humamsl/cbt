@@ -44,6 +44,7 @@
           currentType: {{ (int) $currentTypeId }},
           pgCorrect: '{{ $pgCorrect }}',
           pgkCorrect: @js($pgkCorrect),
+          pgCount: {{ (int) $pgCount }},
           bsAnswer: '{{ $bsAnswer }}',
           tingkat: '{{ old('tingkat', $item->tingkat) }}',
           topicId: '{{ old('topic_id', $item->topic_id) }}',
@@ -51,7 +52,8 @@
           mapelId: '{{ old('mata_pelajaran_id', $item->mata_pelajaran_id) }}',
           tingkatByMapel: @js($tingkatByMapel ?? null),
       })"
-      x-init="initEditors()">
+      x-init="initEditors()"
+      @submit.prevent="handleSubmit()">
     @csrf @if($item->exists) @method('PUT') @endif
 
     <div class="grid md:grid-cols-2 gap-4">
@@ -209,7 +211,7 @@
                         <button type="button" @click="symbolTarget = 'opsi {{ chr(65 + $i) }}'; showSymbols = true"
                                 class="text-[10px] text-brand-600 hover:underline ml-auto">∑ simbol</button>
                     </div>
-                    <textarea name="options[{{ $i }}]" data-editor="mini" data-opsi-label="opsi {{ chr(65 + $i) }}"
+                    <textarea id="editor-opsi-{{ $i }}" name="options[{{ $i }}]" data-editor="mini" data-opsi-label="opsi {{ chr(65 + $i) }}"
                               data-preview-target="math-preview-opsi-{{ $i }}"
                               class="opsi">{{ $pgOldOpts[$i] ?? '' }}</textarea>
                     <div id="math-preview-opsi-{{ $i }}-wrap" class="hidden">
@@ -428,10 +430,93 @@ function normalizeMathHtml(html) {
     return box.innerHTML;
 }
 
-function bankSoalForm({ typesMap, currentType, pgCorrect, pgkCorrect, bsAnswer, tingkat, topicId, topics, mapelId, tingkatByMapel }) {
+/**
+ * Baris "a. ..." / "b. ..." dst di paragraf hasil paste (Word/PDF/Google Docs)
+ * biasanya jadi <p> terpisah -- tapi kadang cuma dipisah <br> dalam satu <p>
+ * yang sama. Pecah dulu jadi <p> per baris supaya loop pemindaian di bawah
+ * (satu blok = satu baris) konsisten untuk kedua pola paste tersebut.
+ */
+function splitBrLines(body) {
+    Array.from(body.children).forEach((el) => {
+        if (! /<br\s*\/?>/i.test(el.innerHTML)) return;
+        const parts = el.innerHTML.split(/<br\s*\/?>/i);
+        if (parts.length < 2) return;
+        const frag = document.createDocumentFragment();
+        parts.forEach((html) => {
+            const p = document.createElement('p');
+            p.innerHTML = html;
+            frag.appendChild(p);
+        });
+        el.replaceWith(frag);
+    });
+}
+
+/**
+ * Kalau node teks PERTAMA di dalam blok diawali label opsi ("a." / "B)" /
+ * dsb), buang label itu dari teks (blok jadi berisi isi opsinya saja, HTML
+ * lain di dalamnya -- bold, rumus -- tidak disentuh) dan kembalikan huruf
+ * opsinya (a-e). Kembalikan null kalau blok ini bukan baris opsi.
+ */
+function matchAndStripOptionPrefix(block) {
+    const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT);
+    const node = walker.nextNode();
+    if (! node) return null;
+    const m = node.textContent.match(/^\s*\(?\s*([A-Ea-e])\s*[.\):]\s*/);
+    if (! m) return null;
+    node.textContent = node.textContent.slice(m[0].length);
+    return m[1].toLowerCase();
+}
+
+/**
+ * Deteksi baris "a. Opsi..." s/d "e. Opsi..." di editor Pertanyaan lalu
+ * pindahkan tiap baris ke editor Opsi yang sesuai (hanya kalau opsi itu
+ * masih kosong -- supaya tidak menimpa opsi yang sudah diisi manual saat
+ * edit soal), dan buang baris-baris itu dari Pertanyaan. Dipanggil otomatis
+ * saat form disubmit (lihat handleSubmit di bankSoalForm).
+ */
+function autoSplitQuestionOptions(pgCount) {
+    const qEd = window.tinymce?.get('editor-question');
+    if (! qEd) return;
+
+    const body = qEd.getBody();
+    splitBrLines(body);
+
+    const letters = Array.from({ length: pgCount }, (_, i) => String.fromCharCode(97 + i));
+    const found = {};
+    const stemBlocks = [];
+    let lastLetter = null;
+
+    Array.from(body.children).forEach((block) => {
+        const letter = matchAndStripOptionPrefix(block);
+        if (letter && letters.includes(letter)) {
+            found[letter] = block.innerHTML.trim();
+            lastLetter = letter;
+        } else if (! lastLetter) {
+            stemBlocks.push(block.outerHTML);
+        } else if (block.textContent.trim() !== '') {
+            // Baris lanjutan (opsi yang membungkus ke baris berikutnya)
+            found[lastLetter] += ' ' + block.innerHTML.trim();
+        }
+    });
+
+    if (Object.keys(found).length === 0) return; // tidak ada pola opsi terdeteksi, tidak apa-apa
+
+    letters.forEach((L, i) => {
+        if (! found[L]) return;
+        const ed = window.tinymce.get('editor-opsi-' + i);
+        if (! ed) return;
+        if (ed.getContent({ format: 'text' }).trim() === '') {
+            ed.setContent(found[L]);
+        }
+    });
+
+    qEd.setContent(stemBlocks.join(''));
+}
+
+function bankSoalForm({ typesMap, currentType, pgCorrect, pgkCorrect, pgCount, bsAnswer, tingkat, topicId, topics, mapelId, tingkatByMapel }) {
     return {
         typesMap, currentType, slug: typesMap[currentType] || 'pg',
-        pgCorrect, pgkCorrect, bsAnswer,
+        pgCorrect, pgkCorrect, pgCount, bsAnswer,
         tingkat: tingkat || '', topicId: topicId || '', topics: topics || [],
         mapelId: mapelId || '',
         tingkatByMapel: tingkatByMapel || null, // null = admin (tanpa batasan)
@@ -578,6 +663,15 @@ function bankSoalForm({ typesMap, currentType, pgCorrect, pgkCorrect, bsAnswer, 
             editor.focus();
             editor.insertContent(sym);
             lastFocusedEditor = editor;
+        },
+
+        /** Dipanggil saat tombol "Simpan Soal" ditekan (@submit.prevent di <form>). */
+        handleSubmit() {
+            if (this.slug === 'pg' || this.slug === 'pgk') {
+                autoSplitQuestionOptions(this.pgCount);
+            }
+            tinymce.triggerSave(); // sinkronkan semua editor ke <textarea> sebelum submit
+            this.$root.submit();   // submit native, tidak memicu ulang event 'submit'
         },
     };
 }
