@@ -7,6 +7,7 @@
         allRombels: @js($rombels->map(fn ($r) => ['id' => $r->id, 'nama' => $r->nama_rombel])->values()),
         aksesMap: @js($aksesPerGuru->map(fn ($rows) => $rows->pluck('rombongan_belajar_id')->values())),
         guruNames: @js($aksesPerGuru->mapWithKeys(fn ($rows) => [$rows->first()->guru_id => optional($rows->first()->guru)->nama_ptk ?? 'Petugas'])),
+        guruList: @js($gurus->map(fn ($g) => ['id' => $g->id, 'nama' => $g->nama_ptk, 'nip' => $g->nip])->values()),
     })">
 
     {{-- Form tambah akses --}}
@@ -121,18 +122,34 @@
             </div>
             <form method="POST" :action="editUrl" class="flex flex-col overflow-hidden flex-1">
                 @csrf @method('PUT')
-                <div class="p-4 overflow-y-auto">
-                    <p class="text-xs text-ink-500 mb-2">Centang kelas yang boleh dimonitoring, hilangkan centang untuk mencabut aksesnya.</p>
-                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-1">
-                        <template x-for="r in allRombels" :key="r.id">
-                            <label class="flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm hover:bg-brand-50 cursor-pointer">
-                                <input type="checkbox" name="rombel_ids[]" :value="r.id"
-                                       :checked="editingRombelIds.includes(r.id)"
-                                       @change="toggleEditRombel(r.id, $event.target.checked)"
-                                       class="rounded border-slate-300 text-brand-600 focus:ring-brand-500">
-                                <span x-text="r.nama"></span>
-                            </label>
-                        </template>
+                <input type="hidden" name="new_guru_id" :value="selectedGuruId">
+                <div class="p-4 overflow-y-auto space-y-4">
+                    <div>
+                        <label class="label">Ganti Petugas (opsional)</label>
+                        <select class="select" x-model.number="selectedGuruId">
+                            <template x-for="g in guruList" :key="g.id">
+                                <option :value="g.id" x-text="g.nama + ' — ' + g.nip"></option>
+                            </template>
+                        </select>
+                        <p class="mt-1 text-xs text-amber-600" x-show="selectedGuruId !== editingGuruId" x-cloak>
+                            Seluruh akses kelas ini akan dipindahkan dari <strong x-text="editingGuruName"></strong>
+                            ke <strong x-text="selectedGuruName()"></strong>.
+                        </p>
+                    </div>
+                    <div>
+                        <label class="label">Kelas yang Dimonitoring</label>
+                        <p class="text-xs text-ink-500 mb-2">Centang kelas yang boleh dimonitoring, hilangkan centang untuk mencabut aksesnya.</p>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-1">
+                            <template x-for="r in allRombels" :key="r.id">
+                                <label class="flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm hover:bg-brand-50 cursor-pointer">
+                                    <input type="checkbox" name="rombel_ids[]" :value="r.id"
+                                           :checked="editingRombelIds.includes(r.id)"
+                                           @change="toggleEditRombel(r.id, $event.target.checked)"
+                                           class="rounded border-slate-300 text-brand-600 focus:ring-brand-500">
+                                    <span x-text="r.nama"></span>
+                                </label>
+                            </template>
+                        </div>
                     </div>
                 </div>
                 <div class="flex justify-end gap-2 p-4 border-t border-slate-100">
@@ -145,19 +162,24 @@
 </div>
 
 <script>
-function aksesPage({ allRombels, aksesMap, guruNames }) {
+function aksesPage({ allRombels, aksesMap, guruNames, guruList }) {
     return {
-        allRombels, aksesMap, guruNames,
+        allRombels, aksesMap, guruNames, guruList,
         modalOpen: false,
         editingGuruId: null,
         editingGuruName: '',
         editingRombelIds: [],
+        selectedGuruId: null,
         editUrl: '',
 
         openEdit(guruId) {
             this.editingGuruId = guruId;
             this.editingGuruName = this.guruNames[guruId] || 'Petugas';
             this.editingRombelIds = [...(this.aksesMap[guruId] || [])];
+            // Default-nya petugas yang sama (tidak ganti) -- admin tinggal
+            // pilih nama lain di dropdown kalau memang mau memindahkan akses
+            // kelas ini ke petugas berbeda.
+            this.selectedGuruId = guruId;
             this.editUrl = `{{ url('monitoring/akses/petugas') }}/${guruId}`;
             this.modalOpen = true;
         },
@@ -168,6 +190,17 @@ function aksesPage({ allRombels, aksesMap, guruNames }) {
             } else {
                 this.editingRombelIds = this.editingRombelIds.filter(x => x !== id);
             }
+        },
+
+        /**
+         * Nama petugas tujuan (untuk pesan peringatan "Ganti Petugas").
+         * TIDAK bisa pakai `guruNames` -- itu cuma berisi guru yang SUDAH
+         * jadi petugas (dari daftar akses yang ada), sedangkan tujuan ganti
+         * petugas bisa siapa saja dari `guruList` (semua guru aktif),
+         * termasuk yang belum pernah jadi petugas monitoring sama sekali.
+         */
+        selectedGuruName() {
+            return this.guruList.find(g => g.id === this.selectedGuruId)?.nama || '-';
         },
     };
 }

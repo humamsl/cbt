@@ -428,30 +428,48 @@ class MonitoringController extends Controller
      * Beda dari aksesStore() (menu tambah di atas) yang cuma menambah dan
      * tidak pernah menghapus, jadi form itu tidak cocok dipakai untuk
      * "melepas" kelas -- makanya modal Edit ini disediakan terpisah.
+     *
+     * Modal yang sama juga dipakai untuk GANTI PETUGAS: kalau admin memilih
+     * guru lain lewat dropdown "Ganti Petugas" (field new_guru_id berbeda
+     * dari $guru di URL), seluruh akses milik $guru (guru ASAL) dipindahkan
+     * ke guru baru itu -- bukan disamakan-persis seperti mode edit kelas
+     * biasa, supaya kelas lain yang SUDAH dipegang guru baru (kalau dia
+     * kebetulan juga sudah jadi petugas di kelas lain) tidak ikut terhapus
+     * tanpa sengaja hanya karena tidak tercentang di form ini.
      */
     public function aksesUpdate(Request $r, Guru $guru)
     {
         $data = $r->validate([
             'rombel_ids' => 'nullable|array',
             'rombel_ids.*' => 'integer|exists:mysql_datacenter.rombongan_belajar,id',
+            'new_guru_id' => 'nullable|integer|exists:mysql_datacenter.guru,id',
         ]);
         $rombelIds = $data['rombel_ids'] ?? [];
+        $gantiPetugas = ! empty($data['new_guru_id']) && (int) $data['new_guru_id'] !== (int) $guru->id;
+        $tujuan = $gantiPetugas ? Guru::findOrFail($data['new_guru_id']) : $guru;
 
-        DB::transaction(function () use ($guru, $rombelIds) {
-            MonitoringAkses::where('guru_id', $guru->id)
-                ->whereNotIn('rombongan_belajar_id', $rombelIds)
-                ->delete();
+        DB::transaction(function () use ($guru, $tujuan, $rombelIds, $gantiPetugas) {
+            if ($gantiPetugas) {
+                MonitoringAkses::where('guru_id', $guru->id)->delete();
+            } else {
+                MonitoringAkses::where('guru_id', $guru->id)
+                    ->whereNotIn('rombongan_belajar_id', $rombelIds)
+                    ->delete();
+            }
 
             foreach ($rombelIds as $rombelId) {
                 MonitoringAkses::firstOrCreate([
-                    'guru_id' => $guru->id,
+                    'guru_id' => $tujuan->id,
                     'rombongan_belajar_id' => $rombelId,
                 ]);
             }
         });
 
-        return redirect()->route('monitoring.akses')
-            ->with('success', "Akses monitoring {$guru->nama_ptk} diperbarui.");
+        $pesan = $gantiPetugas
+            ? "Petugas monitoring diganti dari {$guru->nama_ptk} menjadi {$tujuan->nama_ptk}."
+            : "Akses monitoring {$guru->nama_ptk} diperbarui.";
+
+        return redirect()->route('monitoring.akses')->with('success', $pesan);
     }
 
     /** Cabut semua akses monitoring satu petugas sekaligus. */

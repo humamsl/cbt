@@ -102,7 +102,20 @@ export const examProtectionStore = reactive({
     },
 
     _attachAlwaysOnHandlers() {
-        document.addEventListener('contextmenu', (e) => { e.preventDefault(); this.logViolation('right_click'); });
+        // 'contextmenu' awalnya dibuat untuk memblokir klik-kanan DESKTOP (mis.
+        // percobaan buka "Inspect Element"). Masalahnya, di mobile, LONG-PRESS
+        // biasa pada teks/gambar APAPUN memicu event 'contextmenu' yang PERSIS
+        // SAMA -- jadi setiap kali siswa menahan layar (mis. sekadar mencoba
+        // menyeleksi teks untuk dibaca ulang, atau tidak sengaja menekan agak
+        // lama), tercatat sebagai "percobaan klik-kanan" walau di HP tidak
+        // mungkin membuka DevTools lewat long-press sama sekali -- salah
+        // menilai niat, bukan proteksi yang sungguh relevan di mobile. Menu-nya
+        // tetap dicegah muncul (preventDefault) di kedua platform, tapi
+        // pelanggarannya HANYA dicatat di desktop.
+        document.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            if (! this.isMobile) this.logViolation('right_click');
+        });
         document.addEventListener('copy', (e) => { e.preventDefault(); this.logViolation('copy'); });
         document.addEventListener('paste', (e) => { e.preventDefault(); this.logViolation('paste'); });
         document.addEventListener('cut', (e) => { e.preventDefault(); this.logViolation('cut'); });
