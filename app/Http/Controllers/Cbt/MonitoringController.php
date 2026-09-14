@@ -420,4 +420,47 @@ class MonitoringController extends Controller
         $akses->delete();
         return back()->with('success', "Akses monitoring {$nama} untuk kelas {$kelas} dihapus.");
     }
+
+    /**
+     * Edit akses satu petugas sekaligus: samakan set kelasnya PERSIS dengan
+     * checkbox yang dikirim -- kelas yang baru dicentang ditambahkan, kelas
+     * yang sebelumnya ada tapi sekarang tidak dicentang lagi ikut dihapus.
+     * Beda dari aksesStore() (menu tambah di atas) yang cuma menambah dan
+     * tidak pernah menghapus, jadi form itu tidak cocok dipakai untuk
+     * "melepas" kelas -- makanya modal Edit ini disediakan terpisah.
+     */
+    public function aksesUpdate(Request $r, Guru $guru)
+    {
+        $data = $r->validate([
+            'rombel_ids' => 'nullable|array',
+            'rombel_ids.*' => 'integer|exists:mysql_datacenter.rombongan_belajar,id',
+        ]);
+        $rombelIds = $data['rombel_ids'] ?? [];
+
+        DB::transaction(function () use ($guru, $rombelIds) {
+            MonitoringAkses::where('guru_id', $guru->id)
+                ->whereNotIn('rombongan_belajar_id', $rombelIds)
+                ->delete();
+
+            foreach ($rombelIds as $rombelId) {
+                MonitoringAkses::firstOrCreate([
+                    'guru_id' => $guru->id,
+                    'rombongan_belajar_id' => $rombelId,
+                ]);
+            }
+        });
+
+        return redirect()->route('monitoring.akses')
+            ->with('success', "Akses monitoring {$guru->nama_ptk} diperbarui.");
+    }
+
+    /** Cabut semua akses monitoring satu petugas sekaligus. */
+    public function aksesDestroyAll(Guru $guru)
+    {
+        $count = MonitoringAkses::where('guru_id', $guru->id)->delete();
+        return redirect()->route('monitoring.akses')
+            ->with('success', $count > 0
+                ? "Semua akses monitoring {$guru->nama_ptk} ({$count} kelas) dihapus."
+                : "{$guru->nama_ptk} tidak memiliki akses monitoring.");
+    }
 }

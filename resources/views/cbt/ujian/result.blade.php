@@ -17,17 +17,23 @@
             @endif
         </div>
         @if($quiz->show_score)
-        <div class="grid grid-cols-3 divide-x divide-slate-100">
+        <div class="grid {{ $attempt->partial_count > 0 ? 'grid-cols-4' : 'grid-cols-3' }} divide-x divide-slate-100">
             <div class="p-3 sm:p-5 text-center">
                 <div class="text-2xl font-bold text-emerald-600">{{ $attempt->correct_count }}</div>
                 <div class="text-xs text-ink-500 mt-1">Benar</div>
             </div>
+            @if($attempt->partial_count > 0)
+                <div class="p-3 sm:p-5 text-center">
+                    <div class="text-2xl font-bold text-amber-600">{{ $attempt->partial_count }}</div>
+                    <div class="text-xs text-ink-500 mt-1">Sebagian Benar</div>
+                </div>
+            @endif
             <div class="p-3 sm:p-5 text-center">
                 <div class="text-2xl font-bold text-rose-600">{{ $attempt->wrong_count }}</div>
                 <div class="text-xs text-ink-500 mt-1">Salah</div>
             </div>
             <div class="p-3 sm:p-5 text-center">
-                <div class="text-2xl font-bold text-amber-600">{{ $attempt->empty_count }}</div>
+                <div class="text-2xl font-bold text-slate-500">{{ $attempt->empty_count }}</div>
                 <div class="text-xs text-ink-500 mt-1">Kosong</div>
             </div>
         </div>

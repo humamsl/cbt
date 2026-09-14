@@ -240,10 +240,31 @@ class UjianController extends Controller
             'quiz_question_id' => 'required|exists:quiz_questions,id',
             'question_option_id' => 'nullable|exists:question_options,id',
             'answer_text' => 'nullable|string',
+            // PGK: semua opsi yang dicentang siswa (bisa >1).
+            'question_option_ids' => 'nullable|array',
+            'question_option_ids.*' => 'integer|exists:question_options,id',
+            // Penjodohan: peta {left_option_id: right_option_id pilihan siswa}.
+            'match_pairs' => 'nullable|array',
+            'match_pairs.*' => 'nullable|integer|exists:question_options,id',
         ]);
+
+        // PGK & Penjodohan disimpan sebagai JSON generik di answer_json --
+        // question_option_id (satu nilai) tidak cukup untuk menampung
+        // >1 pilihan (PGK) atau peta kiri->kanan (Penjodohan).
+        $answerJson = null;
+        if (array_key_exists('question_option_ids', $data)) {
+            $answerJson = array_values($data['question_option_ids']);
+        } elseif (array_key_exists('match_pairs', $data)) {
+            $answerJson = $data['match_pairs'];
+        }
+
         QuizAttemptAnswer::updateOrCreate(
             ['quiz_attempt_id' => $attempt->id, 'quiz_question_id' => $data['quiz_question_id']],
-            ['question_option_id' => $data['question_option_id'] ?? null, 'answer_text' => $data['answer_text'] ?? null]
+            [
+                'question_option_id' => $data['question_option_id'] ?? null,
+                'answer_text' => $data['answer_text'] ?? null,
+                'answer_json' => $answerJson,
+            ]
         );
         return response()->json(['ok' => true]);
     }
@@ -339,18 +360,34 @@ class UjianController extends Controller
 
     /*    internal    */
     /**
-     * Bandingkan jawaban siswa dengan kunci jawaban berdasarkan jenis soal.
+     * Hitung pecahan nilai (0.0 - 1.0) yang didapat siswa untuk satu soal,
+     * berdasarkan jenis soal. Dulu fungsi ini ("isAnswerCorrect") cuma
+     * mengembalikan true/false dan menganggap SEMUA jenis soal berbasis
+     * opsi (PG/PGK/Penjodohan) sama-sama "satu question_option_id vs satu
+     * opsi is_correct" -- itu sebabnya di halaman ujian PGK & Penjodohan
+     * dulu ikut dirender radio single-select (lihat show.blade.php) dan,
+     * kalaupun siswa memilih lebih dari satu opsi benar untuk PGK, hanya
+     * opsi is_correct PERTAMA di database yang pernah cocok. Sekarang PGK
+     * & Penjodohan punya cabang sendiri dengan penilaian proporsional;
+     * PG/Benar-salah/Fill-blank tetap hanya menghasilkan 0.0 atau 1.0
+     * seperti sebelumnya.
      *
-     * - Pilihan ganda / benar-salah   → bandingkan question_option_id dengan is_correct
+     * - Pilihan ganda / benar-salah   → cek question_option_id thd opsi is_correct
+     * - PGK (multi-jawaban benar)     → proporsional: (opsi benar terpilih −
+     *                                   opsi salah terpilih) / total opsi benar,
+     *                                   minimal 0 (memilih SEMUA opsi tidak bisa
+     *                                   dipakai buat "aman" dapat nilai penuh)
+     * - Penjodohan                    → proporsional: pasangan yang dicocokkan
+     *                                   benar / total pasangan
      * - Fill the blank                → bandingkan answer_text dengan correct_answer_text
      *                                   - default: case-INsensitive + trim spasi
      *                                   - kalau soal.case_sensitive = true → perlu sama persis huruf besar/kecil
      *                                   - multi-jawaban: pisah pakai "|" di correct_answer_text
      *                                     mis. "Jakarta|DKI Jakarta|Daerah Khusus Ibukota Jakarta"
      */
-    protected function isAnswerCorrect($question, $ans): bool
+    protected function answerScoreFraction($question, $ans): float
     {
-        if (! $question) return false;
+        if (! $question) return 0.0;
 
         $typeSlug = strtolower((string) (optional($question->type)->slug ?? optional($question->type)->question_type ?? ''));
 
@@ -361,7 +398,7 @@ class UjianController extends Controller
 
             // Daftar jawaban benar (pisahkan dengan | untuk multi-jawaban)
             $accepted = array_filter(array_map('trim', explode('|', $key)), fn ($v) => $v !== '');
-            if (empty($accepted)) return false;
+            if (empty($accepted)) return 0.0;
 
             $caseSensitive = (bool) ($question->case_sensitive ?? false);
             $normalize = fn (string $s) => $caseSensitive
@@ -370,14 +407,50 @@ class UjianController extends Controller
 
             $studentNorm = $normalize($student);
             foreach ($accepted as $a) {
-                if ($normalize($a) === $studentNorm) return true;
+                if ($normalize($a) === $studentNorm) return 1.0;
             }
-            return false;
+            return 0.0;
         }
 
-        // PG / PGK / Benar-salah → cek question_option_id terhadap opsi is_correct
+        // PGK: nilai proporsional thd jumlah opsi benar yang berhasil dipilih,
+        // dikurangi opsi salah yang ikut dipilih -- supaya mencentang semua
+        // opsi bukan strategi aman.
+        if ($typeSlug === 'pgk') {
+            $correctIds = $question->options->where('is_correct', true)->pluck('id');
+            $totalCorrect = $correctIds->count();
+            if ($totalCorrect === 0) return 0.0;
+
+            $selectedIds = collect($ans->selectedOptionIds());
+            $correctSelected = $selectedIds->intersect($correctIds)->count();
+            $wrongSelected = $selectedIds->diff($correctIds)->count();
+
+            return max(0.0, ($correctSelected - $wrongSelected) / $totalCorrect);
+        }
+
+        // Penjodohan: nilai proporsional thd jumlah pasangan kiri-kanan yang
+        // dicocokkan dengan benar (dibandingkan lewat pair_group yang sama).
+        if ($typeSlug === 'penjodohan') {
+            $leftOptions = $question->options->where('is_left_side', true);
+            $totalPairs = $leftOptions->count();
+            if ($totalPairs === 0) return 0.0;
+
+            $rightByPairGroup = $question->options->where('is_left_side', false)->keyBy('pair_group');
+            $studentPairs = $ans->matchPairs();
+
+            $correctMatches = 0;
+            foreach ($leftOptions as $left) {
+                $chosenRightId = $studentPairs[$left->id] ?? null;
+                $expectedRight = $rightByPairGroup[$left->pair_group] ?? null;
+                if ($chosenRightId && $expectedRight && $chosenRightId === (int) $expectedRight->id) {
+                    $correctMatches++;
+                }
+            }
+            return $correctMatches / $totalPairs;
+        }
+
+        // PG / Benar-salah → cek question_option_id terhadap opsi is_correct
         $correctOption = $question->options->firstWhere('is_correct', true);
-        return $correctOption && $correctOption->id === $ans->question_option_id;
+        return ($correctOption && $correctOption->id === $ans->question_option_id) ? 1.0 : 0.0;
     }
 
     protected function blockAndFinalize(Quiz $quiz, QuizAttempt $attempt, string $reason): void
@@ -398,17 +471,29 @@ class UjianController extends Controller
 
         DB::transaction(function () use ($quiz, $attempt, $forced) {
             $quiz->load('questions.question.options');
-            $score = 0; $correct = 0; $wrong = 0; $empty = 0;
+            $score = 0; $correct = 0; $wrong = 0; $empty = 0; $partial = 0;
 
             foreach ($quiz->questions as $qq) {
                 $ans = $attempt->answers()->where('quiz_question_id', $qq->id)->first();
-                if (! $ans || (! $ans->question_option_id && ! filled($ans->answer_text))) {
+                $belumDijawab = ! $ans || (
+                    ! $ans->question_option_id
+                    && empty($ans->answer_json)
+                    && ! filled($ans->answer_text)
+                );
+                if ($belumDijawab) {
                     $empty++; continue;
                 }
 
-                $isCorrect = $this->isAnswerCorrect($qq->question, $ans);
-                $ans->update(['is_correct' => $isCorrect]);
-                if ($isCorrect) { $correct++; $score += $qq->marks; }
+                $fraction = $this->answerScoreFraction($qq->question, $ans);
+                $ans->update(['is_correct' => $fraction >= 1.0, 'partial_score' => $fraction]);
+                $score += $qq->marks * $fraction;
+                // PGK/Penjodohan proporsional bisa jatuh di antara 0 dan 1
+                // (mis. cocok 2 dari 3 pasangan) -- itu bukan "Benar" (kurang)
+                // atau "Salah" (masih dapat nilai), jadi dihitung terpisah
+                // sebagai "Sebagian Benar" supaya ringkasan Benar/Salah/Kosong
+                // tidak menyesatkan.
+                if ($fraction >= 1.0) { $correct++; }
+                elseif ($fraction > 0.0) { $partial++; }
                 else { $wrong++; }
             }
 
@@ -443,6 +528,7 @@ class UjianController extends Controller
                 'correct_count' => $correct,
                 'wrong_count' => $wrong,
                 'empty_count' => $empty,
+                'partial_count' => $partial,
                 'is_force_submitted' => $forced,
             ]);
         });

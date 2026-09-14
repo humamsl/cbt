@@ -32,7 +32,7 @@
           pingUrl: '{{ route('siswa.ujian.ping', [$quiz, $attempt]) }}',
           loginUrl: '{{ route('login') }}',
           initialViolations: {{ (int) $attempt->violation_count }},
-          existing: @js($existingAnswers->mapWithKeys(fn ($a) => [$a->quiz_question_id => $a->question_option_id ?? $a->answer_text])->toArray())
+          existing: @js($existingAnswers->mapWithKeys(fn ($a) => [$a->quiz_question_id => $a->answer_json ?? ($a->question_option_id ?? $a->answer_text)])->toArray())
       })">
 
 {{-- ============ START GATE (Vue: ExamStartGate.vue) ============ --}}
@@ -97,6 +97,12 @@
                 $q = $qq->question;
                 $typeSlug = strtolower((string) (optional($q->type)->slug ?? optional($q->type)->question_type ?? ''));
                 $isFillBlank = $typeSlug === 'fill-blank' || $typeSlug === 'fill_blank' || str_contains($typeSlug, 'fill');
+                $isPgk = $typeSlug === 'pgk';
+                $isPenjodohan = $typeSlug === 'penjodohan';
+                $selectedOptionIds = (array) (($existingAnswers[$qq->id] ?? null)?->answer_json ?? []);
+                $existingPairs = $isPenjodohan ? (($existingAnswers[$qq->id] ?? null)?->matchPairs() ?? []) : [];
+                $leftOptions = $isPenjodohan ? $q->options->where('is_left_side', true)->sortBy('order') : collect();
+                $rightOptions = $isPenjodohan ? $q->options->where('is_left_side', false)->sortBy('order') : collect();
             @endphp
             <div class="card card-pad soal-math" id="soal-{{ $qq->id }}">
                 <div class="flex items-center justify-between mb-2">
@@ -112,6 +118,43 @@
                            @change="saveTextAnswer({{ $qq->id }}, $event.target.value)"
                            placeholder="Tulis jawaban Anda di sini..."
                            class="w-full p-3 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none text-sm">
+                @elseif($isPgk)
+                    {{-- PGK: bisa pilih lebih dari satu opsi -- nilai dihitung proporsional
+                         (opsi benar terpilih dikurangi opsi salah terpilih), jadi mencentang
+                         semua opsi BUKAN cara aman dapat nilai penuh. --}}
+                    <p class="text-xs text-brand-600 mb-2">☑ Bisa pilih lebih dari satu jawaban yang benar.</p>
+                    <div class="space-y-2">
+                        @foreach($q->options as $opt)
+                            <label class="flex items-start gap-3 p-3 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50 transition has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50">
+                                <input type="checkbox" name="qm_{{ $qq->id }}[]" value="{{ $opt->id }}"
+                                       @checked(in_array($opt->id, $selectedOptionIds))
+                                       @change="saveMultiAnswer({{ $qq->id }})"
+                                       class="mt-0.5 rounded text-brand-600 focus:ring-brand-500 border-slate-300">
+                                <div class="text-sm prose prose-sm max-w-none">{!! \App\Support\SoalHtml::render($opt->option_text) !!}</div>
+                            </label>
+                        @endforeach
+                    </div>
+                @elseif($isPenjodohan)
+                    {{-- Penjodohan: tiap item kiri dipasangkan ke satu item kanan lewat
+                         dropdown -- nilai dihitung proporsional (jumlah pasangan yang
+                         benar dibagi total pasangan). --}}
+                    <div class="space-y-2">
+                        @foreach($leftOptions as $left)
+                            <div class="flex flex-col sm:flex-row sm:items-center gap-2 p-3 rounded-xl border border-slate-200">
+                                <div class="text-sm font-medium text-ink-800 sm:w-1/2 prose prose-sm max-w-none">{!! \App\Support\SoalHtml::render($left->option_text) !!}</div>
+                                <select name="qp_{{ $qq->id }}_{{ $left->id }}"
+                                        @change="saveMatchAnswer({{ $qq->id }}, {{ $left->id }}, $event.target.value)"
+                                        class="select sm:w-1/2">
+                                    <option value="">-- Pilih pasangan --</option>
+                                    @foreach($rightOptions as $right)
+                                        <option value="{{ $right->id }}" @selected(($existingPairs[$left->id] ?? null) == $right->id)>
+                                            {{ $right->option_text }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        @endforeach
+                    </div>
                 @else
                     <div class="space-y-2">
                         @foreach($q->options as $opt)
@@ -357,6 +400,59 @@ function cbtExam(cfg) {
                     method: 'POST',
                     headers: this.headers(),
                     body: JSON.stringify({ quiz_question_id: qqId, question_option_id: optionId })
+                });
+                if (this.handleKickedResponse(r)) return;
+                if (r.status === 423) { this.goToBlocked(); return; }
+                if (! r.ok) this.markSaveFailed(qqId, previous);
+            } catch (e) { this.markSaveFailed(qqId, previous); }
+        },
+
+        /**
+         * PGK: kumpulkan SEMUA checkbox yang tercentang untuk soal ini (bukan
+         * cuma yang barusan diklik), lalu kirim sebagai array. `answered[qqId]`
+         * sengaja di-delete kalau kosong -- array kosong `[]` tetap truthy di
+         * JS, jadi kalau tidak dicek eksplisit tombol navigasi soal ini akan
+         * tetap kelihatan "terjawab" (hijau) padahal siswa baru saja
+         * membatalkan semua centangannya.
+         */
+        async saveMultiAnswer(qqId) {
+            const checked = Array.from(document.querySelectorAll(`input[name="qm_${qqId}[]"]:checked`))
+                .map(el => parseInt(el.value, 10));
+            const previous = this.answered[qqId];
+            if (checked.length === 0) { delete this.answered[qqId]; } else { this.answered[qqId] = checked; }
+            try {
+                const r = await fetch(this.saveUrl, {
+                    method: 'POST',
+                    headers: this.headers(),
+                    body: JSON.stringify({ quiz_question_id: qqId, question_option_ids: checked })
+                });
+                if (this.handleKickedResponse(r)) return;
+                if (r.status === 423) { this.goToBlocked(); return; }
+                if (! r.ok) this.markSaveFailed(qqId, previous);
+            } catch (e) { this.markSaveFailed(qqId, previous); }
+        },
+
+        /**
+         * Penjodohan: kumpulkan SEMUA dropdown pasangan kiri->kanan untuk soal
+         * ini (bukan cuma yang barusan diubah) jadi satu objek {left_id: right_id},
+         * lalu kirim sekaligus. Sama seperti PGK, "terjawab" hanya menyala kalau
+         * ADA minimal satu pasangan terisi.
+         */
+        async saveMatchAnswer(qqId) {
+            const pairs = {};
+            document.querySelectorAll(`select[name^="qp_${qqId}_"]`).forEach(el => {
+                if (el.value) {
+                    const leftId = el.name.split('_').pop();
+                    pairs[leftId] = parseInt(el.value, 10);
+                }
+            });
+            const previous = this.answered[qqId];
+            if (Object.keys(pairs).length === 0) { delete this.answered[qqId]; } else { this.answered[qqId] = pairs; }
+            try {
+                const r = await fetch(this.saveUrl, {
+                    method: 'POST',
+                    headers: this.headers(),
+                    body: JSON.stringify({ quiz_question_id: qqId, match_pairs: pairs })
                 });
                 if (this.handleKickedResponse(r)) return;
                 if (r.status === 423) { this.goToBlocked(); return; }

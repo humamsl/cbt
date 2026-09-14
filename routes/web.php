@@ -161,6 +161,9 @@ Route::middleware([
         Route::get('/monitoring/akses',              [MonitoringController::class, 'akses'])->name('monitoring.akses');
         Route::post('/monitoring/akses',             [MonitoringController::class, 'aksesStore'])->name('monitoring.akses.store');
         Route::delete('/monitoring/akses/{akses}',   [MonitoringController::class, 'aksesDestroy'])->name('monitoring.akses.destroy');
+        // Edit sekaligus (tambah + hapus kelas dalam satu simpan) & hapus semua akses satu petugas
+        Route::put('/monitoring/akses/petugas/{guru}',    [MonitoringController::class, 'aksesUpdate'])->name('monitoring.akses.update');
+        Route::delete('/monitoring/akses/petugas/{guru}', [MonitoringController::class, 'aksesDestroyAll'])->name('monitoring.akses.destroy-all');
     });
 
     // UJIAN (siswa) — dilindungi proteksi IP bila admin mengaktifkannya
