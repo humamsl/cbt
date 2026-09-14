@@ -44,7 +44,7 @@ use Illuminate\Support\Str;
 class BonusJawabanPgkPenjodohanLama extends Command
 {
     protected $signature = 'ujian:bonus-pgk-penjodohan-lama
-        {--quiz= : Batasi ke satu quiz_id saja (default: semua quiz)}
+        {--quiz= : Batasi ke quiz_id tertentu, pisahkan dgn koma utk lebih dari satu (mis. --quiz=12,15,20). Default: semua quiz}
         {--terapkan : Simpan perubahan. Tanpa opsi ini hanya melaporkan (dry-run)}';
 
     protected $description = 'Beri nilai penuh (bonus) utk jawaban PGK/Penjodohan yg dikerjakan sebelum bug jenis soal itu diperbaiki';
@@ -53,14 +53,28 @@ class BonusJawabanPgkPenjodohanLama extends Command
     {
         $terapkan = (bool) $this->option('terapkan');
 
+        $quizIds = null;
+        if ($this->option('quiz')) {
+            $quizIds = collect(explode(',', $this->option('quiz')))
+                ->map(fn ($v) => (int) trim($v))
+                ->filter()
+                ->values()
+                ->all();
+            if (empty($quizIds)) {
+                $this->error('--quiz diisi tapi tidak ada ID valid yang terbaca.');
+
+                return self::FAILURE;
+            }
+        }
+
         $jawabanLama = QuizAttemptAnswer::query()
             ->whereNotNull('question_option_id')
             ->whereNull('answer_json')
             ->whereHas('quizQuestion.question.type', fn ($q) => $q->whereIn('slug', ['pgk', 'penjodohan']))
-            ->whereHas('attempt', function ($q) {
+            ->whereHas('attempt', function ($q) use ($quizIds) {
                 $q->where('is_done', true);
-                if ($this->option('quiz')) {
-                    $q->where('quiz_id', (int) $this->option('quiz'));
+                if ($quizIds) {
+                    $q->whereIn('quiz_id', $quizIds);
                 }
             })
             ->with(['attempt.quiz.questions', 'quizQuestion.question.type'])
