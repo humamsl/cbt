@@ -334,12 +334,50 @@ export const examProtectionStore = reactive({
 
     attachCommonHandlers() {
         // 1. Tab / window blur
+        //
+        // MOBILE diberi toleransi (grace period) sebelum dicatat sebagai
+        // pelanggaran -- layar terkunci sebentar, notifikasi masuk, telepon
+        // masuk, atau sekadar OS menggeser fokus adalah kejadian NORMAL & SERING
+        // di HP, bukan indikasi mencontek. Tanpa toleransi ini, satu kejadian
+        // layar terkunci ~1 detik bisa memicu blur + visibilitychange + pageshow
+        // (persisted) SEKALIGUS -- 2-3 "pelanggaran" dari SATU momen yang sama
+        // sekali -- dan dengan ambang batas default cuma 5, siswa yang wajar
+        // saja (mis. sedang mengecek ulang jawaban lalu layarnya sempat mati)
+        // bisa gampang ke-auto-submit/diblokir tanpa benar-benar berbuat curang.
+        // Pelanggaran BARU dicatat kalau halaman masih tersembunyi setelah
+        // toleransi waktu ini lewat -- itu baru indikasi kuat siswa benar-benar
+        // pindah aplikasi/keluar dalam waktu berarti, bukan sekadar dilirik.
+        //
+        // DESKTOP tidak diberi grace period (perilaku lama dipertahankan persis)
+        // -- pindah tab/window di desktop adalah gestur yang jauh lebih sengaja.
+        const MOBILE_HIDDEN_GRACE_MS = 5000;
+        let hiddenTimer = null;
+
         document.addEventListener('visibilitychange', () => {
-            if (document.hidden) this.logViolation(this.isMobile ? 'app_switch' : 'tab_switch');
+            if (document.hidden) {
+                if (this.isMobile) {
+                    clearTimeout(hiddenTimer);
+                    hiddenTimer = setTimeout(() => {
+                        if (document.hidden) this.logViolation('app_switch');
+                    }, MOBILE_HIDDEN_GRACE_MS);
+                } else {
+                    this.logViolation('tab_switch');
+                }
+            } else {
+                clearTimeout(hiddenTimer);
+            }
         });
-        window.addEventListener('blur', () => this.logViolation('window_blur'));
+        window.addEventListener('blur', () => {
+            // Mobile: blur nyaris selalu berbarengan dengan visibilitychange di
+            // atas (layar kunci, pindah app, notifikasi) -- sudah ditangani lewat
+            // grace period, jadi TIDAK dicatat dobel di sini.
+            if (!this.isMobile) this.logViolation('window_blur');
+        });
         window.addEventListener('pageshow', (e) => {
-            if (e.persisted) this.logViolation('back_forward_cache');
+            // Sama alasannya: di mobile, restore dari bfcache adalah efek
+            // SAMPING dari app-switch yang sama yang sudah (atau belum, kalau
+            // masih dalam toleransi) tercatat lewat visibilitychange di atas.
+            if (e.persisted && !this.isMobile) this.logViolation('back_forward_cache');
         });
 
         // 2. Prevent F12, Ctrl+Shift+I, Ctrl+U, Ctrl+S, Ctrl+P
@@ -510,11 +548,14 @@ export const examProtectionStore = reactive({
 
             // Sesi perangkat ini sudah tidak berlaku (409 = ditendang
             // SingleSessionGuard karena akun login di perangkat lain, 401/419 =
-            // sesi/token sudah hangus). Serahkan ke halaman ujian untuk
+            // sesi/token sudah hangus, r.redirected = middleware auth diam-diam
+            // mengarahkan ke /login dan fetch mengikutinya -- tanpa cek ini,
+            // status akhirnya 200 dan kode di bawah salah mengira laporan
+            // pelanggaran berhasil tersimpan). Serahkan ke halaman ujian untuk
             // memunculkan alert & keluar -- jangan diproses seperti balasan
             // pelanggaran biasa (body-nya memang bukan format itu).
-            if ([409, 401, 419].includes(r.status)) {
-                this.onSessionConflict?.(r.status);
+            if ([409, 401, 419].includes(r.status) || r.redirected) {
+                this.onSessionConflict?.(r.status, r.redirected);
                 return;
             }
 

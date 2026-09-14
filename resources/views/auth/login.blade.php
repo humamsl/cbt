@@ -188,32 +188,58 @@
     // Auto-refresh CSRF token sebelum submit login (anti 419 di mobile).
     // Jika halaman sudah lama dibuka & token kadaluwarsa, kita ambil token baru
     // dari endpoint /csrf-refresh sebelum benar-benar submit form.
+    //
+    // Diberi RETRY + TIMEOUT (sebelumnya tidak ada keduanya): jaringan sekolah
+    // via LAN/WiFi kadang tersendat sesaat -- sebelumnya SEKALI gagal/lambat
+    // langsung "menyerah" dan submit pakai token lama yang sudah pasti basi,
+    // berakhir di halaman 419 mentah (lihat laporan siswa). Sekarang dicoba
+    // sampai 2x dengan batas waktu wajar per percobaan sebelum benar-benar
+    // fallback ke token lama sebagai upaya terakhir.
     document.addEventListener('DOMContentLoaded', () => {
         const form = document.getElementById('login-form');
         const tokenInput = document.getElementById('csrf-token-input');
+        const submitBtn = form?.querySelector('button[type="submit"]');
         if (! form || ! tokenInput) return;
+
+        async function fetchFreshToken(timeoutMs) {
+            const ctrl = new AbortController();
+            const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+            try {
+                const res = await fetch("{{ route('csrf.refresh') }}", {
+                    method: 'GET',
+                    credentials: 'same-origin',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
+                    signal: ctrl.signal,
+                });
+                if (! res.ok) return null;
+                const data = await res.json();
+                return data?.token || null;
+            } catch (err) {
+                return null; // timeout atau jaringan gagal
+            } finally {
+                clearTimeout(timer);
+            }
+        }
 
         let submitting = false;
         form.addEventListener('submit', async (e) => {
             if (submitting) return;
             e.preventDefault();
             submitting = true;
-            try {
-                const res = await fetch("{{ route('csrf.refresh') }}", {
-                    method: 'GET',
-                    credentials: 'same-origin',
-                    headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
-                });
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data && data.token) tokenInput.value = data.token;
-                    // sync meta tag juga
-                    const meta = document.querySelector('meta[name="csrf-token"]');
-                    if (meta && data && data.token) meta.setAttribute('content', data.token);
-                }
-            } catch (err) {
-                // network gagal — tetap submit dengan token yang ada
+            if (submitBtn) { submitBtn.disabled = true; submitBtn.dataset.originalHtml = submitBtn.innerHTML; submitBtn.textContent = 'Menghubungkan...'; }
+
+            // Percobaan 1 (3 detik), kalau gagal coba sekali lagi (3 detik) --
+            // baru setelah KEDUANYA gagal, submit apa adanya dengan token yang
+            // sudah ada (mungkin masih valid kalau halaman baru saja dimuat).
+            let token = await fetchFreshToken(3000);
+            if (! token) token = await fetchFreshToken(3000);
+
+            if (token) {
+                tokenInput.value = token;
+                const meta = document.querySelector('meta[name="csrf-token"]');
+                if (meta) meta.setAttribute('content', token);
             }
+
             form.submit();
         });
     });

@@ -53,6 +53,7 @@
                             Ujian dibuka {{ $q->valid_from->format('d M Y \p\u\k\u\l H:i') }}
                         </p>
                     @else
+                        @php($sedang = $st['attempt_sedang'] ?? null)
                         <form method="POST" action="{{ route('siswa.ujian.start', $q) }}" class="mt-4 space-y-2">
                             @csrf
                             @if($q->require_session_token)
@@ -60,8 +61,15 @@
                                        class="input w-full uppercase tracking-widest text-center font-mono">
                                 @error('token', 'quiz'.$q->id)<p class="text-xs text-rose-600">{{ $message }}</p>@enderror
                             @endif
-                            <button class="btn-primary w-full">Mulai Ujian</button>
+                            {{-- Sebelumnya selalu "Mulai Ujian" walau attempt lama sudah ada &
+                                 belum selesai -- siswa yang baru saja ke-logout paksa jadi ragu
+                                 apakah klik ini akan menghapus jawabannya (lihat list.blade.php
+                                 untuk penjelasan lebih lengkap; halaman ini duplikat kartunya). --}}
+                            <button class="btn-primary w-full">{{ $sedang ? 'Lanjutkan Ujian' : 'Mulai Ujian' }}</button>
                         </form>
+                        @if($sedang)
+                            <p class="text-xs text-brand-600 text-center mt-1">Anda punya jawaban tersimpan dari sesi sebelumnya.</p>
+                        @endif
                     @endif
                 </div>
             @empty

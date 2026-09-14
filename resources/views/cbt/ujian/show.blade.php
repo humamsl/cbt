@@ -294,7 +294,7 @@ function cbtExam(cfg) {
 
             // Store juga perlu bisa memunculkan alert ini, karena fetch lapor
             // pelanggaran bisa jadi yang lebih dulu kena 409 daripada heartbeat.
-            examProtectionStore.onSessionConflict = (status) => this.handleKickedResponse({ status });
+            examProtectionStore.onSessionConflict = (status, redirected) => this.handleKickedResponse({ status, redirected });
         },
 
         startTimer() {
@@ -334,6 +334,17 @@ function cbtExam(cfg) {
          * 401/419 ikut ditangani supaya siswa tidak pernah terdampar di halaman
          * ujian yang sudah mati -- mis. kalau request pertama pasca-tendangan
          * kebetulan gagal karena jaringan, yang tersisa hanya 401/419.
+         *
+         * r.redirected: SEBELUMNYA TIDAK DICEK SAMA SEKALI -- kalau sesi sudah
+         * mati, middleware auth me-redirect (302) ke /login, dan fetch() secara
+         * DIAM-DIAM MENGIKUTI redirect itu lalu mengembalikan status 200 (HTML
+         * halaman login), bukan error. Kode lama membaca "200 OK" sebagai
+         * "jawaban tersimpan" padahal TIDAK ADA YANG TERSIMPAN SAMA SEKALI --
+         * inilah penyebab laporan "jawaban tidak tersimpan, tanpa peringatan
+         * apa pun". r.redirected bernilai true persis pada kasus ini, jadi
+         * dicek di sini supaya SEMUA pemanggil (saveAnswer, saveTextAnswer,
+         * saveMultiAnswer, saveMatchAnswer, heartbeat, lapor pelanggaran) ikut
+         * terlindungi otomatis lewat satu titik ini.
          */
         handleKickedResponse(r) {
             if (r.status === 409) {
@@ -343,10 +354,10 @@ function cbtExam(cfg) {
                 );
                 return true;
             }
-            if (r.status === 401 || r.status === 419) {
+            if (r.status === 401 || r.status === 419 || r.redirected) {
                 this.showKicked(
                     'Sesi ujian Anda sudah berakhir',
-                    'Sesi login di perangkat ini sudah tidak berlaku. Jawaban yang sudah tersimpan tetap aman — silakan login kembali untuk melanjutkan.'
+                    'Sesi login di perangkat ini sudah tidak berlaku. Jawaban TERAKHIR mungkin belum sempat tersimpan -- silakan login kembali, lalu periksa ulang jawaban Anda sebelum melanjutkan.'
                 );
                 return true;
             }

@@ -3,6 +3,9 @@
 
 @section('content')
 <x-page-header title="Daftar Ujian Tersedia" subtitle="Pilih ujian untuk dikerjakan"/>
+{{-- Flash error/success (mis. "waktu ujian sudah berakhir" dari start()) sudah
+     ditampilkan otomatis oleh layouts/app.blade.php di atas @yield('content'),
+     tidak perlu diulang di sini. --}}
 
 <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
     @forelse($quizzes as $q)
@@ -42,6 +45,7 @@
                     Ujian dibuka {{ $q->valid_from->format('d M Y \p\u\k\u\l H:i') }}
                 </p>
             @else
+                @php($sedang = $st['attempt_sedang'] ?? null)
                 <form method="POST" action="{{ route('siswa.ujian.start', $q) }}" class="mt-4 space-y-2">
                     @csrf
                     @if($q->require_session_token)
@@ -49,8 +53,18 @@
                                class="input w-full uppercase tracking-widest text-center font-mono">
                         @error('token', 'quiz'.$q->id)<p class="text-xs text-rose-600">{{ $message }}</p>@enderror
                     @endif
-                    <button class="btn-primary w-full">Mulai Ujian <x-icon name="arrow-right" class="w-4 h-4"/></button>
+                    {{-- Sebelumnya selalu "Mulai Ujian" walau attempt lama sudah ada &
+                         belum selesai (start() tetap melanjutkan attempt itu, tapi
+                         labelnya menyesatkan seolah mau mulai baru -- siswa yang baru
+                         saja ke-logout paksa jadi ragu apakah klik ini akan menghapus
+                         jawabannya). --}}
+                    <button class="btn-primary w-full">
+                        {{ $sedang ? 'Lanjutkan Ujian' : 'Mulai Ujian' }} <x-icon name="arrow-right" class="w-4 h-4"/>
+                    </button>
                 </form>
+                @if($sedang)
+                    <p class="text-xs text-brand-600 text-center mt-1">Anda punya jawaban tersimpan dari sesi sebelumnya — lanjutkan dari situ.</p>
+                @endif
             @endif
         </div>
     @empty
