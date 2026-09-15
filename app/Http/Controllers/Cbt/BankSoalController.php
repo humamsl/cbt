@@ -194,7 +194,7 @@ class BankSoalController extends Controller
     public function update(Request $r, Question $bankSoal, ImageLocalizer $localizer)
     {
         $this->assertBolehKelolaSoal($r->user(), $bankSoal);
-        $this->assertSoalTidakSedangDipakai($bankSoal);
+        $this->assertSoalBolehDiedit($bankSoal);
 
         $this->localizeRequestImages($r, $localizer);
 
@@ -280,25 +280,68 @@ class BankSoalController extends Controller
     }
 
     /**
-     * Tolak edit/hapus soal yang masih terpasang di tes yang SUDAH punya
-     * siswa mengerjakan (attempt apa pun -- lagi jalan maupun sudah selesai).
+     * Tolak EDIT soal yang masih terpasang di tes yang MASIH BERLANGSUNG
+     * (belum berstatus "Selesai" -- lihat Quiz::getStatusAttribute()) dan
+     * sudah ada siswa mengerjakan.
      *
-     * KENAPA: BankSoalController::update() (lewat syncOptionsByType()) selalu
-     * menghapus SEMUA pilihan jawaban lama lalu membuat yang baru dari nol,
-     * apa pun field yang sebenarnya diubah guru. quiz_attempt_answers.
-     * question_option_id memakai nullOnDelete (lihat migrasi create_cbt_tables)
-     * -- bukan dihapus, tapi jawaban siswa yang sudah tersimpan jadi
-     * "terputus" (null) begitu opsi lamanya hilang: siswa yang masih
-     * mengerjakan akan dinilai pakai kunci jawaban BARU tanpa sadar, dan
-     * siswa yang sudah selesai akan terlihat "belum menjawab" soal itu di
-     * halaman Lihat Jawaban walau nilai akhirnya sendiri tidak berubah.
-     * Menghapus soal (destroy) lebih parah lagi: soalnya jadi soft-deleted
-     * sehingga $qq->question bernilai null dan me-crash halaman ujian siswa
-     * yang masih mengerjakan, serta membuat soal itu otomatis dianggap SALAH
-     * untuk semua peserta saat dinilai.
+     * KENAPA DIBATASI SAAT MASIH BERLANGSUNG: update() (lewat
+     * syncOptionsByType()) selalu menghapus SEMUA pilihan jawaban lama lalu
+     * membuat yang baru dari nol, apa pun field yang sebenarnya diubah guru.
+     * Kalau tesnya masih berjalan, siswa yang BELUM submit bisa dinilai
+     * pakai kunci jawaban BARU tanpa sadar -- itu yang mau dicegah di sini.
+     *
+     * KENAPA DIIZINKAN SETELAH "Selesai": begitu valid_upto lewat, tidak ada
+     * lagi siswa yang bisa memulai/melanjutkan attempt (lihat
+     * UjianController::start() -- sudah_berakhir menolak), jadi risiko
+     * "dinilai pakai kunci baru di tengah jalan" itu sudah tidak mungkin
+     * terjadi lagi. Guru justru butuh ini untuk memperbaiki soal yang
+     * ternyata salah (mis. opsi/kunci PGK keliru) SETELAH tesnya selesai
+     * dikerjakan -- sebelumnya blokir ini permanen selamanya walau pesan
+     * errornya sendiri menjanjikan "tunggu tes selesai" seolah akan terbuka.
+     *
+     * quiz_attempt_answers.question_option_id memakai nullOnDelete (lihat
+     * migrasi create_cbt_tables) -- opsi lama yang dihapus syncOptionsByType()
+     * membuat jawaban siswa yang SUDAH tercatat jadi "terputus" (null) di
+     * halaman Lihat Jawaban (nilai akhirnya sendiri TIDAK berubah, itu kolom
+     * terpisah yang sudah dihitung final saat submit). Ini trade-off yang
+     * diterima secara sadar demi bisa memperbaiki soal yang salah.
+     *
+     * HAPUS (destroy) TIDAK memakai method ini -- tetap diblokir tanpa syarat
+     * lewat assertSoalTidakSedangDipakai() di bawah, karena soft-delete
+     * membuat relasi $qq->question jadi null dan bisa merusak halaman Lihat
+     * Jawaban untuk SELAMANYA, bukan cuma satu kolom opsi yang null.
+     */
+    protected function assertSoalBolehDiedit(Question $soal): void
+    {
+        $terpakai = QuizQuestion::where('question_id', $soal->id)
+            ->whereHas('quiz.attempts')
+            ->with('quiz:id,name,is_published,valid_from,valid_upto')
+            ->get()
+            ->first(fn ($qq) => $qq->quiz && $qq->quiz->status !== 'selesai');
+
+        if ($terpakai) {
+            $pesan = 'Soal ini tidak bisa diedit: tes "'.$terpakai->quiz->name.'" masih berlangsung dan sudah ada siswa mengerjakan -- mengubahnya sekarang bisa membuat siswa yang belum submit dinilai pakai kunci jawaban baru tanpa sadar. Tunggu tes tersebut berstatus Selesai, atau lepas dulu soal ini dari tes itu.';
+
+            abort(back()->with('error', $pesan));
+        }
+    }
+
+    /**
+     * Tolak HAPUS soal yang masih terpasang di tes yang PERNAH punya siswa
+     * mengerjakan (attempt apa pun -- lagi jalan maupun sudah selesai),
+     * TANPA SYARAT status -- beda dari assertSoalBolehDiedit() di atas yang
+     * membuka blokir begitu tes berstatus Selesai.
+     *
+     * KENAPA TIDAK IKUT DIBUKA SETELAH SELESAI: menghapus soal (destroy)
+     * men-soft-delete baris Question-nya, sehingga $qq->question bernilai
+     * null SELAMANYA -- halaman Lihat Jawaban/Hasil untuk tes itu akan error
+     * atau kehilangan soal tersebut kapan pun dibuka di masa depan, bukan
+     * cuma saat tesnya masih berlangsung. Guru yang perlu memperbaiki soal
+     * yang salah dipakai di tes yang sudah selesai cukup EDIT-nya (diizinkan
+     * lewat assertSoalBolehDiedit()), bukan menghapusnya.
      *
      * Kalau soal ini terpasang di tes tapi BELUM ada siswa yang mengerjakan
-     * sama sekali, edit/hapus tetap aman dan diizinkan.
+     * sama sekali, hapus tetap aman dan diizinkan.
      */
     protected function assertSoalTidakSedangDipakai(Question $soal): void
     {
@@ -308,7 +351,7 @@ class BankSoalController extends Controller
             ->first();
 
         if ($terpakai) {
-            $pesan = 'Soal ini tidak bisa diedit/dihapus: sudah dipakai di tes "'.$terpakai->quiz->name.'" yang sudah ada siswa mengerjakan -- mengubahnya bisa merusak jawaban & nilai yang sudah tercatat. Tunggu tes tersebut selesai, atau lepas dulu soal ini dari tes itu kalau memang belum ada yang mengerjakan.';
+            $pesan = 'Soal ini tidak bisa dihapus: sudah dipakai di tes "'.$terpakai->quiz->name.'" yang sudah ada siswa mengerjakan -- menghapusnya akan merusak riwayat jawaban & hasil ujian yang sudah tercatat untuk selamanya. Lepas dulu soal ini dari tes itu kalau memang belum ada yang mengerjakan, atau biarkan saja (bisa tetap diedit kalau tesnya sudah Selesai).';
 
             abort(back()->with('error', $pesan));
         }
