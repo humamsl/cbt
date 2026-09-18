@@ -137,10 +137,6 @@
             <div id="math-preview"
                  class="soal-math prose prose-sm max-w-none border border-brand-200 rounded-lg p-3 bg-brand-50/40 [&_img]:max-w-full"></div>
         </div>
-        <p class="mt-1 text-[11px] text-ink-500">
-            Soal matematika hasil salin dari ChatGPT/Gemini/Wikipedia otomatis jadi LaTeX
-            (<code>\(\sqrt&#123;144&#125;\)</code>) dan dirender sebagai rumus di preview soal maupun halaman ujian siswa.
-        </p>
     </div>
 
     {{-- ====================== PALETTE SIMBOL MATEMATIKA ====================== --}}

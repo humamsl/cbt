@@ -103,10 +103,23 @@ class ImageLocalizer
                 ->withOptions(['allow_redirects' => ['max' => 3]])
                 ->get($url);
             if (! $res->successful()) {
+                \Illuminate\Support\Facades\Log::warning('ImageLocalizer: gagal unduh gambar (HTTP non-2xx)', [
+                    'url' => $url, 'status' => $res->status(),
+                ]);
                 return $this->cache[$src] = null;
             }
             $bytes = $res->body();
-        } catch (\Throwable) {
+        } catch (\Throwable $e) {
+            // Direktori exception di sini SERING kali masalah infrastruktur
+            // (mis. cURL error 77: curl.cainfo di php.ini menunjuk ke path CA
+            // bundle yang tidak ada -- kejadian nyata di server ini, membuat
+            // SEMUA gambar hasil copy-paste dari luar gagal ter-download tanpa
+            // ada tanda apa pun ke guru), bukan sekadar "situs sumber mati".
+            // Sebelumnya exception ini ditelan total (catch tanpa log), jadi
+            // satu-satunya cara mendiagnosis adalah membongkar kode manual.
+            \Illuminate\Support\Facades\Log::warning('ImageLocalizer: gagal unduh gambar (exception)', [
+                'url' => $url, 'error' => $e->getMessage(),
+            ]);
             return $this->cache[$src] = null;
         }
 
