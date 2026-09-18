@@ -13,6 +13,20 @@
         </div>
     </div>
 
+    @if(file_exists(public_path('downloads/aplikasi-cbt-siswa.apk')))
+        <div class="card card-pad flex flex-col sm:flex-row items-center gap-4 bg-emerald-50 border border-emerald-200">
+            <div class="w-12 h-12 rounded-xl bg-emerald-600 text-white grid place-items-center shrink-0 text-2xl">📱</div>
+            <div class="flex-1 text-center sm:text-left">
+                <div class="font-semibold text-ink-900">Aplikasi CBT Siswa (Android) sudah tersedia</div>
+                <div class="text-xs text-ink-600 mt-0.5">Ujian jadi lebih aman &amp; anti-curang — unduh &amp; install di HP Anda, lalu login dengan NISN &amp; password yang sama.</div>
+            </div>
+            <a href="{{ asset('downloads/aplikasi-cbt-siswa.apk') }}" download
+               class="btn-primary w-full sm:w-auto justify-center shrink-0">
+                <x-icon name="download" class="w-4 h-4"/> Download APK
+            </a>
+        </div>
+    @endif
+
     <div>
         <h3 class="text-base font-semibold text-ink-900 mb-3">Ujian Tersedia</h3>
         <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
