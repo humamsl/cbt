@@ -34,6 +34,30 @@
             $selectedOptions = $isPgk
                 ? $q->options->whereIn('id', $a->selectedOptionIds())
                 : collect([$a->option])->filter();
+
+            // Rincian bobot nilai -- partial_score (0.0-1.0) tersimpan untuk
+            // SEMUA jenis soal (lihat UjianController::finalize()), jadi poin
+            // didapat bisa dihitung seragam: pecahan x bobot soal. Untuk
+            // PGK/Penjodohan pecahan itu sendiri dijelaskan lebih rinci di
+            // bawah supaya persentase "Sebagian Benar" tidak terasa ajaib.
+            $marks = (float) ($a->quizQuestion->marks ?? 0);
+            $poinDidapat = (float) ($a->partial_score ?? ($a->is_correct ? 1 : 0)) * $marks;
+
+            $pgkBenarDipilih = $isPgk ? $selectedOptions->pluck('id')->intersect($correctOptions->pluck('id'))->count() : 0;
+            $pgkSalahDipilih = $isPgk ? $selectedOptions->pluck('id')->diff($correctOptions->pluck('id'))->count() : 0;
+            $pgkTotalBenar   = $isPgk ? $correctOptions->count() : 0;
+
+            if ($isPenjodohan) {
+                $penjodohanLeft = $q->options->where('is_left_side', true);
+                $penjodohanRightByGroup = $q->options->where('is_left_side', false)->keyBy('pair_group');
+                $penjodohanStudentPairs = $a->matchPairs();
+                $penjodohanBenar = $penjodohanLeft->filter(function ($left) use ($penjodohanRightByGroup, $penjodohanStudentPairs) {
+                    $chosenId = $penjodohanStudentPairs[$left->id] ?? null;
+                    $expected = $penjodohanRightByGroup[$left->pair_group] ?? null;
+                    return $chosenId && $expected && (int) $chosenId === (int) $expected->id;
+                })->count();
+                $penjodohanTotal = $penjodohanLeft->count();
+            }
         @endphp
         <li class="px-4 sm:px-6 py-4 soal-math">
             <div class="flex items-start justify-between gap-3 mb-2">
@@ -43,6 +67,22 @@
                 @elseif($a->is_correct === false)<span class="badge-danger">Salah</span>
                 @else<span class="badge-muted">-</span>@endif
             </div>
+
+            {{-- Rincian bobot nilai -- supaya persentase "Sebagian Benar" (PGK/
+                 Penjodohan) tidak terasa ajaib, dan tiap jenis soal terlihat
+                 jelas berapa poin yang didapat dari berapa poin bobotnya. --}}
+            <div class="text-xs text-ink-500 mb-2">
+                Bobot soal: <span class="font-semibold text-ink-700">{{ rtrim(rtrim(number_format($marks, 2), '0'), '.') }} poin</span>
+                &middot; Diperoleh: <span class="font-semibold {{ $poinDidapat >= $marks ? 'text-emerald-600' : ($poinDidapat > 0 ? 'text-amber-600' : 'text-rose-600') }}">{{ rtrim(rtrim(number_format($poinDidapat, 2), '0'), '.') }} poin</span>
+                @if($isPgk)
+                    &middot; {{ $pgkBenarDipilih }} opsi benar dipilih @if($pgkSalahDipilih > 0)− {{ $pgkSalahDipilih }} opsi salah dipilih @endif dari {{ $pgkTotalBenar }} total opsi benar
+                    <span class="text-ink-400">({{ $pgkBenarDipilih }}@if($pgkSalahDipilih > 0)−{{ $pgkSalahDipilih }}@endif)/{{ $pgkTotalBenar }} = {{ round((($pgkBenarDipilih - $pgkSalahDipilih) / max($pgkTotalBenar, 1)) * 100) }}%</span>
+                @elseif($isPenjodohan)
+                    &middot; {{ $penjodohanBenar }} dari {{ $penjodohanTotal }} pasangan dicocokkan dengan benar
+                    <span class="text-ink-400">({{ $penjodohanBenar }}/{{ $penjodohanTotal }} = {{ $penjodohanTotal ? round($penjodohanBenar / $penjodohanTotal * 100) : 0 }}%)</span>
+                @endif
+            </div>
+
             <div class="text-sm text-ink-600 mb-2 prose prose-sm max-w-none">{!! $q->question !!}</div>
 
             @if($isPenjodohan)
