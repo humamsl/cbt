@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\AppSetting;
 use App\Models\DatacenterAppSetting;
+use App\Models\PersonalAccessToken;
 use App\Models\Sekolah;
 use App\Support\CopyrightGuard;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -12,6 +13,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Sanctum\Sanctum;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -23,6 +25,12 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Schema::defaultStringLength(191);
+
+        // Lihat docblock App\Models\PersonalAccessToken -- wajib, kalau tidak
+        // token siswa (model-nya di koneksi mysql_datacenter) diam-diam
+        // tersimpan di database yang salah dan aplikasi mobile selalu ditolak
+        // "Unauthenticated" walau baru saja login sukses.
+        Sanctum::usePersonalAccessTokenModel(PersonalAccessToken::class);
 
         // Bagikan pengaturan aplikasi ke semua view
         View::composer('*', function ($view) {

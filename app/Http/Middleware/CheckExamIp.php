@@ -31,6 +31,16 @@ class CheckExamIp
         $clientIp = $this->resolveClientIp($request);
 
         if (! IpUtils::checkIp($clientIp, $rules)) {
+            // Klien API (aplikasi mobile) minta JSON -- balas terstruktur,
+            // bukan halaman Blade yang tidak bisa diparse aplikasi.
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'ok' => false,
+                    'error' => 'ip_blocked',
+                    'message' => 'Perangkat/jaringan ini tidak diizinkan mengakses ujian.',
+                ], 403);
+            }
+
             return response()->view('errors.ip-blocked', [
                 'clientIp' => $clientIp,
                 'rules'    => $rules,

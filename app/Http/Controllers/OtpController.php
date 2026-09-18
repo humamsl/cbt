@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\OtpCode;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Log;
 
 class OtpController extends Controller
 {
@@ -15,13 +14,7 @@ class OtpController extends Controller
         abort_unless($user, 401);
 
         // Generate kode baru jika belum ada / sudah kadaluwarsa
-        $active = OtpCode::where('authable_type', $user::class)
-            ->where('authable_id', $user->id)
-            ->where('purpose', 'login')
-            ->whereNull('used_at')
-            ->where('expires_at', '>', now())
-            ->latest('id')
-            ->first();
+        $active = OtpCode::activeLoginFor($user);
 
         if (! $active) {
             $active = $this->generate($user, $request);
@@ -58,12 +51,7 @@ class OtpController extends Controller
         $user = $request->user();
         abort_unless($user, 401);
 
-        $code = OtpCode::where('authable_type', $user::class)
-            ->where('authable_id', $user->id)
-            ->where('purpose', 'login')
-            ->whereNull('used_at')
-            ->where('expires_at', '>', now())
-            ->latest('id')->first();
+        $code = OtpCode::activeLoginFor($user);
 
         if (! $code || ! Hash::check($request->code, $code->code)) {
             return back()->withErrors(['code' => 'Kode OTP salah atau sudah kadaluwarsa.']);
@@ -78,23 +66,10 @@ class OtpController extends Controller
 
     protected function generate($user, Request $request): OtpCode
     {
-        $plain = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-        $destination = $user->email ?? $user->nomor_hp ?? null;
+        [$otp, $plain] = OtpCode::generateFor($user, $request->ip());
 
-        $otp = OtpCode::create([
-            'authable_type' => $user::class,
-            'authable_id'   => $user->id,
-            'code'          => Hash::make($plain),
-            'purpose'       => 'login',
-            'channel'       => $user->otp_method ?? 'email',
-            'destination'   => $destination,
-            'expires_at'    => now()->addMinutes(5),
-            'ip_address'    => $request->ip(),
-        ]);
-
-        // Kirim OTP — di production sambungkan ke driver mail / WA Gateway.
-        // Untuk development: tulis ke log + simpan di session agar bisa ditampilkan ke developer.
-        Log::info('OTP CBT', ['user_id' => $user->id, 'kode' => $plain, 'tujuan' => $destination]);
+        // Development: simpan di session flash agar masih bisa ditampilkan
+        // tanpa gateway mail/WA asli terpasang.
         if (app()->environment(['local', 'testing'])) {
             session()->flash('dev_otp', $plain);
         }

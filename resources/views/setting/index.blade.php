@@ -17,6 +17,7 @@
     <div class="flex gap-1 bg-white rounded-xl p-1 shadow-soft border border-slate-100 w-fit max-w-full overflow-x-auto">
         @foreach([
             'ip'        => ' Proteksi IP',
+            'app'       => ' Wajib Aplikasi',
             'backup'    => ' Backup',
             'restore'   => ' Restore',
         ] as $key => $label)
@@ -102,6 +103,37 @@
                 ta.focus();
             }
         </script>
+    </div>
+
+    {{-- ============ TAB WAJIB APLIKASI ============ --}}
+    <div x-show="tab==='app'" x-cloak class="space-y-4">
+        <div class="card card-pad space-y-3">
+            <div class="flex items-center justify-between">
+                <h3 class="font-semibold text-ink-900">Wajib Aplikasi CBT Siswa <span class="text-xs font-normal text-ink-500">(Android/iOS)</span></h3>
+                <span x-show="$root.querySelector('[name=app_only_exam_enabled]:checked')" class="badge-success">ON</span>
+                <span x-show="!$root.querySelector('[name=app_only_exam_enabled]:checked')" class="badge-muted">OFF</span>
+            </div>
+            <p class="text-xs text-ink-500">
+                Jika diaktifkan, halaman ujian di WEB/browser akan ditutup untuk siswa (diarahkan ke
+                halaman "Gunakan Aplikasi") — ujian hanya bisa dikerjakan lewat Aplikasi CBT Siswa yang
+                punya proteksi anti-curang lebih kuat (anti-screenshot, kunci ke satu aplikasi).
+            </p>
+        </div>
+
+        <div class="card card-pad space-y-3">
+            <label class="inline-flex items-center gap-2 cursor-pointer">
+                <input type="hidden" name="app_only_exam_enabled" value="0">
+                <input type="checkbox" name="app_only_exam_enabled" value="1"
+                       @checked($app['app_only_exam_enabled'])
+                       class="rounded border-slate-300 text-brand-600 focus:ring-brand-500 w-4 h-4">
+                <span class="text-sm font-medium text-ink-700">Wajibkan ujian hanya lewat Aplikasi CBT Siswa</span>
+            </label>
+            <p class="text-[10px] text-ink-500">
+                Aktifkan HANYA setelah aplikasi sudah dibagikan &amp; ter-install di perangkat semua siswa —
+                jika belum, siswa akan kehilangan akses ujian sama sekali karena web menjadi tertutup.
+                Endpoint aplikasi mobile sendiri (API) tidak pernah terpengaruh oleh pengaturan ini.
+            </p>
+        </div>
     </div>
 
     {{-- Submit --}}

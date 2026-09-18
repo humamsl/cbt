@@ -166,8 +166,8 @@ Route::middleware([
         Route::delete('/monitoring/akses/petugas/{guru}', [MonitoringController::class, 'aksesDestroyAll'])->name('monitoring.akses.destroy-all');
     });
 
-    // UJIAN (siswa) — dilindungi proteksi IP bila admin mengaktifkannya
-    Route::middleware(['role:siswa', 'examip'])->group(function () {
+    // UJIAN (siswa) — dilindungi proteksi IP & (opsional) wajib-aplikasi bila admin mengaktifkannya
+    Route::middleware(['role:siswa', 'examip', 'examapp'])->group(function () {
         Route::get('/ujian', [UjianController::class, 'index'])->name('siswa.ujian.index');
         Route::post('/ujian/{quiz}/start', [UjianController::class, 'start'])->name('siswa.ujian.start');
         Route::get('/ujian/{quiz}/{attempt}', [UjianController::class, 'show'])->name('siswa.ujian.show');

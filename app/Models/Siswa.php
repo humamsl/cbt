@@ -7,10 +7,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
 class Siswa extends Authenticatable
 {
-    use HasFactory, Notifiable, HasRbac;
+    use HasFactory, Notifiable, HasRbac, HasApiTokens;
 
     /**
      * Baca/tulis langsung ke database Data Center (sumber tunggal), real-time —

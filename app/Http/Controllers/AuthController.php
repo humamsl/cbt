@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Concerns\LogsLoginAttempts;
 use App\Models\Guru;
-use App\Models\LoginAttempt;
 use App\Models\Siswa;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -14,6 +14,8 @@ use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
+    use LogsLoginAttempts;
+
     public const MAX_ATTEMPTS = 5;
     public const LOCK_MINUTES = 15;
 
@@ -126,7 +128,7 @@ class AuthController extends Controller
     {
         $existing = User::where('email', $data['username'])->first();
         if ($existing && ! empty($existing->locked_until) && $existing->locked_until > now()) {
-            $this->logAttempt($request, $data, false);
+            $this->logAttempt($request, $data['username'], $data['role'], false);
             $minutes = now()->diffInMinutes($existing->locked_until);
             throw ValidationException::withMessages([
                 'username' => "Akun dikunci sementara. Coba lagi dalam {$minutes} menit.",
@@ -135,7 +137,7 @@ class AuthController extends Controller
 
         $ok = Auth::guard('admin')->attempt(['email' => $data['username'], 'password' => $data['password']], $remember);
 
-        $this->logAttempt($request, $data, $ok);
+        $this->logAttempt($request, $data['username'], $data['role'], $ok);
         RateLimiter::hit($rateKey, 60 * 10);
 
         if (! $ok) {
@@ -171,7 +173,7 @@ class AuthController extends Controller
 
         $existing = $model::where($usernameField, $data['username'])->first();
         if ($existing && ! empty($existing->locked_until) && $existing->locked_until > now()) {
-            $this->logAttempt($request, $data, false);
+            $this->logAttempt($request, $data['username'], $data['role'], false);
             $minutes = now()->diffInMinutes($existing->locked_until);
             throw ValidationException::withMessages([
                 'username' => "Akun dikunci sementara. Coba lagi dalam {$minutes} menit.",
@@ -180,7 +182,7 @@ class AuthController extends Controller
 
         $ok = Auth::guard($guard)->attempt([$usernameField => $data['username'], 'password' => $data['password']], $remember);
 
-        $this->logAttempt($request, $data, $ok);
+        $this->logAttempt($request, $data['username'], $data['role'], $ok);
         RateLimiter::hit($rateKey, 60 * 10);
 
         if (! $ok) {
@@ -253,50 +255,4 @@ class AuthController extends Controller
         };
     }
 
-    protected function logAttempt(Request $r, array $data, bool $success): void
-    {
-        $ua = (string) $r->userAgent();
-        $parsed = $this->parseUserAgent($ua);
-
-        // Hitung attempt ke-berapa untuk username ini hari ini
-        $attemptNo = LoginAttempt::where('username', $data['username'])
-            ->whereDate('created_at', today())->count() + 1;
-
-        LoginAttempt::create([
-            'username'   => $data['username'],
-            'guard'      => $data['role'],
-            'success'    => $success,
-            'ip_address' => $r->ip(),
-            'user_agent' => substr($ua, 0, 500),
-            'device_type'=> $parsed['device'],
-            'browser'    => $parsed['browser'],
-            'os'         => $parsed['os'],
-            'attempt_no' => $attemptNo,
-        ]);
-    }
-
-    /** Parser sederhana user agent → device/browser/OS */
-    protected function parseUserAgent(string $ua): array
-    {
-        $device = 'desktop';
-        if (preg_match('/iPad|Tablet/i', $ua)) $device = 'tablet';
-        elseif (preg_match('/Mobi|Android|iPhone|iPod|BlackBerry|Opera Mini/i', $ua)) $device = 'mobile';
-
-        $browser = 'Other';
-        if (preg_match('/Edg\//i', $ua)) $browser = 'Edge';
-        elseif (preg_match('/Chrome\//i', $ua)) $browser = 'Chrome';
-        elseif (preg_match('/Firefox\//i', $ua)) $browser = 'Firefox';
-        elseif (preg_match('/Safari\//i', $ua) && ! preg_match('/Chrome|Edg/i', $ua)) $browser = 'Safari';
-        elseif (preg_match('/OPR\/|Opera/i', $ua)) $browser = 'Opera';
-
-        $os = 'Other';
-        if (preg_match('/Windows NT 10/i', $ua)) $os = 'Windows 10/11';
-        elseif (preg_match('/Windows NT/i', $ua)) $os = 'Windows';
-        elseif (preg_match('/Mac OS X/i', $ua)) $os = 'macOS';
-        elseif (preg_match('/Android/i', $ua)) $os = 'Android';
-        elseif (preg_match('/iPhone|iPad|iPod/i', $ua)) $os = 'iOS';
-        elseif (preg_match('/Linux/i', $ua)) $os = 'Linux';
-
-        return compact('device', 'browser', 'os');
-    }
 }

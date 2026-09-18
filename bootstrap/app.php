@@ -7,6 +7,7 @@ use Illuminate\Foundation\Configuration\Middleware;
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
+        api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
@@ -31,6 +32,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'license'        => \App\Http\Middleware\CheckAppExpiry::class,
             'sso'            => \App\Http\Middleware\SingleSessionGuard::class,
             'examip'         => \App\Http\Middleware\CheckExamIp::class,
+            'examapp'        => \App\Http\Middleware\RequireExamApp::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

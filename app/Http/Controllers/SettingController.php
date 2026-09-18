@@ -18,8 +18,9 @@ class SettingController extends Controller
     {
         return view('setting.index', [
             'app' => [
-                'ip_protection_enabled' => (bool) AppSetting::get('ip_protection_enabled', false),
-                'allowed_ips'           => (string) AppSetting::get('allowed_ips', ''),
+                'ip_protection_enabled'  => (bool) AppSetting::get('ip_protection_enabled', false),
+                'allowed_ips'            => (string) AppSetting::get('allowed_ips', ''),
+                'app_only_exam_enabled'  => (bool) AppSetting::get('app_only_exam_enabled', false),
             ],
             'currentIp' => $this->detectClientIp($request),
             'ipHeaders' => $this->ipHeaders($request),
@@ -75,6 +76,10 @@ class SettingController extends Controller
 
         AppSetting::set('ip_protection_enabled', $enabled ? 1 : 0, 'bool', 'proteksi');
         AppSetting::set('allowed_ips', $raw, 'text', 'proteksi');
+
+        // ---- Wajib Aplikasi Mobile untuk ujian ----
+        AppSetting::set('app_only_exam_enabled', $request->boolean('app_only_exam_enabled') ? 1 : 0, 'bool', 'proteksi');
+
         AppSetting::flush();
 
         return back()->with('success', 'Pengaturan berhasil disimpan.');
