@@ -62,9 +62,20 @@ class HasilController extends Controller
             default            => 'Semua siswa',
         };
 
+        // Judul ujian dipakai sebagai nama file (sama seperti export soal) —
+        // supaya guru tidak lagi menerima file "nilai-siswa" generik yang
+        // gampang tertukar. Prioritas: quiz spesifik dari dropdown > kata
+        // kunci pencarian judul ujian > 'Semua Ujian' kalau tidak difilter.
+        $judulUjian = match (true) {
+            (bool) $r->quiz => optional(Quiz::find($r->quiz))->name ?? 'Semua Ujian',
+            (bool) $r->q    => $r->q,
+            default         => 'Semua Ujian',
+        };
+
         return $svc->exportNilai($attempts, [
             'mapel'  => $mapel,
             'target' => $target,
+            'judul_ujian' => $judulUjian,
             'tahun_ajaran' => optional(\App\Models\TahunAjaran::aktif())->nama_tahun_ajaran ?? '-',
         ]);
     }
@@ -337,11 +348,12 @@ class HasilController extends Controller
         // sudah didokumentasikan di Quiz::scopeUntukSiswa(). Solusinya: ambil
         // dulu siswa_id yang cocok lewat koneksi mysql_datacenter-nya
         // sendiri, baru whereIn() di query quiz_attempts (koneksi cbt).
+        // Pencarian sekarang berdasarkan JUDUL UJIAN (bukan nama/NISN siswa —
+        // sudah ada filter rombel/tingkat terpisah untuk itu). Quiz hidup di
+        // koneksi cbt yang sama dengan quiz_attempts, jadi whereHas aman di
+        // sini (beda dengan Siswa yang lintas database, lihat catatan di atas).
         if ($r->q) {
-            $siswaIds = \App\Models\Siswa::where('nama_siswa', 'like', "%{$r->q}%")
-                ->orWhere('nisn', 'like', "%{$r->q}%")
-                ->pluck('id');
-            $q->whereIn('siswa_id', $siswaIds);
+            $q->whereHas('quiz', fn ($x) => $x->where('name', 'like', "%{$r->q}%"));
         }
         if ($r->quiz)  $q->where('quiz_id', $r->quiz);
         if ($r->mapel) $q->whereHas('quiz', fn ($x) => $x->where('mata_pelajaran_id', $r->mapel));

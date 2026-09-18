@@ -317,6 +317,16 @@ function cbtExam(cfg) {
                     if (r.ok) {
                         const data = await r.json();
                         if (data.blocked) this.goToBlocked();
+                        // Attempt sudah difinalisasi server (mis. mode
+                        // "logout_otomatis" baru terpicu belakangan karena
+                        // laporan pelanggarannya sempat tertunda/offline dan
+                        // baru berhasil terkirim lewat antrean examProtectionStore)
+                        // walau perangkat ini tidak sempat menerima balasannya
+                        // langsung -- ikut keluar ke halaman hasil.
+                        else if (data.done && ! this.autoSubmitted) {
+                            this.autoSubmitted = true;
+                            window.location.replace(window.location.pathname.replace(/\/[^\/]+$/, '') + '/result');
+                        }
                     }
                 } catch (e) { /* jaringan putus sesaat -- coba lagi denyut berikutnya */ }
             }, 10000);

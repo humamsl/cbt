@@ -25,6 +25,7 @@ class ExamViolation extends Model
         'multi_touch'         => 'Sentuhan multi-jari (mobile)',
         'split_screen'        => 'Mode layar terbagi (split-screen)',
         'orientation_change'  => 'Rotasi layar mencurigakan',
+        'screenshot_attempt'  => 'Kemungkinan screenshot (tombol Print Screen)',
     ];
 
     public function attempt()

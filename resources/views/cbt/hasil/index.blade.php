@@ -14,7 +14,7 @@
 @include('cbt.hasil._nav', ['active' => 'index'])
 
 <form class="card card-pad mb-4 grid grid-cols-2 md:grid-cols-5 gap-2">
-    <input name="q" value="{{ request('q') }}" class="input col-span-2" placeholder="Cari NISN / nama siswa...">
+    <input name="q" value="{{ request('q') }}" class="input col-span-2" placeholder="Cari judul ujian...">
     <select name="mapel" class="select">
         <option value="">Semua Mapel</option>
         @foreach($mapelList as $m)

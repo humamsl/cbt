@@ -17,6 +17,7 @@ import { examProtectionStore as store } from '../stores/examProtection';
                 <div>• Jangan pindah tab / window browser</div>
                 <div>• Dilarang copy / paste / klik kanan</div>
                 <div>• Dilarang membuka DevTools (F12)</div>
+                <div :class="store.isMobile ? 'hidden' : ''">• Tombol Print Screen tercatat sebagai pelanggaran</div>
                 <div class="font-semibold text-rose-700 pt-1.5 border-t border-amber-200">
                     Maks. <strong>{{ store.maxViolations }} pelanggaran</strong> — lebih dari itu, ujian <strong>OTOMATIS DIBLOKIR</strong>.
                 </div>

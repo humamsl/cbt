@@ -42,6 +42,7 @@ class HasilReportService
         $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
         $infoLines = [
+            'Ujian          : '.($meta['judul_ujian'] ?? 'Semua Ujian'),
             'Mata Pelajaran : '.($meta['mapel'] ?? '-'),
             'Target         : '.($meta['target'] ?? '-'),
             'Tahun Ajaran   : '.($meta['tahun_ajaran'] ?? '-'),
@@ -109,7 +110,11 @@ class HasilReportService
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
-        return $this->stream($spreadsheet, 'nilai-siswa-' . date('Ymd-His') . '.xlsx');
+        // Nama file ikut judul ujian yang difilter (sama seperti export soal)
+        // supaya tiap file tidak lagi bernama generik "nilai-siswa" yang
+        // rawan tertukar antar ujian saat diunduh berkali-kali.
+        $judul = $meta['judul_ujian'] ?? 'Semua Ujian';
+        return $this->stream($spreadsheet, $this->slug($judul) . '-' . date('Ymd-His') . '.xlsx');
     }
 
     /* ============================================================

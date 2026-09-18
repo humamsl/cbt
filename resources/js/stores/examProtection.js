@@ -33,7 +33,6 @@ export const examProtectionStore = reactive({
     violations: 0,
     showWarning: false,
     lastViolation: '',
-    savingViolation: false,
 
     /** Info (BUKAN pelanggaran): siswa mencoba pinch-zoom yang sedang dikunci. */
     zoomHint: false,
@@ -63,6 +62,23 @@ export const examProtectionStore = reactive({
     _initialized: false,
     _audioCtx: null,
 
+    /* ================= ANTRIAN PELANGGARAN OFFLINE-SAFE =================
+     * LATAR: sebelumnya logViolation() cuma fetch() sekali -- kalau gagal
+     * (jaringan putus, atau siswa sengaja mematikan WiFi CBT lalu pindah ke
+     * paket data), laporannya HILANG PERMANEN tanpa retry, dan hitungan
+     * pelanggaran di server tidak pernah bertambah -- itulah sebabnya mode
+     * "blokir"/"logout_otomatis" terasa "tidak berfungsi" saat siswa keluar
+     * tab lalu memutus jaringan. Sekarang tiap laporan yang gagal terkirim
+     * disimpan di sessionStorage (per attempt, lewat violationUrl sbg key)
+     * dan dicoba ulang otomatis saat: jaringan kembali (event 'online'),
+     * tab kembali terlihat, dan lewat interval berkala -- jadi begitu siswa
+     * kembali online, seluruh pelanggaran yang tertunda langsung dievaluasi
+     * server dan blokir/logout tetap terjadi walau terlambat.
+     */
+    _pendingQueue: [],
+    _flushing: false,
+    _flushIntervalTimer: null,
+
     /**
      * Dipanggil SEKALI secara eksplisit dari resources/js/app.js saat halaman
      * ujian dimuat (bukan dari lifecycle komponen manapun).
@@ -83,6 +99,18 @@ export const examProtectionStore = reactive({
 
         this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
                         || (window.matchMedia && window.matchMedia('(pointer:coarse)').matches);
+
+        // Muat antrean pelanggaran yang gagal terkirim sebelumnya (mis. tab
+        // di-reload saat masih offline) supaya tidak hilang begitu saja, lalu
+        // pasang percobaan-ulang otomatis: saat jaringan kembali ('online'),
+        // saat tab kembali terlihat, DAN lewat interval berkala (jaga-jaga
+        // browser tidak selalu memicu event 'online' dengan andal di mobile).
+        if (this.protectionEnabled) {
+            this._loadQueue();
+            window.addEventListener('online', () => this._flushQueue());
+            this._flushIntervalTimer = setInterval(() => this._flushQueue(), 15000);
+            if (this._pendingQueue.length) this._flushQueue();
+        }
 
         // Cegah klik-kanan/copy/paste/cut selalu aktif SE-HALAMAN, terlepas dari
         // protectionEnabled -- persis seperti directive @contextmenu.prevent
@@ -366,18 +394,49 @@ export const examProtectionStore = reactive({
         const MOBILE_HIDDEN_GRACE_MS = 5000;
         let hiddenTimer = null;
 
+        // Pelanggaran ESKALASI: sebelumnya "keluar tab/app" cuma dicatat SEKALI
+        // per kunjungan keluar, berapa pun lama siswa pergi -- artinya siswa
+        // yang sengaja keluar tab lalu pergi berselancar (mis. ganti ke paket
+        // data) selama bermenit-menit tetap cuma kena 1 pelanggaran, jauh di
+        // bawah ambang batas (default 5) yang memicu blokir/logout. Sekarang,
+        // SELAMA halaman masih tersembunyi, pelanggaran jenis yang sama dicatat
+        // ulang tiap HIDDEN_ESCALATION_MS -- absen sebentar (dilirik notifikasi)
+        // tetap cuma 1 pelanggaran, tapi absen lama otomatis menumpuk sampai
+        // menembus ambang begitu koneksi/tab kembali. Catatan: timer di tab
+        // background BISA di-throttle browser (Chrome menahannya jadi ~1x/menit
+        // setelah beberapa saat) -- tetap jauh lebih baik daripada tidak pernah
+        // terdeteksi sama sekali.
+        const HIDDEN_ESCALATION_MS = 20000;
+        let escalationTimer = null;
+        const startEscalation = (type) => {
+            clearInterval(escalationTimer);
+            escalationTimer = setInterval(() => {
+                if (document.hidden) this.logViolation(type);
+            }, HIDDEN_ESCALATION_MS);
+        };
+        const stopEscalation = () => { clearInterval(escalationTimer); escalationTimer = null; };
+
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) {
                 if (this.isMobile) {
                     clearTimeout(hiddenTimer);
                     hiddenTimer = setTimeout(() => {
-                        if (document.hidden) this.logViolation('app_switch');
+                        if (document.hidden) {
+                            this.logViolation('app_switch');
+                            startEscalation('app_switch');
+                        }
                     }, MOBILE_HIDDEN_GRACE_MS);
                 } else {
                     this.logViolation('tab_switch');
+                    startEscalation('tab_switch');
                 }
             } else {
                 clearTimeout(hiddenTimer);
+                stopEscalation();
+                // Siswa baru kembali -- coba kirim ulang segera pelanggaran yang
+                // tertunda (mis. gagal terkirim saat jaringan sempat putus),
+                // jangan tunggu interval berkala berikutnya.
+                this._flushQueue();
             }
         });
         window.addEventListener('blur', () => {
@@ -403,6 +462,18 @@ export const examProtectionStore = reactive({
             if (blocked) {
                 e.preventDefault();
                 this.logViolation('blocked_key', e.key);
+            }
+
+            // Tombol Print Screen: TIDAK BISA dicegah (OS Windows sudah
+            // menyalin layar ke clipboard sebelum event ini sampai ke
+            // browser), jadi ini murni PENCATATAN sebagai jejak/deteren --
+            // bukan pencegahan. Kombinasi screenshot lain (Win+Shift+S,
+            // Cmd+Shift+3/4 di Mac, tombol Power+Volume di HP) tidak pernah
+            // sampai ke browser sama sekali -- tidak ada API web untuk itu,
+            // jadi TIDAK bisa dideteksi walau dicoba. Jangan janjikan lebih
+            // dari yang benar-benar sanggup dideteksi di sini.
+            if (e.key === 'PrintScreen') {
+                this.logViolation('screenshot_attempt', 'PrintScreen');
             }
         });
 
@@ -538,7 +609,6 @@ export const examProtectionStore = reactive({
 
     async logViolation(type, detail = null) {
         if (!this.protectionEnabled) return;
-        if (this.savingViolation) return;
 
         this.violations++;
         this.lastViolation = type;
@@ -551,12 +621,56 @@ export const examProtectionStore = reactive({
 
         this.onViolationsChanged?.(this.violations);
 
-        this.savingViolation = true;
+        this._deliverViolation({ type, detail, ts: Date.now() });
+    },
+
+    /**
+     * Kirim SATU laporan pelanggaran, dengan jalur berbeda tergantung apakah
+     * halaman sedang terlihat atau tersembunyi:
+     *
+     * - Tersembunyi (siswa sudah pindah tab/app) → pakai navigator.sendBeacon,
+     *   BUKAN fetch. fetch() dari tab yang sedang di-background/ditutup bisa
+     *   dibatalkan begitu saja oleh browser sebelum sempat terkirim; sendBeacon
+     *   memang dirancang browser supaya tetap coba terkirim walau halamannya
+     *   sedang tidak aktif. sendBeacon tidak bisa membaca balasan server (jadi
+     *   blokir/logout baru ketahuan lewat heartbeat ping() berikutnya atau saat
+     *   antrean di-flush), dan tidak mendukung header custom -- makanya CSRF
+     *   token dikirim sebagai field form '_token', bukan header X-CSRF-TOKEN.
+     * - Terlihat → fetch() seperti biasa, bisa langsung baca balasan (blocked/
+     *   logout/409 dst).
+     *
+     * Kapan pun gagal terkirim (offline, sendBeacon ditolak, exception apa
+     * pun), laporan masuk antrean (_enqueue) untuk dicoba ulang nanti --
+     * TIDAK PERNAH dibuang diam-diam seperti sebelumnya.
+     */
+    async _deliverViolation(payload) {
+        // Jaga urutan: coba habiskan antrean lama dulu sebelum laporan baru,
+        // supaya server menerima kronologi pelanggaran apa adanya.
+        if (this._pendingQueue.length) await this._flushQueue();
+
+        if (document.visibilityState === 'hidden' && navigator.sendBeacon) {
+            if (this._sendBeacon(payload)) return;
+            this._enqueue(payload);
+            return;
+        }
+
+        const ok = await this._postViolation(payload);
+        if (!ok) this._enqueue(payload);
+    },
+
+    /**
+     * POST satu laporan lewat fetch. Return true kalau server sudah
+     * menerima & membalas (apa pun isi balasannya) -- false kalau perlu
+     * dicoba ulang (jaringan putus/exception). Balasan 409/401/419/redirect
+     * (sesi mati) DIANGGAP "diterima" (bukan gagal jaringan) supaya tidak
+     * mengantre selamanya untuk sesi yang memang sudah tidak berlaku.
+     */
+    async _postViolation(payload) {
         try {
             const r = await fetch(this.violationUrl, {
                 method: 'POST',
                 headers: this._headers(),
-                body: JSON.stringify({ type, detail }),
+                body: JSON.stringify({ type: payload.type, detail: payload.detail }),
             });
 
             // Sesi perangkat ini sudah tidak berlaku (409 = ditendang
@@ -569,21 +683,78 @@ export const examProtectionStore = reactive({
             // pelanggaran biasa (body-nya memang bukan format itu).
             if ([409, 401, 419].includes(r.status) || r.redirected) {
                 this.onSessionConflict?.(r.status, r.redirected);
-                return;
+                return true;
             }
 
             const data = await r.json();
             if (data.blocked) {
-                // Mode "blokir" -> halaman blokir
                 this.goToBlocked();
             } else if (data.logout) {
-                // Mode "logout_otomatis" -> langsung ke halaman hasil (sudah di-submit di server)
                 window.location.replace(window.location.pathname.replace(/\/[^\/]+$/, '') + '/result');
             }
+            return true;
         } catch (e) {
-            console.error(e);
+            return false;
+        }
+    },
+
+    /** Kirim lewat sendBeacon (dipakai saat halaman tersembunyi). Return false kalau browser menolak antre-kannya. */
+    _sendBeacon(payload) {
+        try {
+            const tokenEl = document.querySelector('meta[name=csrf-token]');
+            if (!tokenEl) return false;
+            const fd = new FormData();
+            fd.append('type', payload.type);
+            if (payload.detail) fd.append('detail', payload.detail);
+            fd.append('_token', tokenEl.content);
+            return navigator.sendBeacon(this.violationUrl, fd);
+        } catch (e) {
+            return false;
+        }
+    },
+
+    _queueStorageKey() {
+        return 'examViolationQueue:' + this.violationUrl;
+    },
+
+    _loadQueue() {
+        try {
+            const raw = sessionStorage.getItem(this._queueStorageKey());
+            this._pendingQueue = raw ? JSON.parse(raw) : [];
+        } catch (e) {
+            this._pendingQueue = [];
+        }
+    },
+
+    _saveQueue() {
+        try {
+            sessionStorage.setItem(this._queueStorageKey(), JSON.stringify(this._pendingQueue));
+        } catch (e) { /* storage penuh/diblokir -- antrean tetap jalan di memori */ }
+    },
+
+    _enqueue(payload) {
+        this._pendingQueue.push(payload);
+        this._saveQueue();
+    },
+
+    /**
+     * Kosongkan antrean SECARA BERURUTAN (bukan paralel) -- kalau laporan
+     * pertama masih gagal (masih offline), berhenti & simpan sisanya untuk
+     * percobaan berikutnya, jangan lompat ke laporan setelahnya (urutan
+     * kronologis pelanggaran penting untuk audit di Monitoring Ujian).
+     */
+    async _flushQueue() {
+        if (this._flushing || this._pendingQueue.length === 0) return;
+        this._flushing = true;
+        try {
+            while (this._pendingQueue.length > 0) {
+                const ok = await this._postViolation(this._pendingQueue[0]);
+                if (!ok) break;
+                this._pendingQueue.shift();
+                this._saveQueue();
+            }
         } finally {
-            this.savingViolation = false;
+            this._flushing = false;
         }
     },
 

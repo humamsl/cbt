@@ -28,6 +28,7 @@ const consequenceText = computed(() => {
         <div>• Jangan pindah tab / window</div>
         <div>• Dilarang copy / paste / klik kanan</div>
         <div>• Dilarang membuka DevTools</div>
+        <div v-show="!store.isMobile">• Tombol Print Screen tercatat sebagai pelanggaran</div>
         <div class="pt-2 mt-2 border-t border-slate-100 text-rose-600 font-semibold">
             {{ consequenceText }}
         </div>
