@@ -120,7 +120,14 @@
                             @forelse($selectedOptions as $opt)
                                 <div>{!! $opt->option_text !!}</div>
                             @empty
-                                {!! $a->answer_text ?: '— kosong —' !!}
+                                {{-- Jawaban isian = teks bebas dari siswa: WAJIB di-escape ({{ }}),
+                                     dan diuji dengan filled() -- bukan `?:` -- karena jawaban "0"
+                                     dianggap falsy oleh PHP dan tampil "kosong" padahal tersimpan. --}}
+                                @if(filled($a->answer_text))
+                                    {{ $a->answer_text }}
+                                @else
+                                    — kosong —
+                                @endif
                             @endforelse
                         </div>
                     </div>

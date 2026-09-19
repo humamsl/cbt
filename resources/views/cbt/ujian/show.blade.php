@@ -65,7 +65,7 @@
             <form method="POST" action="{{ route('siswa.ujian.submit', [$quiz, $attempt]) }}"
                   x-ref="submitForm">
                 @csrf
-                <button type="button" @click="confirmSubmit = true" class="btn-primary text-sm px-3 sm:px-4">Selesai</button>
+                <button type="button" @click="confirmSubmit = true; flushAllText()" class="btn-primary text-sm px-3 sm:px-4">Selesai</button>
             </form>
         </div>
     </div>
@@ -113,9 +113,16 @@
                 <div class="prose prose-sm max-w-none text-ink-700 mb-4">{!! \App\Support\SoalHtml::render($q->question) !!}</div>
 
                 @if($isFillBlank)
+                    {{-- Jawaban dikirim SAAT MENGETIK (debounce), bukan menunggu input
+                         kehilangan fokus: event `change` hanya terpicu saat blur/Enter,
+                         sehingga ketikan terakhir hilang kalau halaman ditinggalkan
+                         tanpa blur (auto-submit waktu habis, atau browser HP yang tidak
+                         mencabut fokus saat tombol ditekan). --}}
                     <input type="text" name="q_{{ $qq->id }}" autocomplete="off"
                            value="{{ ($existingAnswers[$qq->id] ?? null)?->answer_text }}"
-                           @change="saveTextAnswer({{ $qq->id }}, $event.target.value)"
+                           @input="queueTextAnswer({{ $qq->id }}, $event.target.value)"
+                           @change="flushTextAnswer({{ $qq->id }})"
+                           @blur="flushTextAnswer({{ $qq->id }})"
                            placeholder="Tulis jawaban Anda di sini..."
                            class="w-full p-3 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none text-sm">
                 @elseif($isPgk)
@@ -217,7 +224,7 @@
 
         <div class="flex gap-2 mt-5">
             <button type="button" @click="confirmSubmit = false" class="btn-secondary flex-1">Batal</button>
-            <button type="button" @click="confirmSubmit = false; $refs.submitForm.submit()" class="btn-primary flex-1">
+            <button type="button" @click="confirmSubmit = false; submitNow()" class="btn-primary flex-1">
                 Ya, Kirim
             </button>
         </div>
@@ -261,6 +268,18 @@
 
 <script>
 function cbtExam(cfg) {
+    // State jawaban isian (fill-blank). Sengaja di luar objek Alpine: ini
+    // bukan state tampilan, dan Promise/timer tidak perlu (dan tidak boleh)
+    // dibungkus proxy reaktif.
+    const TEXT_DEBOUNCE_MS = 600;
+    const textPending = {};  // qqId -> teks terbaru yang belum dikirim
+    const textTimers  = {};  // qqId -> timer debounce
+    const textChain   = {};  // qqId -> antrean kirim per soal (berurutan, anti salah-urut di server)
+    const textSaved   = {};  // qqId -> teks terakhir yang PASTI sudah tersimpan di server
+    Object.entries(cfg.existing || {}).forEach(([id, v]) => {
+        if (typeof v === 'string') textSaved[id] = v;
+    });
+
     return {
         endsAt: new Date(cfg.endsAt).getTime(),
         saveUrl: cfg.saveUrl,
@@ -277,6 +296,8 @@ function cbtExam(cfg) {
         timeOverShown: false,
         autoSubmitted: false,
         saveError: false,
+        submitting: false,
+        submitRetried: false,
 
         // Perangkat ini ditendang karena akun dipakai login di perangkat lain.
         kicked: false,
@@ -295,6 +316,12 @@ function cbtExam(cfg) {
             // Store juga perlu bisa memunculkan alert ini, karena fetch lapor
             // pelanggaran bisa jadi yang lebih dulu kena 409 daripada heartbeat.
             examProtectionStore.onSessionConflict = (status, redirected) => this.handleKickedResponse({ status, redirected });
+
+            // Siswa pindah aplikasi / layar terkunci / menutup tab saat masih
+            // mengetik: kirim ketikan yang tertunda sekarang juga (fetch memakai
+            // keepalive, jadi tetap terkirim walau halaman sedang ditutup).
+            document.addEventListener('visibilitychange', () => { if (document.hidden) this.flushAllText(); });
+            window.addEventListener('pagehide', () => { this.flushAllText(); });
         },
 
         startTimer() {
@@ -405,8 +432,11 @@ function cbtExam(cfg) {
             if (left === 0 && ! this.autoSubmitted) {
                 this.autoSubmitted = true;
                 this.timeOverShown = true;
-                // Tampilkan banner 1.5 detik supaya siswa sadar, lalu submit
-                setTimeout(() => {
+                // Tampilkan banner 1.5 detik supaya siswa sadar, lalu submit.
+                // Ketikan isian yang masih tertunda (kolom masih fokus, belum
+                // pernah blur) dikirim DULU -- tanpa ini teks terakhir hilang.
+                setTimeout(async () => {
+                    await this.flushBeforeSubmit();
                     const form = document.querySelector('form[action$="/submit"]');
                     if (form) form.submit();
                 }, 1500);
@@ -481,19 +511,111 @@ function cbtExam(cfg) {
             } catch (e) { this.markSaveFailed(qqId, previous); }
         },
 
-        async saveTextAnswer(qqId, text) {
-            const previous = this.answered[qqId];
+        /**
+         * Isian (fill-blank): dipanggil tiap ketikan. Tanda "terjawab" langsung
+         * diperbarui, sedangkan pengiriman ke server ditunda (debounce) supaya
+         * tidak menembak request per huruf.
+         */
+        queueTextAnswer(qqId, text) {
             if (text.trim() === '') { delete this.answered[qqId]; } else { this.answered[qqId] = text; }
+            textPending[qqId] = text;
+            clearTimeout(textTimers[qqId]);
+            textTimers[qqId] = setTimeout(() => this.flushTextAnswer(qqId), TEXT_DEBOUNCE_MS);
+        },
+
+        /**
+         * Kirim SEKARANG ketikan tertunda untuk satu soal (dipanggil saat blur,
+         * Enter, tombol Selesai, dsb). Kirim per soal berurutan lewat textChain.
+         * Mengembalikan Promise<boolean>: true kalau tersimpan.
+         */
+        flushTextAnswer(qqId) {
+            clearTimeout(textTimers[qqId]);
+            delete textTimers[qqId];
+            if (! (qqId in textPending)) return textChain[qqId] || Promise.resolve(true);
+
+            const text = textPending[qqId];
+            delete textPending[qqId];
+            const run = (textChain[qqId] || Promise.resolve(true))
+                .then(() => this.saveTextAnswer(qqId, text));
+            textChain[qqId] = run;
+            return run;
+        },
+
+        /** Kirim semua ketikan isian yang tertunda. true kalau semuanya tersimpan. */
+        async flushAllText() {
+            const ids = new Set([...Object.keys(textPending), ...Object.keys(textChain)]);
+            const results = await Promise.all([...ids].map(id => this.flushTextAnswer(id)));
+            return results.every(ok => ok !== false);
+        },
+
+        /** Sama seperti flushAllText, tapi dibatasi 4 detik supaya submit tidak macet di jaringan mati. */
+        flushBeforeSubmit() {
+            return Promise.race([
+                this.flushAllText(),
+                new Promise(resolve => setTimeout(() => resolve(false), 4000)),
+            ]);
+        },
+
+        /**
+         * Tombol "Ya, Kirim". Ketikan isian dikirim dulu; kalau ada yang gagal
+         * (atau kelamaan) ujian TIDAK langsung ditutup pada klik pertama --
+         * banner gagal-simpan muncul, siswa bisa mencoba lagi. Klik kedua
+         * tetap mengirim apa adanya supaya siswa tidak pernah terjebak.
+         */
+        async submitNow() {
+            if (this.submitting) return;
+            this.submitting = true;
+            const ok = await this.flushBeforeSubmit();
+            if (this.kicked) { this.submitting = false; return; }
+            if (! ok && ! this.submitRetried) {
+                this.submitRetried = true;
+                this.saveError = true;
+                this.submitting = false;
+                return;
+            }
+            this.$refs.submitForm.submit();
+        },
+
+        /** Kirim satu teks isian ke server. Selalu resolve (true/false), tidak pernah reject. */
+        async saveTextAnswer(qqId, text) {
+            const saved = textSaved[qqId];
+            // Tidak ada yang berubah dari yang sudah tersimpan -> lewati.
+            if (text === saved || (saved === undefined && text.trim() === '')) return true;
+
             try {
                 const r = await fetch(this.saveUrl, {
                     method: 'POST',
                     headers: this.headers(),
+                    keepalive: true,
                     body: JSON.stringify({ quiz_question_id: qqId, answer_text: text })
                 });
-                if (this.handleKickedResponse(r)) return;
-                if (r.status === 423) { this.goToBlocked(); return; }
-                if (! r.ok) this.markSaveFailed(qqId, previous);
-            } catch (e) { this.markSaveFailed(qqId, previous); }
+                if (this.handleKickedResponse(r)) return false;
+                if (r.status === 423) { this.goToBlocked(); return false; }
+                if (! r.ok) { this.markTextSaveFailed(qqId, text); return false; }
+                textSaved[qqId] = text;
+                // Pulihkan tanda "terjawab" kalau sempat dibalikkan oleh kegagalan
+                // sebelumnya -- kecuali siswa sudah mengetik lagi (antrean terisi).
+                if (! (qqId in textPending)) {
+                    if (text.trim() === '') { delete this.answered[qqId]; } else { this.answered[qqId] = text; }
+                }
+                return true;
+            } catch (e) {
+                this.markTextSaveFailed(qqId, text);
+                return false;
+            }
+        },
+
+        /**
+         * Gagal simpan isian: tanda "terjawab" dikembalikan ke keadaan yang
+         * benar-benar tersimpan, banner ditampilkan, dan teksnya dimasukkan
+         * lagi ke antrean supaya dicoba ulang otomatis saat flush berikutnya
+         * (mis. saat siswa menekan Selesai) walau siswa tidak mengetik lagi.
+         */
+        markTextSaveFailed(qqId, text) {
+            const saved = textSaved[qqId];
+            if (saved === undefined || saved.trim() === '') { delete this.answered[qqId]; } else { this.answered[qqId] = saved; }
+            if (! (qqId in textPending)) textPending[qqId] = text;
+            this.saveError = true;
         },
 
         /**
