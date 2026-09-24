@@ -95,6 +95,20 @@
         @foreach($quiz->questions as $idx => $qq)
             @php
                 $q = $qq->question;
+            @endphp
+            @if(!$q)
+                {{-- Soal induknya sudah terhapus/hilang dari database tapi baris
+                     quiz_questions-nya masih ada (data yatim) -- render placeholder
+                     supaya satu soal rusak tidak menggagalkan seluruh halaman ujian. --}}
+                <div class="card card-pad" id="soal-{{ $qq->id }}">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="text-xs text-ink-500">Soal {{ $idx + 1 }} dari {{ $quiz->questions->count() }}</div>
+                        <span class="badge-muted">{{ $qq->marks }} poin</span>
+                    </div>
+                    <div class="text-sm text-rose-600">⚠ Soal ini tidak dapat dimuat. Silakan hubungi pengawas ujian.</div>
+                </div>
+            @else
+            @php
                 $typeSlug = strtolower((string) (optional($q->type)->slug ?? optional($q->type)->question_type ?? ''));
                 $isFillBlank = $typeSlug === 'fill-blank' || $typeSlug === 'fill_blank' || str_contains($typeSlug, 'fill');
                 $isPgk = $typeSlug === 'pgk';
@@ -176,6 +190,7 @@
                     </div>
                 @endif
             </div>
+            @endif
         @endforeach
     </div>
 
