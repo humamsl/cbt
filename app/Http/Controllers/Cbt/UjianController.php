@@ -193,9 +193,16 @@ class UjianController extends Controller
         $violationSoundEnabled = $protectionEnabled
             && (bool) ($quiz->violation_sound_enabled ?? true);
 
+        // Jumlah soal yang WAJIB dijawab sebelum tombol "Ya, Kirim" bisa
+        // diklik -- BUKAN quiz->questions->count() mentah, supaya soal yang
+        // memang tidak bisa dijawab (lihat QuizQuestion::isAnswerable()) tidak
+        // menyandera siswa yang sudah menjawab semua soal yang bisa dijawab.
+        $totalSoalWajibDijawab = $quiz->questions->filter->isAnswerable()->count();
+
         return view('cbt.ujian.show', compact(
             'quiz', 'attempt', 'existingAnswers', 'endsAt',
-            'protectionEnabled', 'maxViolations', 'violationSoundEnabled'
+            'protectionEnabled', 'maxViolations', 'violationSoundEnabled',
+            'totalSoalWajibDijawab'
         ));
     }
 
@@ -339,6 +346,25 @@ class UjianController extends Controller
         if ($attempt->is_blocked) {
             return redirect()->route('siswa.ujian.blocked', [$quiz, $attempt]);
         }
+        if ($attempt->is_done) {
+            return redirect()->route('siswa.ujian.result', [$quiz, $attempt]);
+        }
+
+        // Wajib jawab semua soal sebelum bisa kirim manual -- TAPI kalau
+        // waktu sudah habis, submit ini juga yang dipanggil OTOMATIS oleh
+        // tick() di JS (form[action$="/submit"].submit()), jadi harus tetap
+        // lolos apa pun kondisinya supaya siswa tidak pernah terjebak tidak
+        // bisa keluar dari ujian hanya karena ada soal yang belum terjawab.
+        // Guard server-side ini menegakkan aturan yang sama seperti tombol
+        // "Ya, Kirim" di tampilan (jangan andalkan validasi client saja).
+        $endsAt = $attempt->time_start->copy()->addMinutes((int) $quiz->duration);
+        if (now()->lt($endsAt)) {
+            $sisa = $scoring->unansweredRequiredCount($quiz, $attempt);
+            if ($sisa > 0) {
+                return back()->with('error', "Masih ada {$sisa} soal yang belum dijawab. Jawab semua soal terlebih dahulu sebelum mengirim.");
+            }
+        }
+
         $scoring->finalize($quiz, $attempt, forced: false);
         return redirect()->route('siswa.ujian.result', [$quiz, $attempt]);
     }

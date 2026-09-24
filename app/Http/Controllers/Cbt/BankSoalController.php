@@ -340,18 +340,36 @@ class BankSoalController extends Controller
      * yang salah dipakai di tes yang sudah selesai cukup EDIT-nya (diizinkan
      * lewat assertSoalBolehDiedit()), bukan menghapusnya.
      *
-     * Kalau soal ini terpasang di tes tapi BELUM ada siswa yang mengerjakan
-     * sama sekali, hapus tetap aman dan diizinkan.
+     * Kalau soal ini terpasang di tes yang BELUM ada siswa mengerjakan SAMA
+     * SEKALI, hapus MASIH TETAP DIBLOKIR selama tesnya sudah publish dan
+     * belum berstatus Selesai (termasuk yang jadwalnya belum tiba) -- "belum
+     * ada yang mengerjakan" bukan berarti "tidak akan pernah dikerjakan":
+     * begitu jadwalnya tiba/dilanjutkan nanti, soal yang sudah dihapus
+     * (soft-delete) akan membuat $qq->question null dan meledak persis
+     * seperti kasus tes yang sudah berjalan (lihat catatan panjang di atas).
+     * Hanya tes DRAFT (belum publish -- tidak mungkin dibuka siswa sama
+     * sekali) yang aman dihapus soalnya kapan pun.
      */
     protected function assertSoalTidakSedangDipakai(Question $soal): void
     {
         $terpakai = QuizQuestion::where('question_id', $soal->id)
-            ->whereHas('quiz.attempts')
-            ->with('quiz:id,name')
-            ->first();
+            ->with('quiz:id,name,is_published,valid_from,valid_upto')
+            ->get()
+            ->first(fn ($qq) => $qq->quiz && (
+                ($qq->quiz->is_published && $qq->quiz->status !== 'selesai')
+                || $qq->quiz->attempts()->exists()
+            ));
 
         if ($terpakai) {
-            $pesan = 'Soal ini tidak bisa dihapus: sudah dipakai di tes "'.$terpakai->quiz->name.'" yang sudah ada siswa mengerjakan -- menghapusnya akan merusak riwayat jawaban & hasil ujian yang sudah tercatat untuk selamanya. Lepas dulu soal ini dari tes itu kalau memang belum ada yang mengerjakan, atau biarkan saja (bisa tetap diedit kalau tesnya sudah Selesai).';
+            $quiz = $terpakai->quiz;
+            // Prioritaskan alasan "sudah ada siswa mengerjakan" kalau memang
+            // itu yang terjadi -- pesan "walau belum ada siswa mengerjakan"
+            // akan salah/menyesatkan untuk tes yang masih aktif TAPI sudah
+            // ada siswa mengerjakannya juga.
+            $sudahDikerjakan = $quiz->attempts()->exists();
+            $pesan = $sudahDikerjakan
+                ? 'Soal ini tidak bisa dihapus: sudah dipakai di tes "'.$quiz->name.'" yang sudah ada siswa mengerjakan -- menghapusnya akan merusak riwayat jawaban & hasil ujian yang sudah tercatat untuk selamanya. Lepas dulu soal ini dari tes itu kalau memang belum ada yang mengerjakan, atau biarkan saja (bisa tetap diedit kalau tesnya sudah Selesai).'
+                : 'Soal ini tidak bisa dihapus: masih terpasang di tes "'.$quiz->name.'" yang sudah dipublikasikan dan belum berstatus Selesai -- menghapusnya sekarang (walau belum ada siswa mengerjakan) bisa membuat soal ini error saat tesnya nanti dibuka/dilanjutkan siswa. Lepas dulu soal ini dari tes itu, atau tunggu sampai tesnya berstatus Selesai.';
 
             abort(back()->with('error', $pesan));
         }

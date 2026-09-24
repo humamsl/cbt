@@ -613,7 +613,7 @@ class HasilController extends Controller
             $items[] = [
                 'id'              => $qq->id,
                 'title'           => optional($qq->question)->title ?? '-',
-                'tipe'            => optional($qq->question->type ?? null)->question_type ?? '-',
+                'tipe'            => optional(optional($qq->question)->type)->question_type ?? '-',
                 'total_benar'     => $totalBenar,
                 'total_peserta'   => $n,
                 'percent_correct' => $n ? $totalBenar / $n * 100 : 0,

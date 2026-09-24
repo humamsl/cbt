@@ -100,6 +100,38 @@ class ExamScoringService
         return ($correctOption && $correctOption->id === $ans->question_option_id) ? 1.0 : 0.0;
     }
 
+    /**
+     * Hitung jumlah soal WAJIB (yang punya cara untuk dijawab, lihat
+     * QuizQuestion::isAnswerable()) yang masih kosong pada attempt ini.
+     * Dipakai submit() untuk menegakkan aturan "siswa harus menjawab semua
+     * soal dulu baru bisa mengirim" -- TANPA ikut menghitung soal yang
+     * memang tidak mungkin dijawab (soal terhapus, atau PG/PGK/Penjodohan
+     * tanpa opsi sama sekali), supaya satu soal bermasalah tidak menyandera
+     * siswa yang sudah menjawab semua yang bisa dia jawab. Fill-blank SELALU
+     * ikut dihitung wajib di sini walau guru belum mengisi kunci jawabannya.
+     */
+    public function unansweredRequiredCount(Quiz $quiz, QuizAttempt $attempt): int
+    {
+        $quiz->loadMissing('questions.question.options');
+        $answered = $attempt->answers()
+            ->whereIn('quiz_question_id', $quiz->questions->pluck('id'))
+            ->get()->keyBy('quiz_question_id');
+
+        $empty = 0;
+        foreach ($quiz->questions as $qq) {
+            if (! $qq->isAnswerable()) continue;
+
+            $ans = $answered->get($qq->id);
+            $belumDijawab = ! $ans || (
+                ! $ans->question_option_id
+                && empty($ans->answer_json)
+                && ! filled($ans->answer_text)
+            );
+            if ($belumDijawab) $empty++;
+        }
+        return $empty;
+    }
+
     public function blockAndFinalize(Quiz $quiz, QuizAttempt $attempt, string $reason): void
     {
         DB::transaction(function () use ($quiz, $attempt, $reason) {

@@ -20,7 +20,20 @@
     <ul class="divide-y divide-slate-100">
     @foreach($attempt->answers as $idx => $a)
         @php
-            $q = $a->quizQuestion->question;
+            $q = optional($a->quizQuestion)->question;
+        @endphp
+        @if(! $q)
+            {{-- Soal induknya sudah terhapus/hilang dari database (quiz_questions
+                 atau questions-nya) SETELAH siswa menjawabnya -- lihat catatan di
+                 BankSoalController::assertSoalTidakSedangDipakai(). Placeholder di
+                 sini supaya satu soal rusak tidak menggagalkan seluruh halaman
+                 review jawaban attempt ini. --}}
+            <li class="px-4 sm:px-6 py-4">
+                <div class="font-semibold text-ink-900 mb-1">{{ $idx + 1 }}. <span class="text-rose-600">⚠ Soal tidak dapat dimuat</span></div>
+                <div class="text-xs text-ink-500">Soal ini sudah terhapus dari bank soal setelah dijawab siswa.</div>
+            </li>
+        @else
+        @php
             $typeSlug = strtolower((string) (optional($q->type)->slug ?? optional($q->type)->question_type ?? ''));
             $isPgk = $typeSlug === 'pgk';
             $isPenjodohan = $typeSlug === 'penjodohan';
@@ -154,6 +167,7 @@
                 </div>
             @endif
         </li>
+        @endif
     @endforeach
     </ul>
 </div>

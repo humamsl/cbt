@@ -148,9 +148,33 @@ class UjianController extends Controller
 
         $questions = $quiz->questions->map(function ($qq) use ($existingAnswers) {
             $q = $qq->question;
+            $ans = $existingAnswers[$qq->id] ?? null;
+
+            // Soal induknya sudah terhapus/hilang dari database (baris
+            // quiz_questions-nya masih ada, jadi bukan sekadar dilewati diam-diam)
+            // -- balas placeholder yang jelas, JANGAN akses $q->type dkk di bawah
+            // (itu yang sebelumnya bikin request ini 500 "Attempt to read
+            // property on null", persis seperti versi web di show.blade.php).
+            if (! $q) {
+                return [
+                    'quiz_question_id' => $qq->id,
+                    'marks' => $qq->marks,
+                    'type' => null,
+                    'title' => null,
+                    'question_html' => null,
+                    'answerable' => false,
+                    'existing_answer' => null,
+                    'error' => 'Soal ini tidak dapat dimuat. Silakan hubungi pengawas ujian.',
+                ];
+            }
+
             $typeSlug = strtolower((string) (optional($q->type)->slug ?? optional($q->type)->question_type ?? ''));
             $isPenjodohan = $typeSlug === 'penjodohan';
-            $ans = $existingAnswers[$qq->id] ?? null;
+            // `answerable`: false kalau PG/PGK/Penjodohan belum ada opsi sama
+            // sekali -- fill-blank SELALU answerable (lihat
+            // QuizQuestion::isAnswerable(), satu sumber kebenaran yang sama
+            // dipakai versi web) walau guru belum mengisi kunci jawabannya.
+            $answerable = $qq->isAnswerable();
 
             $payload = [
                 'quiz_question_id' => $qq->id,
@@ -158,8 +182,13 @@ class UjianController extends Controller
                 'type' => $typeSlug,
                 'title' => $q->title,
                 'question_html' => ApiHtml::render($q->question),
+                'answerable' => $answerable,
                 'existing_answer' => null,
             ];
+
+            if (! $answerable) {
+                return $payload;
+            }
 
             if ($isPenjodohan) {
                 $payload['left_options'] = $q->options->where('is_left_side', true)->sortBy('order')->values()
@@ -209,6 +238,28 @@ class UjianController extends Controller
         if ($attempt->is_blocked) {
             return response()->json(['ok' => false, 'blocked' => true], 423);
         }
+        if ($attempt->is_done) {
+            return response()->json(['ok' => true, 'attempt_id' => $attempt->id]);
+        }
+
+        // Sama seperti versi web (Cbt\UjianController::submit()): siswa wajib
+        // menjawab semua soal dulu sebelum submit manual, TAPI submit yang
+        // dipicu otomatis oleh timer app saat waktu habis harus tetap lolos
+        // apa pun kondisinya -- dicek dari waktu server, bukan flag dari app,
+        // supaya tidak bisa dilewati begitu saja dari sisi client.
+        $endsAt = $attempt->time_start->copy()->addMinutes((int) $quiz->duration);
+        if (now()->lt($endsAt)) {
+            $sisa = $scoring->unansweredRequiredCount($quiz, $attempt);
+            if ($sisa > 0) {
+                return response()->json([
+                    'ok' => false,
+                    'error' => 'belum_lengkap',
+                    'message' => "Masih ada {$sisa} soal yang belum dijawab. Jawab semua soal terlebih dahulu sebelum mengirim.",
+                    'unanswered_count' => $sisa,
+                ], 422);
+            }
+        }
+
         $scoring->finalize($quiz, $attempt, forced: false);
 
         return response()->json(['ok' => true, 'attempt_id' => $attempt->id]);

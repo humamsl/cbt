@@ -70,6 +70,17 @@
         </div>
     </div>
 
+    {{-- Banner soal belum lengkap terjawab -- muncul setelah server menolak
+         submit manual (klik "Ya, Kirim" saat masih ada soal wajib kosong).
+         Blade biasa (bukan x-show Alpine) karena ini hasil redirect back()
+         setelah full-page form submit, bukan interaksi Alpine di halaman
+         yang sama. --}}
+    @if(session('error'))
+        <div class="bg-rose-600 text-white px-4 py-3 text-center font-bold">
+            ⚠ {{ session('error') }}
+        </div>
+    @endif
+
     {{-- ============ BANNER PELANGGARAN (Vue: ExamViolationBanner.vue) ============ --}}
     <div id="exam-violation-banner-root"></div>
 
@@ -117,6 +128,14 @@
                 $existingPairs = $isPenjodohan ? (($existingAnswers[$qq->id] ?? null)?->matchPairs() ?? []) : [];
                 $leftOptions = $isPenjodohan ? $q->options->where('is_left_side', true)->sortBy('order') : collect();
                 $rightOptions = $isPenjodohan ? $q->options->where('is_left_side', false)->sortBy('order') : collect();
+
+                // Soal yang "ada" tapi tidak punya cara untuk dijawab sama sekali --
+                // PG/PGK/Penjodohan yang opsinya belum diisi guru (fill-blank SELALU
+                // dianggap bisa dijawab, lihat QuizQuestion::isAnswerable()). Tanpa
+                // pengecekan ini form tetap muncul padahal tidak ada apa pun yang
+                // bisa dipilih siswa, dan siswa jadi tersandera aturan "wajib jawab
+                // semua soal" oleh soal yang bukan salahnya.
+                $isAnswerable = $qq->isAnswerable();
             @endphp
             <div class="card card-pad soal-math" id="soal-{{ $qq->id }}">
                 <div class="flex items-center justify-between mb-2">
@@ -126,7 +145,9 @@
                 <div class="font-semibold text-ink-900 mb-3">{{ $q->title }}</div>
                 <div class="prose prose-sm max-w-none text-ink-700 mb-4">{!! \App\Support\SoalHtml::render($q->question) !!}</div>
 
-                @if($isFillBlank)
+                @if(! $isAnswerable)
+                    <p class="text-sm text-rose-600">⚠ Soal ini belum lengkap (belum ada pilihan jawaban dari guru) dan dilewati dari penilaian. Silakan lanjut ke soal berikutnya dan laporkan ke pengawas ujian.</p>
+                @elseif($isFillBlank)
                     {{-- Jawaban dikirim SAAT MENGETIK (debounce), bukan menunggu input
                          kehilangan fokus: event `change` hanya terpicu saat blur/Enter,
                          sehingga ketikan terakhir hilang kalau halaman ditinggalkan
@@ -233,13 +254,24 @@
             <div class="rounded-lg bg-amber-50 border border-amber-200 p-2">
                 <div class="text-amber-700 font-semibold">Belum</div>
                 <div class="text-lg font-bold text-amber-700"
-                     x-text="{{ $quiz->questions->count() }} - Object.keys(answered).length"></div>
+                     x-text="{{ $totalSoalWajibDijawab }} - Object.keys(answered).length"></div>
             </div>
         </div>
 
+        {{-- Aturan: siswa wajib menjawab semua soal dulu baru bisa kirim --
+             tombol "Ya, Kirim" dikunci selama masih ada soal wajib yang kosong
+             (server juga menegakkan ini ulang, lihat UjianController::submit()). --}}
+        <p x-show="({{ $totalSoalWajibDijawab }} - Object.keys(answered).length) > 0" x-cloak
+           class="text-xs text-rose-600 font-semibold mt-3">
+            ⚠ Masih ada soal yang belum dijawab. Jawab semua soal dulu sebelum bisa mengirim.
+        </p>
+
         <div class="flex gap-2 mt-5">
             <button type="button" @click="confirmSubmit = false" class="btn-secondary flex-1">Batal</button>
-            <button type="button" @click="confirmSubmit = false; submitNow()" class="btn-primary flex-1">
+            <button type="button" @click="confirmSubmit = false; submitNow()"
+                    :disabled="({{ $totalSoalWajibDijawab }} - Object.keys(answered).length) > 0"
+                    :class="(({{ $totalSoalWajibDijawab }} - Object.keys(answered).length) > 0) ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''"
+                    class="btn-primary flex-1">
                 Ya, Kirim
             </button>
         </div>
