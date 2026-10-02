@@ -4,6 +4,7 @@ namespace App\Services\Ujian;
 
 use App\Models\Quiz;
 use App\Models\QuizAttempt;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -144,11 +145,87 @@ class ExamScoringService
         });
     }
 
-    public function finalize(Quiz $quiz, QuizAttempt $attempt, bool $forced = false): void
+    /* ===================== WAKTU HABIS TANPA SUBMIT =====================
+       Auto-submit saat waktu habis selama ini HANYA dikerjakan timer di
+       browser/app siswa (tick() di show.blade.php memanggil /submit). Kalau
+       request itu tidak pernah sampai -- server mati karena listrik padam,
+       jaringan sekolah putus, atau siswa menutup browser -- attempt-nya
+       tertinggal "sedang mengerjakan" selamanya dan nilainya tidak pernah
+       dihitung (tampil 0 / kosong di Hasil). Method di bawah ini membuat
+       server sendiri yang menyelesaikan attempt yang sudah lewat waktu,
+       memakai jawaban yang sempat tersimpan (jawaban disimpan per soal
+       lewat saveAnswer, jadi yang sudah dijawab sebelum server mati aman). */
+
+    /**
+     * Jeda setelah waktu habis sebelum server menyelesaikan attempt sendiri,
+     * supaya auto-submit dari browser/app (yang ikut mengirim ketikan isian
+     * terakhir) tetap sempat sampai duluan.
+     */
+    public const TOLERANSI_WAKTU_HABIS_DETIK = 120;
+
+    /** Batas waktu pengerjaan: time_start + durasi ujian (null = tidak bisa dihitung). */
+    public function batasWaktu(Quiz $quiz, QuizAttempt $attempt): ?Carbon
+    {
+        if (! $attempt->time_start || (int) $quiz->duration <= 0) return null;
+
+        return $attempt->time_start->copy()->addMinutes((int) $quiz->duration);
+    }
+
+    /**
+     * Selesaikan attempt kalau waktunya sudah habis (lewat toleransi) tapi
+     * belum pernah disubmit. time_end diisi BATAS WAKTU-nya, bukan saat ini,
+     * supaya durasi pengerjaan tidak ikut terhitung sampai server menyala.
+     * Return true kalau attempt barusan diselesaikan.
+     */
+    public function finalizeIfExpired(Quiz $quiz, QuizAttempt $attempt): bool
+    {
+        if (! $this->sudahKedaluwarsa($quiz, $attempt)) return false;
+
+        $this->finalize($quiz, $attempt, forced: false, timeEnd: $this->batasWaktu($quiz, $attempt));
+        return true;
+    }
+
+    /** Masih "sedang" padahal batas waktu + toleransi sudah lewat? */
+    public function sudahKedaluwarsa(Quiz $quiz, QuizAttempt $attempt): bool
+    {
+        if ($attempt->is_done || $attempt->is_blocked) return false;
+
+        $batas = $this->batasWaktu($quiz, $attempt);
+
+        return $batas && now()->gte($batas->copy()->addSeconds(self::TOLERANSI_WAKTU_HABIS_DETIK));
+    }
+
+    /**
+     * Sapu semua attempt yang masih "sedang" tapi waktunya sudah habis.
+     * Dipanggil dari middleware SelesaikanUjianKedaluwarsa dan command
+     * `ujian:selesaikan-kedaluwarsa`. Return jumlah attempt yang diselesaikan.
+     */
+    public function finalizeExpiredAttempts(?array $quizIds = null): int
+    {
+        $jumlah = 0;
+
+        QuizAttempt::with('quiz')
+            ->where('is_done', false)
+            ->where('is_blocked', false)
+            ->whereNotNull('time_start')
+            ->when($quizIds !== null, fn ($q) => $q->whereIn('quiz_id', $quizIds))
+            ->chunkById(200, function ($attempts) use (&$jumlah) {
+                foreach ($attempts as $attempt) {
+                    // quiz null = registrasi ujiannya sudah dihapus → biarkan
+                    if ($attempt->quiz && $this->finalizeIfExpired($attempt->quiz, $attempt)) {
+                        $jumlah++;
+                    }
+                }
+            });
+
+        return $jumlah;
+    }
+
+    public function finalize(Quiz $quiz, QuizAttempt $attempt, bool $forced = false, ?Carbon $timeEnd = null): void
     {
         if ($attempt->is_done) return;
 
-        DB::transaction(function () use ($quiz, $attempt, $forced) {
+        DB::transaction(function () use ($quiz, $attempt, $forced, $timeEnd) {
             $quiz->load('questions.question.options');
             $score = 0; $correct = 0; $wrong = 0; $empty = 0; $partial = 0;
 
@@ -202,7 +279,7 @@ class ExamScoringService
 
             $attempt->update([
                 'is_done' => true,
-                'time_end' => now(),
+                'time_end' => $timeEnd ?? now(),
                 'score' => $score,
                 'correct_count' => $correct,
                 'wrong_count' => $wrong,

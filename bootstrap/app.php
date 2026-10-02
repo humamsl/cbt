@@ -14,6 +14,9 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         // Middleware global yang berjalan pada setiap request
         $middleware->append(\App\Http\Middleware\UpdateUserLastSeen::class);
+        // Selesaikan ujian yang waktunya habis tapi tak pernah disubmit (mis.
+        // server mati saat ujian) -- tanpa perlu cron, lihat class-nya.
+        $middleware->append(\App\Http\Middleware\SelesaikanUjianKedaluwarsa::class);
 
         // Tambahkan proteksi hak cipta + anti-kloning + license check ke web group
         $middleware->web(append: [
@@ -33,6 +36,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'sso'            => \App\Http\Middleware\SingleSessionGuard::class,
             'examip'         => \App\Http\Middleware\CheckExamIp::class,
             'examapp'        => \App\Http\Middleware\RequireExamApp::class,
+            'ujian.kedaluwarsa' => \App\Http\Middleware\SelesaikanUjianKedaluwarsa::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

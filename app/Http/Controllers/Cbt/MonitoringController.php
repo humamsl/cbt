@@ -13,10 +13,19 @@ use App\Models\Siswa;
 use App\Models\SiswaRombel;
 use App\Models\TahunAjaran;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\DB;
 
-class MonitoringController extends Controller
+class MonitoringController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        // Attempt yang waktunya habis tapi tak pernah disubmit (mis. server
+        // mati saat ujian) diselesaikan dulu sebelum status ditampilkan.
+        return [new Middleware('ujian.kedaluwarsa:langsung', only: ['index', 'detail'])];
+    }
+
     /* ===================== SCOPE UNTUK GURU =====================
        Admin melihat semua ujian. Guru hanya melihat:
        1. registrasi ujian yang DIA buat sendiri (created_by_guru_id), dan

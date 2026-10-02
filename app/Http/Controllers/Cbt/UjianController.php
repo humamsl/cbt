@@ -7,6 +7,7 @@ use App\Models\ExamViolation;
 use App\Models\Quiz;
 use App\Models\QuizAttempt;
 use App\Models\QuizAttemptAnswer;
+use App\Services\Ujian\ExamScoringService;
 use Illuminate\Http\Request;
 
 class UjianController extends Controller
@@ -147,13 +148,16 @@ class UjianController extends Controller
         return redirect()->route('siswa.ujian.show', [$quiz, $attempt]);
     }
 
-    public function show(Quiz $quiz, QuizAttempt $attempt)
+    public function show(Quiz $quiz, QuizAttempt $attempt, ExamScoringService $scoring)
     {
         abort_unless($attempt->siswa_id === request()->user()->id, 403);
 
         if ($attempt->is_blocked) {
             return redirect()->route('siswa.ujian.blocked', [$quiz, $attempt]);
         }
+        // Waktu sudah habis tapi tak pernah tersubmit (mis. server sempat
+        // mati saat ujian) → selesaikan dengan jawaban yang sudah tersimpan.
+        $scoring->finalizeIfExpired($quiz, $attempt);
         if ($attempt->is_done) {
             return redirect()->route('siswa.ujian.result', [$quiz, $attempt]);
         }
@@ -209,6 +213,12 @@ class UjianController extends Controller
     public function blocked(Quiz $quiz, QuizAttempt $attempt)
     {
         abort_unless($attempt->siswa_id === request()->user()->id, 403);
+        // Halaman ujian mengarahkan ke sini setiap kali server menolak (423)
+        // -- termasuk saat attempt sudah SELESAI (waktu habis / submit otomatis),
+        // bukan diblokir. Jangan tampilkan "diblokir" untuk kasus itu.
+        if (! $attempt->is_blocked && $attempt->is_done) {
+            return redirect()->route('siswa.ujian.result', [$quiz, $attempt]);
+        }
         return view('cbt.ujian.blocked', compact('quiz', 'attempt'));
     }
 
@@ -224,9 +234,12 @@ class UjianController extends Controller
      * Status attempt ikut dikembalikan supaya perangkat yang idle juga sadar
      * kalau ujiannya diblokir/diselesaikan dari sisi guru.
      */
-    public function ping(Quiz $quiz, QuizAttempt $attempt, Request $r)
+    public function ping(Quiz $quiz, QuizAttempt $attempt, Request $r, ExamScoringService $scoring)
     {
         abort_unless($attempt->siswa_id === $r->user()->id, 403);
+
+        // Timer di perangkat gagal submit saat waktu habis → server yang selesaikan.
+        $scoring->finalizeIfExpired($quiz, $attempt);
 
         return response()->json([
             'ok'      => true,
@@ -235,9 +248,12 @@ class UjianController extends Controller
         ]);
     }
 
-    public function saveAnswer(Quiz $quiz, QuizAttempt $attempt, Request $r)
+    public function saveAnswer(Quiz $quiz, QuizAttempt $attempt, Request $r, ExamScoringService $scoring)
     {
         abort_unless($attempt->siswa_id === $r->user()->id, 403);
+        // Jawaban yang datang setelah waktu habis (lewat toleransi) tidak
+        // diterima lagi: attempt diselesaikan dengan jawaban yang tersimpan.
+        $scoring->finalizeIfExpired($quiz, $attempt);
         if ($attempt->is_blocked || $attempt->is_done) {
             return response()->json(['ok' => false, 'blocked' => true], 423);
         }

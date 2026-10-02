@@ -12,11 +12,20 @@ use App\Models\Sekolah;
 use App\Models\TingkatKelas;
 use App\Services\Hasil\HasilReportService;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Carbon;
 
-class HasilController extends Controller
+class HasilController extends Controller implements HasMiddleware
 {
     use ScopedToGuruMapel;
+
+    public static function middleware(): array
+    {
+        // Nilai attempt yang waktunya habis tapi tak pernah disubmit (mis.
+        // server mati saat ujian) dihitung dulu sebelum laporan/export dibuat.
+        return [new Middleware('ujian.kedaluwarsa:langsung')];
+    }
 
     /* ============================================================
      * INDEX — daftar nilai semua attempt + filter

@@ -115,13 +115,16 @@ class UjianController extends Controller
         return response()->json(['ok' => true, 'attempt_id' => $attempt->id]);
     }
 
-    public function show(Quiz $quiz, QuizAttempt $attempt, Request $r)
+    public function show(Quiz $quiz, QuizAttempt $attempt, Request $r, ExamScoringService $scoring)
     {
         abort_unless($attempt->siswa_id === $r->user()->id, 403);
 
         if ($attempt->is_blocked) {
             return response()->json(['ok' => false, 'blocked' => true, 'reason' => $attempt->blocked_reason], 423);
         }
+        // Sama seperti versi web: waktu habis tapi tak pernah tersubmit (mis.
+        // server sempat mati) → selesaikan dengan jawaban yang tersimpan.
+        $scoring->finalizeIfExpired($quiz, $attempt);
         if ($attempt->is_done) {
             return response()->json(['ok' => false, 'done' => true]);
         }
