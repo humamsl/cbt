@@ -12,6 +12,7 @@ use App\Models\RombonganBelajar;
 use App\Models\SessionToken;
 use App\Models\TahunAjaran;
 use App\Models\TingkatKelas;
+use App\Models\Topic;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -317,19 +318,88 @@ class TesController extends Controller
 
     public function questions(Quiz $tes, Request $r)
     {
-        $tes->load('questions.question.mapel', 'questions.question.type', 'questions.question.options');
-        $available = Question::with('mapel', 'type', 'options')
+        $tes->load('questions.question.mapel', 'questions.question.type', 'questions.question.options', 'questions.question.topic');
+
+        // Semua soal bank yang boleh dipakai user untuk tes ini, BELUM dikurangi
+        // yang sudah terpasang — jadi dasar daftar topik di filter, supaya topik
+        // yang soalnya sudah habis dipasang tidak tiba-tiba hilang dari pilihan
+        // (padahal masih jadi filter aktif).
+        $bank = Question::query()
             ->when($tes->mata_pelajaran_id, fn ($q) => $q->where('mata_pelajaran_id', $tes->mata_pelajaran_id))
-            ->whereNotIn('id', $tes->questions->pluck('question_id'))
+            ->tap(fn ($q) => $this->scopeBankSoalForUser($q, $r->user()));
+        $belumTerpasang = (clone $bank)->whereNotIn('id', $tes->questions->pluck('question_id'));
+
+        // ?topik=<id> → soal topik itu; ?topik=none → soal tanpa topik
+        $topik = (string) $r->topik;
+        $available = (clone $belumTerpasang)
+            ->with('mapel', 'type', 'options', 'topic')
             ->when($r->q, fn ($q) => $q->where('title', 'like', "%{$r->q}%"))
-            ->tap(fn ($q) => $this->scopeBankSoalForUser($q, $r->user()))
+            ->when($topik === 'none', fn ($q) => $q->whereNull('topic_id'))
+            ->when(ctype_digit($topik), fn ($q) => $q->where('topic_id', (int) $topik))
+            // Urutan pasti: setelah soal dipasang daftar dimuat ulang, soal
+            // lain harus tetap di posisinya (tanpa ORDER BY urutan MySQL bebas).
+            ->orderBy('id')
             ->paginate(10)->withQueryString();
-        return view('cbt.tes.questions', compact('tes', 'available'));
+
+        // Soal terakhir di halaman terakhir baru saja dipasang → halaman ini
+        // kosong; mundur ke halaman terakhir yang masih ada isinya (filter tetap).
+        if ($available->isEmpty() && $available->currentPage() > 1) {
+            return redirect($available->url($available->lastPage()));
+        }
+
+        return view('cbt.tes.questions', [
+            'tes' => $tes,
+            'available' => $available,
+            'topikOptions' => $this->topikFilterOptions($tes, $bank, $belumTerpasang),
+        ]);
+    }
+
+    /**
+     * Pilihan dropdown "Filter Topik" di Kelola Soal: hanya topik yang punya
+     * soal di bank user ini, lengkap dengan jumlah soal yang BELUM terpasang.
+     */
+    protected function topikFilterOptions(Quiz $tes, $bank, $belumTerpasang): array
+    {
+        $sisa = (clone $belumTerpasang)
+            ->selectRaw('topic_id, COUNT(*) as jml')
+            ->groupBy('topic_id')
+            ->pluck('jml', 'topic_id');
+
+        $ujianUmum = ! $tes->mata_pelajaran_id;
+        $tingkatNama = TingkatKelas::dropdown();
+
+        $options = Topic::with('mapel')
+            ->whereIn('id', (clone $bank)->whereNotNull('topic_id')->select('topic_id'))
+            ->get()
+            // Ujian Umum: kelompokkan per mapel dulu, baru nama topik
+            ->sortBy(fn ($t) => ($ujianUmum ? optional($t->mapel)->nama_mapel.'|' : '').$t->topic, SORT_NATURAL | SORT_FLAG_CASE)
+            ->map(fn ($t) => [
+                'id'   => (string) $t->id,
+                'label' => $t->topic,
+                'info' => collect([
+                    $ujianUmum ? optional($t->mapel)->nama_mapel : null,
+                    $t->tingkat ? ($tingkatNama[$t->tingkat] ?? 'Tingkat '.$t->tingkat) : null,
+                ])->filter()->implode(' · '),
+                'jml'  => (int) ($sisa[$t->id] ?? 0),
+            ])
+            ->values()->all();
+
+        if ((clone $bank)->whereNull('topic_id')->exists()) {
+            $options[] = ['id' => 'none', 'label' => 'Tanpa topik', 'info' => '', 'jml' => (int) ($sisa[''] ?? 0)];
+        }
+
+        return $options;
     }
 
     public function attachQuestion(Quiz $tes, Request $r)
     {
         $data = $r->validate(['question_id' => 'required|exists:questions,id', 'marks' => 'nullable|numeric|min:0']);
+
+        // Klik ganda / dua tab terbuka → jangan sampai soal yang sama terpasang dua kali.
+        if ($tes->questions()->where('question_id', $data['question_id'])->exists()) {
+            return $this->soalResponse($r, 'Soal ini sudah ada di tes.', false);
+        }
+
         QuizQuestion::create([
             'quiz_id' => $tes->id,
             'question_id' => $data['question_id'],
@@ -337,10 +407,23 @@ class TesController extends Controller
             'order' => $tes->questions()->max('order') + 1,
         ]);
         $tes->update(['total_marks' => $tes->questions()->sum('marks')]);
-        return back()->with('success', 'Soal ditambahkan ke tes.');
+        return $this->soalResponse($r, 'Soal ditambahkan ke tes.');
     }
 
-    public function detachQuestion(Quiz $tes, QuizQuestion $quizQuestion)
+    /**
+     * Halaman Kelola Soal memasang/melepas soal lewat AJAX (fetch) supaya
+     * halaman tidak reload & filter/pencarian bank soal tidak hilang — balas
+     * JSON untuk itu, dan redirect biasa kalau form dikirim tanpa JavaScript.
+     */
+    protected function soalResponse(Request $r, string $message, bool $ok = true)
+    {
+        if ($r->expectsJson()) {
+            return response()->json(['message' => $message], $ok ? 200 : 422);
+        }
+        return back()->with($ok ? 'success' : 'error', $message);
+    }
+
+    public function detachQuestion(Request $r, Quiz $tes, QuizQuestion $quizQuestion)
     {
         // Menghapus soal dari tes ikut MENGHAPUS PERMANEN jawaban siswa untuk
         // soal itu (quiz_attempt_answers.quiz_question_id cascadeOnDelete —
@@ -353,12 +436,12 @@ class TesController extends Controller
         // duplikat tes-nya (tombol "Duplikat" di daftar Registrasi Ujian)
         // lalu ubah soal di salinannya, bukan mengedit tes yang sudah dipakai.
         if ($tes->attempts()->where('is_done', true)->exists()) {
-            return back()->with('error', 'Soal tidak bisa dihapus: sudah ada siswa yang mengerjakan tes ini — menghapus soal akan menghapus jawaban mereka & mengubah nilai yang sudah tercatat. Duplikat tes ini kalau perlu susunan soal yang berbeda.');
+            return $this->soalResponse($r, 'Soal tidak bisa dihapus: sudah ada siswa yang mengerjakan tes ini — menghapus soal akan menghapus jawaban mereka & mengubah nilai yang sudah tercatat. Duplikat tes ini kalau perlu susunan soal yang berbeda.', false);
         }
 
         $quizQuestion->delete();
         $tes->update(['total_marks' => $tes->questions()->sum('marks')]);
-        return back()->with('success', 'Soal dihapus dari tes.');
+        return $this->soalResponse($r, 'Soal dihapus dari tes.');
     }
 
     /* ===================== EXPORT SOAL UJIAN ===================== */

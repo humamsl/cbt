@@ -14,13 +14,6 @@
         /* Sembunyikan tombol "open in new tab" pada mobile */
         a[href], img { -webkit-touch-callout: none; }
 
-        /* Kunci zoom lapis pertama, di level browser.
-           `pan-x pan-y` = scroll tetap boleh, pinch-zoom & double-tap zoom tidak.
-           Ini menutup celah meta viewport `user-scalable=no` yang sengaja
-           DIABAIKAN iOS Safari. Kenapa zoom dikunci: pinch-zoom mengecilkan
-           angka viewport di Chrome Android sehingga terbaca sebagai layar
-           terbelah oleh detektor anti-curang -- lihat _attachZoomLock() di
-           resources/js/stores/examProtection.js. */
         html, body { touch-action: pan-x pan-y; }
     </style>
 </head>
@@ -353,20 +346,12 @@ function cbtExam(cfg) {
         kickedBody: '',
 
         init() {
-            // Timer HANYA dimulai lewat callback ini -- baik untuk quiz dengan
-            // proteksi aktif (dipanggil oleh examProtectionStore.startExam()
-            // setelah siswa klik "Mulai Ujian") maupun proteksi nonaktif
-            // (dipanggil langsung dari examProtectionStore.init()).
+
             examProtectionStore.onExamStarted = () => { this.startTimer(); this.startHeartbeat(); };
             examProtectionStore.onViolationsChanged = (n) => { this.violations = n; };
 
-            // Store juga perlu bisa memunculkan alert ini, karena fetch lapor
-            // pelanggaran bisa jadi yang lebih dulu kena 409 daripada heartbeat.
             examProtectionStore.onSessionConflict = (status, redirected) => this.handleKickedResponse({ status, redirected });
 
-            // Siswa pindah aplikasi / layar terkunci / menutup tab saat masih
-            // mengetik: kirim ketikan yang tertunda sekarang juga (fetch memakai
-            // keepalive, jadi tetap terkirim walau halaman sedang ditutup).
             document.addEventListener('visibilitychange', () => { if (document.hidden) this.flushAllText(); });
             window.addEventListener('pagehide', () => { this.flushAllText(); });
         },
@@ -377,9 +362,9 @@ function cbtExam(cfg) {
         },
 
         /**
-         * Denyut ke server tiap 10 detik. Halaman ujian nyaris tidak pernah
-         * pindah halaman, jadi tanpa denyut ini perangkat lama baru sadar sudah
-         * ditendang saat siswa kebetulan menjawab soal -- bisa belasan menit.
+         * Ping ke server selama 5 detik sekali untuk mengetahui apakah sesi ujian di perangkat ini masih berlaku. 
+         * Kalau tidak, langsung redirect ke halaman login. Kalau server sudah menandai ujian ini selesai (mis. mode "logout_otomatis" 
+         * baru terpicu belakangan karena laporan pelanggaran sempat tertunda/offline dan baru berhasil terkirim lewat antrean examProtectionStore), ikut redirect ke halaman hasil.
          */
         startHeartbeat() {
             if (! this.pingUrl) return;
@@ -391,45 +376,15 @@ function cbtExam(cfg) {
                     if (r.ok) {
                         const data = await r.json();
                         if (data.blocked) this.goToBlocked();
-                        // Attempt sudah difinalisasi server (mis. mode
-                        // "logout_otomatis" baru terpicu belakangan karena
-                        // laporan pelanggarannya sempat tertunda/offline dan
-                        // baru berhasil terkirim lewat antrean examProtectionStore)
-                        // walau perangkat ini tidak sempat menerima balasannya
-                        // langsung -- ikut keluar ke halaman hasil.
                         else if (data.done && ! this.autoSubmitted) {
                             this.autoSubmitted = true;
                             window.location.replace(window.location.pathname.replace(/\/[^\/]+$/, '') + '/result');
                         }
                     }
                 } catch (e) { /* jaringan putus sesaat -- coba lagi denyut berikutnya */ }
-            }, 10000);
+            }, 5000);
         },
 
-        /**
-         * Deteksi "sesi di perangkat ini sudah tidak berlaku". Return true
-         * kalau sudah ditangani, supaya pemanggil berhenti memproses respons.
-         *
-         *  409 = SingleSessionGuard: akun barusan login di perangkat lain.
-         *        Ini status yang muncul pada request PERTAMA setelah ditendang.
-         *  401 = sesi sudah dihanguskan (request kedua dst, atau sesi kedaluwarsa).
-         *  419 = token CSRF ikut mati bersama sesinya.
-         *
-         * 401/419 ikut ditangani supaya siswa tidak pernah terdampar di halaman
-         * ujian yang sudah mati -- mis. kalau request pertama pasca-tendangan
-         * kebetulan gagal karena jaringan, yang tersisa hanya 401/419.
-         *
-         * r.redirected: SEBELUMNYA TIDAK DICEK SAMA SEKALI -- kalau sesi sudah
-         * mati, middleware auth me-redirect (302) ke /login, dan fetch() secara
-         * DIAM-DIAM MENGIKUTI redirect itu lalu mengembalikan status 200 (HTML
-         * halaman login), bukan error. Kode lama membaca "200 OK" sebagai
-         * "jawaban tersimpan" padahal TIDAK ADA YANG TERSIMPAN SAMA SEKALI --
-         * inilah penyebab laporan "jawaban tidak tersimpan, tanpa peringatan
-         * apa pun". r.redirected bernilai true persis pada kasus ini, jadi
-         * dicek di sini supaya SEMUA pemanggil (saveAnswer, saveTextAnswer,
-         * saveMultiAnswer, saveMatchAnswer, heartbeat, lapor pelanggaran) ikut
-         * terlindungi otomatis lewat satu titik ini.
-         */
         handleKickedResponse(r) {
             if (r.status === 409) {
                 this.showKicked(
@@ -464,7 +419,7 @@ function cbtExam(cfg) {
                     clearInterval(timer);
                     window.location.replace(this.loginUrl);
                 }
-            }, 1000);
+            }, 1500);
         },
 
         tick() {
@@ -505,14 +460,6 @@ function cbtExam(cfg) {
             } catch (e) { this.markSaveFailed(qqId, previous); }
         },
 
-        /**
-         * PGK: kumpulkan SEMUA checkbox yang tercentang untuk soal ini (bukan
-         * cuma yang barusan diklik), lalu kirim sebagai array. `answered[qqId]`
-         * sengaja di-delete kalau kosong -- array kosong `[]` tetap truthy di
-         * JS, jadi kalau tidak dicek eksplisit tombol navigasi soal ini akan
-         * tetap kelihatan "terjawab" (hijau) padahal siswa baru saja
-         * membatalkan semua centangannya.
-         */
         async saveMultiAnswer(qqId) {
             const checked = Array.from(document.querySelectorAll(`input[name="qm_${qqId}[]"]:checked`))
                 .map(el => parseInt(el.value, 10));
@@ -603,12 +550,6 @@ function cbtExam(cfg) {
             ]);
         },
 
-        /**
-         * Tombol "Ya, Kirim". Ketikan isian dikirim dulu; kalau ada yang gagal
-         * (atau kelamaan) ujian TIDAK langsung ditutup pada klik pertama --
-         * banner gagal-simpan muncul, siswa bisa mencoba lagi. Klik kedua
-         * tetap mengirim apa adanya supaya siswa tidak pernah terjebak.
-         */
         async submitNow() {
             if (this.submitting) return;
             this.submitting = true;
@@ -640,8 +581,7 @@ function cbtExam(cfg) {
                 if (r.status === 423) { this.goToBlocked(); return false; }
                 if (! r.ok) { this.markTextSaveFailed(qqId, text); return false; }
                 textSaved[qqId] = text;
-                // Pulihkan tanda "terjawab" kalau sempat dibalikkan oleh kegagalan
-                // sebelumnya -- kecuali siswa sudah mengetik lagi (antrean terisi).
+
                 if (! (qqId in textPending)) {
                     if (text.trim() === '') { delete this.answered[qqId]; } else { this.answered[qqId] = text; }
                 }
@@ -665,18 +605,6 @@ function cbtExam(cfg) {
             this.saveError = true;
         },
 
-        /**
-         * Sebelumnya kegagalan simpan (selain 409/401/419/423 yang sudah
-         * ditangani) DIAM SAJA -- cuma console.error, sementara tanda
-         * "terjawab" di this.answered TETAP menyala hijau karena sudah
-         * di-set optimis sebelum request. Siswa mengira jawabannya
-         * tersimpan padahal server menolak (mis. soal itu baru saja
-         * dihapus dari tes oleh guru -> 422 "quiz_question_id" tidak
-         * valid lagi) atau request gagal jaringan -- dan itu baru
-         * ketahuan setelah submit, saat nilainya sudah telanjur 0.
-         * Balikkan tanda ke keadaan sebelumnya (jujur: belum tersimpan)
-         * dan tampilkan banner supaya siswa tahu harus mengulang.
-         */
         markSaveFailed(qqId, previous) {
             if (previous === undefined) { delete this.answered[qqId]; } else { this.answered[qqId] = previous; }
             this.saveError = true;
