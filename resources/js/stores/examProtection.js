@@ -1,6 +1,16 @@
 import { reactive } from 'vue';
 
 /**
+ * Berapa lama (ms) setelah kolom ketik dilepas, viewport masih dianggap
+ * "dipengaruhi keyboard". Animasi menutup keyboard + event resize di HP
+ * low-end (WebView/aplikasi exam browser) bisa makan >700 ms -- kalau dicek
+ * terlalu cepat, viewport masih kecil dan terbaca split-screen.
+ */
+const KEYBOARD_SETTLE_MS = 1500;
+
+const NON_TYPING_INPUTS = ['checkbox', 'radio', 'button', 'submit', 'reset', 'range', 'color', 'file', 'image', 'hidden'];
+
+/**
  * Shared reactive store untuk proteksi anti-curang ujian siswa.
  *
  * SATU instance untuk seluruh halaman (module ES hanya diinisialisasi sekali
@@ -59,6 +69,9 @@ export const examProtectionStore = reactive({
 
     _warningTimer: null,
     _zoomHintTimer: null,
+    /** Lihat _attachKeyboardTracking(). */
+    _windowFocused: true,
+    _typingBlurAt: 0,
     _initialized: false,
     _audioCtx: null,
 
@@ -162,6 +175,11 @@ export const examProtectionStore = reactive({
         // detektor split-screen di mobile dan detektor DevTools di desktop.
         this._attachZoomLock();
 
+        // Sama alasannya: keyboard virtual (soal isian) mengecilkan viewport,
+        // jadi status "sedang mengetik" harus sudah dilacak sebelum detektor
+        // berbasis ukuran viewport/orientasi dipasang.
+        this._attachKeyboardTracking();
+
         if (!this.isMobile) {
             // === DESKTOP: WAJIB FULLSCREEN ===
             // (Sempat dicoba juga di mobile atas permintaan, tapi di-revert lagi
@@ -192,7 +210,17 @@ export const examProtectionStore = reactive({
             if (screen.orientation && screen.orientation.lock) {
                 try { await screen.orientation.lock('portrait'); } catch (e) {}
             }
+            // Sebagian browser/WebView menghitung orientasi dari ukuran
+            // viewport, bukan layar fisik -- keyboard yang memakan separuh
+            // tinggi membuat viewport "melebar" dan terbaca rotasi. Saat
+            // keyboard terbuka, rotasi baru dipercaya kalau dimensi layar
+            // fisik (screen.width/height) benar-benar tertukar.
+            let screenPortrait = screen.height >= screen.width;
             screen.orientation?.addEventListener('change', () => {
+                const nowPortrait = screen.height >= screen.width;
+                const rotated = nowPortrait !== screenPortrait;
+                screenPortrait = nowPortrait;
+                if (!rotated && this._keyboardLikelyOpen()) return;
                 this.logViolation('orientation_change', screen.orientation?.type);
             });
 
@@ -210,6 +238,42 @@ export const examProtectionStore = reactive({
 
         this.attachCommonHandlers();
         this.onExamStarted?.();
+    },
+
+    _isTypingField(el) {
+        if (!el) return false;
+        if (el.isContentEditable || el.tagName === 'TEXTAREA') return true;
+        return el.tagName === 'INPUT' && !NON_TYPING_INPUTS.includes((el.type || 'text').toLowerCase());
+    },
+
+    /**
+     * Keyboard virtual kemungkinan sedang terbuka -- atau baru saja menutup
+     * (KEYBOARD_SETTLE_MS) -- sehingga ukuran viewport sedang tidak bisa
+     * dipercaya. Selalu false kalau jendela ujian kehilangan fokus: siswa
+     * yang membelah layar lalu mengetuk aplikasi lain tidak boleh lolos
+     * hanya karena kolom isiannya masih berstatus fokus.
+     */
+    _keyboardLikelyOpen() {
+        if (!this._windowFocused) return false;
+        if (this._isTypingField(document.activeElement)) return true;
+        return Date.now() - this._typingBlurAt < KEYBOARD_SETTLE_MS;
+    },
+
+    /**
+     * Status fokus jendela dilacak lewat event, BUKAN document.hasFocus() --
+     * di sebagian WebView (aplikasi exam browser) hasFocus() bisa false walau
+     * siswa sedang mengetik, membuat keyboard terbaca split-screen. Sentuhan/
+     * fokus di halaman juga menandai jendela fokus lagi, jaga-jaga browser
+     * tidak memicu event 'focus' setelah kembali.
+     */
+    _attachKeyboardTracking() {
+        window.addEventListener('blur', () => { this._windowFocused = false; });
+        window.addEventListener('focus', () => { this._windowFocused = true; });
+        document.addEventListener('focusin', () => { this._windowFocused = true; });
+        document.addEventListener('touchstart', () => { this._windowFocused = true; }, { passive: true });
+        document.addEventListener('focusout', (e) => {
+            if (this._isTypingField(e.target)) this._typingBlurAt = Date.now();
+        });
     },
 
     /** Apakah halaman sedang dalam kondisi pinch-zoom (skala > 1). */
@@ -337,26 +401,16 @@ export const examProtectionStore = reactive({
      * Chrome lama, munculnya keyboard (mis. siswa mengetik jawaban soal
      * isian/fill-blank) MENGECILKAN layout viewport ~40-50% tingginya -- persis
      * seperti split-screen atas-bawah, sehingga dulu terbaca 'split_screen'.
-     * Selama kolom ketik sedang fokus (keyboard kemungkinan terbuka), luas
+     * Selama keyboard kemungkinan terbuka (_keyboardLikelyOpen), luas
      * viewport diabaikan dan yang diperiksa hanya LEBAR -- keyboard tidak
-     * pernah mengurangi lebar, split-screen kiri-kanan iya. Begitu kolom ketik
-     * dilepas (keyboard menutup), viewport dicek ulang: kalau masih menyusut,
-     * berarti memang di-split, bukan keyboard. document.hasFocus() ikut
-     * dipakai supaya siswa yang sudah membelah layar lalu mengetuk aplikasi
-     * lain (jendela ujian kehilangan fokus) tidak lolos hanya karena
-     * kolom isiannya masih berstatus fokus.
+     * pernah mengurangi lebar, split-screen kiri-kanan iya. Setelah kolom
+     * ketik dilepas dan keyboard selesai menutup (KEYBOARD_SETTLE_MS),
+     * viewport dicek ulang: kalau masih menyusut, berarti memang di-split.
      */
     _attachSplitScreenDetection() {
         const root = document.documentElement;
         const viewportArea = () => root.clientWidth * root.clientHeight;
-
-        const NON_TYPING_INPUTS = ['checkbox', 'radio', 'button', 'submit', 'reset', 'range', 'color', 'file', 'image', 'hidden'];
-        const isTypingField = (el) => {
-            if (!el) return false;
-            if (el.isContentEditable || el.tagName === 'TEXTAREA') return true;
-            return el.tagName === 'INPUT' && !NON_TYPING_INPUTS.includes((el.type || 'text').toLowerCase());
-        };
-        const keyboardLikelyOpen = () => document.hasFocus() && isTypingField(document.activeElement);
+        const keyboardLikelyOpen = () => this._keyboardLikelyOpen();
 
         let baselineArea = viewportArea();
         let baselineWidth = root.clientWidth;
@@ -380,9 +434,14 @@ export const examProtectionStore = reactive({
             let shrunk;
             if (keyboardLikelyOpen()) {
                 // Tinggi sedang "dimakan" keyboard -> hanya lebar yang bisa
-                // dipercaya. Kalau lebar normal, JANGAN ubah status apa pun
-                // (termasuk inSplitScreen) -- tunggu keyboard menutup.
-                if (needRecalibrate || root.clientWidth / baselineWidth >= 0.85) return;
+                // dipercaya. Kalau lebar normal, jangan menuduh -- tunggu
+                // keyboard menutup. Status split hanya di-reset kalau luasnya
+                // pun sudah pulih (keyboard yang tidak mengecilkan layout).
+                if (needRecalibrate) return;
+                if (root.clientWidth / baselineWidth >= 0.85) {
+                    if (viewportArea() / baselineArea >= 0.85) inSplitScreen = false;
+                    return;
+                }
                 shrunk = true;
             } else {
                 // Rotasi terjadi saat keyboard terbuka -> baseline baru diambil
@@ -417,11 +476,16 @@ export const examProtectionStore = reactive({
             }, 800);
         });
 
-        window.addEventListener('resize', () => scheduleCheck(300));
+        // Resize di tengah masa tenang keyboard menutup tetap dicek ulang
+        // setelah masa itu lewat -- cek di dalamnya akan selalu dilewati.
+        window.addEventListener('resize', () => {
+            const settleLeft = KEYBOARD_SETTLE_MS - (Date.now() - this._typingBlurAt);
+            scheduleCheck(Math.max(300, settleLeft + 100));
+        });
         // Keyboard menutup / jendela ujian kehilangan fokus -> cek ulang setelah
-        // animasi keyboard selesai. focusout ke kolom ketik lain (pindah soal
+        // keyboard selesai menutup. focusout ke kolom ketik lain (pindah soal
         // isian) aman: saat cek berjalan, activeElement sudah kolom yang baru.
-        document.addEventListener('focusout', () => scheduleCheck(700));
+        document.addEventListener('focusout', () => scheduleCheck(KEYBOARD_SETTLE_MS + 100));
         window.addEventListener('blur', () => scheduleCheck(700));
     },
 
@@ -543,7 +607,10 @@ export const examProtectionStore = reactive({
             if (this.isMobile) return;
             const zoom = (window.devicePixelRatio || 1) / baseDpr;
             const w = window.outerWidth - window.innerWidth * zoom;
-            const h = window.outerHeight - window.innerHeight * zoom;
+            // Tinggi diabaikan saat keyboard virtual terbuka (laptop layar
+            // sentuh/tablet yang tidak terdeteksi mobile) -- keyboard
+            // mengecilkan innerHeight persis seperti DevTools yang di-dock bawah.
+            const h = this._keyboardLikelyOpen() ? 0 : window.outerHeight - window.innerHeight * zoom;
             if (w > 200 || h > 200) {
                 this.logViolation('devtools');
             }
