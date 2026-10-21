@@ -47,7 +47,9 @@ trait HasRbac
         // Default per tipe user
         $type = $this->user_type ?? 'guest';
         return $this->cachedPermissions = match ($type) {
-            'admin' => ['*'],                 // wildcard, akses semua
+            // User tanpa role valid bukan akun panel (lihat User::scopePanelAccounts) —
+            // dulu dapat wildcard '*', sehingga baris users asing langsung berakses penuh.
+            'admin' => [],
             'guru'  => $this->guruDefaultPermissions(),
             'siswa' => $this->siswaDefaultPermissions(),
             default => [],

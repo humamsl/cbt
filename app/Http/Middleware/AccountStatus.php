@@ -20,6 +20,14 @@ class AccountStatus
             return $next($request);
         }
 
+        // Baris users tanpa role CBT (mis. akun daftar Perpus di DB bersama) bukan
+        // akun panel — keluarkan juga sesi/remember-me yang terbentuk sebelum login dibatasi.
+        if ($user instanceof \App\Models\User && ! $user->isPanelAccount()) {
+            $this->logoutAll($request);
+            return redirect()->route('login')
+                ->withErrors(['username' => 'Kombinasi username dan password salah.']);
+        }
+
         $status = strtolower((string) ($user->account_status ?? 'active'));
 
         // Cek penguncian sementara karena gagal login

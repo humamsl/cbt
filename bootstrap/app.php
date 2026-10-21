@@ -31,6 +31,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'rbac'           => \App\Http\Middleware\Rbac::class,
             'otp'            => \App\Http\Middleware\OtpVerification::class,
             'accountstatus'  => \App\Http\Middleware\AccountStatus::class,
+            'mustchangepw'   => \App\Http\Middleware\ForcePasswordChange::class,
             'admin'          => \App\Http\Middleware\AdminMiddleware::class,
             'license'        => \App\Http\Middleware\CheckAppExpiry::class,
             'sso'            => \App\Http\Middleware\SingleSessionGuard::class,

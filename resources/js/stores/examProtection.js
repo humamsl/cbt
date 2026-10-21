@@ -332,45 +332,97 @@ export const examProtectionStore = reactive({
      * dicatat sebagai 'split_screen'. Layout viewport tidak berubah saat zoom,
      * tapi tetap berubah saat jendela benar-benar dibelah -- persis yang kita
      * mau. Guard _isZoomed() dipasang sebagai lapis kedua.
+     *
+     * KEYBOARD VIRTUAL: di Android WebView, Firefox, Samsung Internet, dan
+     * Chrome lama, munculnya keyboard (mis. siswa mengetik jawaban soal
+     * isian/fill-blank) MENGECILKAN layout viewport ~40-50% tingginya -- persis
+     * seperti split-screen atas-bawah, sehingga dulu terbaca 'split_screen'.
+     * Selama kolom ketik sedang fokus (keyboard kemungkinan terbuka), luas
+     * viewport diabaikan dan yang diperiksa hanya LEBAR -- keyboard tidak
+     * pernah mengurangi lebar, split-screen kiri-kanan iya. Begitu kolom ketik
+     * dilepas (keyboard menutup), viewport dicek ulang: kalau masih menyusut,
+     * berarti memang di-split, bukan keyboard. document.hasFocus() ikut
+     * dipakai supaya siswa yang sudah membelah layar lalu mengetuk aplikasi
+     * lain (jendela ujian kehilangan fokus) tidak lolos hanya karena
+     * kolom isiannya masih berstatus fokus.
      */
     _attachSplitScreenDetection() {
-        const viewportArea = () =>
-            document.documentElement.clientWidth * document.documentElement.clientHeight;
+        const root = document.documentElement;
+        const viewportArea = () => root.clientWidth * root.clientHeight;
+
+        const NON_TYPING_INPUTS = ['checkbox', 'radio', 'button', 'submit', 'reset', 'range', 'color', 'file', 'image', 'hidden'];
+        const isTypingField = (el) => {
+            if (!el) return false;
+            if (el.isContentEditable || el.tagName === 'TEXTAREA') return true;
+            return el.tagName === 'INPUT' && !NON_TYPING_INPUTS.includes((el.type || 'text').toLowerCase());
+        };
+        const keyboardLikelyOpen = () => document.hasFocus() && isTypingField(document.activeElement);
 
         let baselineArea = viewportArea();
+        let baselineWidth = root.clientWidth;
+        let needRecalibrate = false;
         let recentOrientationChange = false;
         let inSplitScreen = false;
         let resizeTimer = null;
+
+        const recalibrate = () => {
+            baselineArea = viewportArea();
+            baselineWidth = root.clientWidth;
+            needRecalibrate = false;
+        };
+
+        const check = () => {
+            if (recentOrientationChange) return;
+            // Sedang di-zoom (browser mengabaikan kunci zoom kita) -> angka
+            // viewport tidak bisa dipercaya, lewati saja daripada menuduh.
+            if (this._isZoomed()) return;
+
+            let shrunk;
+            if (keyboardLikelyOpen()) {
+                // Tinggi sedang "dimakan" keyboard -> hanya lebar yang bisa
+                // dipercaya. Kalau lebar normal, JANGAN ubah status apa pun
+                // (termasuk inSplitScreen) -- tunggu keyboard menutup.
+                if (needRecalibrate || root.clientWidth / baselineWidth >= 0.85) return;
+                shrunk = true;
+            } else {
+                // Rotasi terjadi saat keyboard terbuka -> baseline baru diambil
+                // sekarang, setelah keyboard menutup.
+                if (needRecalibrate) { recalibrate(); return; }
+                shrunk = viewportArea() / baselineArea < 0.85;
+            }
+
+            if (shrunk) {
+                if (!inSplitScreen) {
+                    inSplitScreen = true;
+                    this.logViolation('split_screen');
+                }
+            } else {
+                inSplitScreen = false;
+            }
+        };
+
+        const scheduleCheck = (delay) => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(check, delay);
+        };
 
         screen.orientation?.addEventListener('change', () => {
             recentOrientationChange = true;
             setTimeout(() => {
                 recentOrientationChange = false;
-                // Kalibrasi ulang baseline setelah rotasi selesai & UI settle.
-                baselineArea = viewportArea();
+                // Kalibrasi ulang baseline setelah rotasi selesai & UI settle --
+                // kecuali keyboard sedang terbuka (baseline akan ikut kecil).
+                if (keyboardLikelyOpen()) needRecalibrate = true;
+                else recalibrate();
             }, 800);
         });
 
-        window.addEventListener('resize', () => {
-            clearTimeout(resizeTimer);
-            resizeTimer = setTimeout(() => {
-                if (recentOrientationChange) return;
-                // Sedang di-zoom (browser mengabaikan kunci zoom kita) -> angka
-                // viewport tidak bisa dipercaya, lewati saja daripada menuduh.
-                if (this._isZoomed()) return;
-
-                const ratio = viewportArea() / baselineArea;
-
-                if (ratio < 0.85) {
-                    if (!inSplitScreen) {
-                        inSplitScreen = true;
-                        this.logViolation('split_screen');
-                    }
-                } else {
-                    inSplitScreen = false;
-                }
-            }, 300);
-        });
+        window.addEventListener('resize', () => scheduleCheck(300));
+        // Keyboard menutup / jendela ujian kehilangan fokus -> cek ulang setelah
+        // animasi keyboard selesai. focusout ke kolom ketik lain (pindah soal
+        // isian) aman: saat cek berjalan, activeElement sudah kolom yang baru.
+        document.addEventListener('focusout', () => scheduleCheck(700));
+        window.addEventListener('blur', () => scheduleCheck(700));
     },
 
     attachCommonHandlers() {

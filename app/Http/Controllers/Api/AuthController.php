@@ -55,7 +55,7 @@ class AuthController extends Controller
 
         if ($siswa && $siswa->locked_until && $siswa->locked_until->isFuture()) {
             $this->logAttempt($r, $data['nisn'], 'siswa', false);
-            $minutes = now()->diffInMinutes($siswa->locked_until);
+            $minutes = max(1, (int) ceil(now()->diffInMinutes($siswa->locked_until)));
             throw ValidationException::withMessages([
                 'nisn' => "Akun dikunci sementara. Coba lagi dalam {$minutes} menit.",
             ]);
@@ -119,6 +119,13 @@ class AuthController extends Controller
 
         $otp = OtpCode::activeLoginFor($siswa);
         if (! $otp || ! Hash::check($data['code'], $otp->code)) {
+            // Tiket OTP hangus setelah 5x salah — tanpa ini kode 6 digit bisa
+            // ditebak beruntun selama 5 menit masa berlaku tiket.
+            $failKey = 'otp_login_fail:'.$data['otp_token'];
+            if (RateLimiter::hit($failKey, 300) >= 5) {
+                Cache::forget('otp_login:'.$data['otp_token']);
+                RateLimiter::clear($failKey);
+            }
             throw ValidationException::withMessages([
                 'code' => 'Kode OTP salah atau sudah kedaluwarsa.',
             ]);

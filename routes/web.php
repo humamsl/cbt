@@ -64,6 +64,7 @@ Route::middleware([
     'sso',             // single sign-on: kick session lama
     'accountstatus',   // cek account_status & locked_until
     'otp',             // paksa verifikasi OTP jika otp_enabled
+    'mustchangepw',    // wajib ganti password setelah admin:reset-credentials
 ])->group(function () {
 
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');

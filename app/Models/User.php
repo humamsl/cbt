@@ -28,6 +28,7 @@ class User extends Authenticatable
             'last_seen_at' => 'datetime',
             'locked_until' => 'datetime',
             'otp_enabled' => 'boolean',
+            'must_change_password' => 'boolean',
             'is_aktif' => 'boolean',
         ];
     }
@@ -35,6 +36,22 @@ class User extends Authenticatable
     public function otpCodes(): MorphMany
     {
         return $this->morphMany(OtpCode::class, 'authable');
+    }
+
+    /**
+     * Akun panel CBT = baris users yang terhubung ke role CBT yang valid.
+     * Kolom `role` tidak bisa dipakai: default-nya 'admin' di level DB, sehingga
+     * baris yang ditulis aplikasi lain ke tabel users yang sama (mis. pendaftaran
+     * anggota Perpus pada server yang berbagi database) ikut terlihat sebagai admin.
+     */
+    public function scopePanelAccounts($query)
+    {
+        return $query->whereHas('role');
+    }
+
+    public function isPanelAccount(): bool
+    {
+        return $this->role_id !== null && $this->role()->exists();
     }
 
     public function getUserTypeAttribute(): string

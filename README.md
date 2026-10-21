@@ -238,6 +238,40 @@ database/migrations/
 - Timer countdown realtime; auto-submit ketika 00:00:00
 - Navigasi soal sidebar dengan badge "terjawab/belum"
 - Form submit "Selesai & Kirim" → kalkulasi nilai otomatis di server
+- Waktu habis tapi tidak tersubmit (server mati, browser ditutup) → diselesaikan otomatis oleh server (lihat di bawah)
+
+### Ujian Terhenti karena Server Mati (Listrik Padam)
+
+**Masalah:** auto-submit saat waktu habis dikirim oleh timer di browser/app siswa. Kalau server mati saat ujian berlangsung (listrik padam, jaringan putus) atau siswa menutup browser, kiriman itu tidak pernah sampai. Setelah server menyala, status ujian siswa tertinggal **"Sedang"**, padahal waktu pengerjaan & jadwal registrasi ujian sudah selesai, dan nilainya tercatat **0 / kosong**.
+
+**Penanganan (otomatis, tanpa cron):** server sendiri yang menyelesaikan attempt yang sudah lewat **waktu mulai + durasi ujian + toleransi 2 menit**. Toleransi itu memberi kesempatan auto-submit dari browser sampai duluan.
+
+- Nilai dihitung dari jawaban yang **sudah tersimpan** sebelum server mati. Jawaban disimpan per soal setiap kali siswa memilih/mengetik, jadi yang sudah dijawab tetap terhitung. Hasilnya sama persis seperti siswa menekan "Kirim" saat waktu habis.
+- `time_end` diisi **batas waktu** pengerjaan, bukan jam server menyala, supaya durasi pengerjaan tetap wajar.
+- Pemicunya:
+  - setiap request ke aplikasi, maksimal 1x/menit, berjalan di belakang layar setelah respons terkirim (middleware `SelesaikanUjianKedaluwarsa`);
+  - saat guru/admin membuka halaman **Monitoring Ujian** & **Hasil & Laporan**, dijalankan langsung sebelum halaman tampil;
+  - saat siswa membuka halaman ujiannya, menyimpan jawaban, atau ping dari tab yang masih terbuka: siswa diarahkan ke halaman hasil, dan jawaban yang datang setelah waktu habis tidak diterima lagi;
+  - API aplikasi mobile (`show`).
+- Attempt yang **masih dalam waktu**, yang **diblokir**, dan yang registrasi ujiannya **sudah dihapus** tidak disentuh.
+- Logika ada di `App\Services\Ujian\ExamScoringService` (`finalizeIfExpired()`, `finalizeExpiredAttempts()`).
+
+**Membereskan manual** (mis. tepat setelah server menyala kembali). Command ini menampilkan daftar siswa, ujian, waktu mulai, batas waktu, dan jumlah jawaban tersimpan:
+
+```bash
+# Lihat dulu daftar attempt yang akan diselesaikan (belum menyimpan apa pun)
+php artisan ujian:selesaikan-kedaluwarsa
+
+# Simpan: selesaikan & hitung nilainya
+php artisan ujian:selesaikan-kedaluwarsa --terapkan
+
+# Batasi ke satu ujian saja (quiz_id)
+php artisan ujian:selesaikan-kedaluwarsa --quiz=12 --terapkan
+```
+
+Command yang sama juga terdaftar di scheduler (`routes/console.php`, tiap menit). Ia hanya berjalan kalau server memasang cron `* * * * * php artisan schedule:run`. Tanpa cron pun penanganan otomatis di atas tetap jalan.
+
+> Siswa yang terdampak hanya mendapat nilai dari soal yang sempat terjawab sebelum server mati. Kalau siswa perlu mengulang ujian, gunakan tombol **Reset** untuk siswa tersebut di **Monitoring Ujian**.
 
 ## Fitur Proteksi
 

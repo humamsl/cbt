@@ -6,6 +6,7 @@ use App\Concerns\LogsLoginAttempts;
 use App\Models\Guru;
 use App\Models\Siswa;
 use App\Models\User;
+use App\Support\LoginFailureCap;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +19,8 @@ class AuthController extends Controller
 
     public const MAX_ATTEMPTS = 5;
     public const LOCK_MINUTES = 15;
+    /** Login admin gagal per IP per jam (semua username digabung). */
+    public const ADMIN_IP_MAX_FAILURES = 30;
 
     public function showLogin(Request $request, ?string $module = null)
     {
@@ -126,21 +129,39 @@ class AuthController extends Controller
     /** Login admin — sepenuhnya lokal (User tetap dikelola langsung di CBT). */
     protected function attemptAdmin(Request $request, array $data, bool $remember, string $rateKey): bool|\Illuminate\Http\RedirectResponse
     {
+        // Batas tambahan khusus admin (siswa sengaja tidak — banyak siswa berbagi
+        // satu IP sekolah): per akun per 24 jam dari IP mana pun, dan per IP untuk
+        // semua username admin (menahan penebakan banyak email dari satu IP).
+        $ipKey = 'login-admin-ip:'.$request->ip();
+        $blocked = LoginFailureCap::blockedFor($data['username'])
+            ?? (RateLimiter::tooManyAttempts($ipKey, self::ADMIN_IP_MAX_FAILURES) ? RateLimiter::availableIn($ipKey) : null);
+        if ($blocked !== null) {
+            $this->logAttempt($request, $data['username'], $data['role'], false);
+            throw ValidationException::withMessages(['username' => LoginFailureCap::message($blocked)]);
+        }
+
         $existing = User::where('email', $data['username'])->first();
         if ($existing && ! empty($existing->locked_until) && $existing->locked_until > now()) {
             $this->logAttempt($request, $data['username'], $data['role'], false);
-            $minutes = now()->diffInMinutes($existing->locked_until);
+            $minutes = max(1, (int) ceil(now()->diffInMinutes($existing->locked_until)));
             throw ValidationException::withMessages([
                 'username' => "Akun dikunci sementara. Coba lagi dalam {$minutes} menit.",
             ]);
         }
 
-        $ok = Auth::guard('admin')->attempt(['email' => $data['username'], 'password' => $data['password']], $remember);
+        // Hanya akun panel CBT (punya role valid) — lihat User::scopePanelAccounts()
+        $ok = Auth::guard('admin')->attempt([
+            'email'    => $data['username'],
+            'password' => $data['password'],
+            fn ($q) => $q->panelAccounts(),
+        ], $remember);
 
         $this->logAttempt($request, $data['username'], $data['role'], $ok);
         RateLimiter::hit($rateKey, 60 * 10);
 
         if (! $ok) {
+            LoginFailureCap::hit($data['username']);
+            RateLimiter::hit($ipKey, 3600);
             if ($existing) {
                 $count = (int) ($existing->failed_login_count ?? 0) + 1;
                 $updates = ['failed_login_count' => $count];
@@ -152,6 +173,8 @@ class AuthController extends Controller
             }
             return false;
         }
+
+        LoginFailureCap::clear($data['username']);
 
         $user = Auth::guard('admin')->user();
         $status = strtolower((string) ($user->account_status ?? 'active'));
@@ -174,7 +197,7 @@ class AuthController extends Controller
         $existing = $model::where($usernameField, $data['username'])->first();
         if ($existing && ! empty($existing->locked_until) && $existing->locked_until > now()) {
             $this->logAttempt($request, $data['username'], $data['role'], false);
-            $minutes = now()->diffInMinutes($existing->locked_until);
+            $minutes = max(1, (int) ceil(now()->diffInMinutes($existing->locked_until)));
             throw ValidationException::withMessages([
                 'username' => "Akun dikunci sementara. Coba lagi dalam {$minutes} menit.",
             ]);

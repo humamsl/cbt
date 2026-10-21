@@ -14,7 +14,8 @@ class AdminMiddleware
     public function handle(Request $request, Closure $next)
     {
         $user = $request->user();
-        if (! $user || ($user->user_type ?? '') !== 'admin') {
+        if (! $user || ($user->user_type ?? '') !== 'admin'
+            || ($user instanceof \App\Models\User && ! $user->isPanelAccount())) {
             abort(403, 'Hanya administrator yang dapat mengakses halaman ini.');
         }
         return $next($request);
